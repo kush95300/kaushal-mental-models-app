@@ -31,7 +31,11 @@ export async function POST(request: Request) {
     let delegateId = body.delegateId ? parseInt(body.delegateId) : null;
     if (!delegateId) {
       const selfDelegate = await (prisma as any).delegate.findFirst({
-        where: { name: "Self" },
+        where: {
+          name: {
+            in: ["Self", "self", "SELF"],
+          },
+        },
       });
       if (selfDelegate) delegateId = selfDelegate.id;
     }
@@ -67,12 +71,8 @@ export async function PATCH(request: Request) {
     if (updates.dueDate) updates.dueDate = new Date(updates.dueDate);
     if (updates.delegateId) updates.delegateId = parseInt(updates.delegateId);
 
-    // Business Rule: If moving out of DELEGATE/INBOX, auto-assign to Self
-    if (
-      updates.quadrant &&
-      updates.quadrant !== "DELEGATE" &&
-      updates.quadrant !== "INBOX"
-    ) {
+    // Business Rule: If moving out of DELEGATE quadrant, auto-assign to Self
+    if (updates.quadrant && updates.quadrant !== "DELEGATE") {
       const selfDelegate = await (prisma as any).delegate.findFirst({
         where: {
           name: {

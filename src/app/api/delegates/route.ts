@@ -7,7 +7,11 @@ export async function GET() {
     await (prisma as any).delegate.upsert({
       where: { name: "Self" },
       update: {},
-      create: { name: "Self", email: "me@example.com" },
+      create: {
+        id: 1, // Attempt to maintain ID 1
+        name: "Self",
+        email: "me@example.com",
+      },
     });
 
     const delegates = await (prisma as any).delegate.findMany({

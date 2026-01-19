@@ -250,10 +250,17 @@ function EisenhowerMatrixContent() {
         setNewTask("");
         return;
       }
+      const selfDelegate = delegates.find(
+        (d) => d.name.toLowerCase() === "self",
+      );
       const res = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: newTask, quadrant: "INBOX" }),
+        body: JSON.stringify({
+          content: newTask,
+          quadrant: "INBOX",
+          delegateId: selfDelegate?.id || null,
+        }),
       });
       if (res.ok) {
         const task = await res.json();
@@ -332,9 +339,9 @@ function EisenhowerMatrixContent() {
     quadrant: string,
     additionalData: any = {},
   ) => {
-    // Constraint: Auto-assign to "Self" if not in designated Delegate quadrant
-    if (quadrant !== "DELEGATE" && quadrant !== "INBOX") {
-      // Case-insensitive check for "Self"
+    // Constraint: Assignment logic based on Quadrant
+    if (quadrant !== "DELEGATE") {
+      // Auto-assign to "Self" for active quadrants (DO, SCHEDULE, ELIMINATE, INBOX)
       const selfDelegate = delegates.find(
         (d) => d.name.toLowerCase() === "self",
       );
@@ -530,6 +537,10 @@ function EisenhowerMatrixContent() {
     completed: tasks.filter((t) => t.status === "DONE" && !t.isDeleted).length,
     pending: tasks.filter((t) => t.status === "TODO" && !t.isDeleted).length,
     eliminated: tasks.filter((t) => t.isDeleted).length,
+    delegated: tasks.filter(
+      (t) =>
+        !t.isDeleted && t.delegate && t.delegate.name.toLowerCase() !== "self",
+    ).length,
   };
 
   const TaskCard = ({ task }: { task: Task }) => (
@@ -567,7 +578,7 @@ function EisenhowerMatrixContent() {
             {new Date(task.dueDate).toLocaleDateString()}
           </span>
         )}
-        {task.delegate && (
+        {task.delegate && task.quadrant !== "INBOX" && (
           <span className="text-[10px] font-bold text-amber-500 uppercase flex items-center gap-1 mt-0.5">
             <Users className="w-3 h-3" /> {task.delegate.name}
           </span>
@@ -618,7 +629,7 @@ function EisenhowerMatrixContent() {
 
   const Quadrant = ({ qConfig }: { qConfig: any }) => {
     const quadrantTasks = tasks.filter(
-      (t) => t.quadrant === qConfig.id && !t.isDeleted,
+      (t) => t.quadrant === qConfig.id && !t.isDeleted && t.status !== "DONE",
     );
     const isActive = activeQuadrant === qConfig.id;
 
@@ -836,6 +847,14 @@ function EisenhowerMatrixContent() {
                     {stats.eliminated}
                   </span>
                 </div>
+                <div className="px-4 py-2 bg-amber-50 border border-amber-100 rounded-2xl flex flex-col items-center justify-center shadow-sm text-center">
+                  <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest">
+                    Delegated
+                  </span>
+                  <span className="text-xl font-black text-amber-600 leading-none">
+                    {stats.delegated}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -931,7 +950,9 @@ function EisenhowerMatrixContent() {
               className="space-y-3 overflow-y-auto custom-scrollbar pr-1 scroll-smooth"
               style={{ maxHeight: `${visibleLimit * 54 + 16}px` }}
             >
-              {tasks.filter((t) => t.quadrant === "INBOX").length === 0 ? (
+              {tasks.filter(
+                (t) => t.quadrant === "INBOX" && t.status !== "DONE",
+              ).length === 0 ? (
                 <div className="flex flex-col items-center justify-center pt-16 opacity-30 text-slate-400">
                   <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center mb-4">
                     <Move className="w-6 h-6" />
@@ -944,7 +965,7 @@ function EisenhowerMatrixContent() {
                 </div>
               ) : (
                 tasks
-                  .filter((t) => t.quadrant === "INBOX")
+                  .filter((t) => t.quadrant === "INBOX" && t.status !== "DONE")
                   .map((task) => <TaskCard key={task.id} task={task} />)
               )}
             </div>

@@ -21,25 +21,26 @@
 
 ## Task Management
 
-| Feature               | Status     | Proof / UI Element                             |
-| :-------------------- | :--------- | :--------------------------------------------- |
-| **Create Task**       | ✅ Working | "New Task" input and "Add to Inbox" button.    |
-| **Delete Task**       | ✅ Working | Trash icon on every task card.                 |
-| **Complete Task**     | ✅ Working | Circle/Check icon on every task card.          |
-| **Edit Due Date**     | ✅ Working | Calendar icon on hover (except Inbox).         |
-| **Reassign Delegate** | ✅ Working | User/Cog icon on Delegate quadrant tasks.      |
-| **Edit Content**      | ✅ Working | Pencil icon on active tasks (including Inbox). |
+| Feature               | Status     | Proof / UI Element                                       |
+| :-------------------- | :--------- | :------------------------------------------------------- |
+| **Create Task**       | ✅ Working | "New Task" input and "Add to Inbox" button.              |
+| **Delete Task**       | ✅ Working | Trash icon on every task card.                           |
+| **Complete Task**     | ✅ Working | Task disappears from quadrant and moves to Done Archive. |
+| **Edit Due Date**     | ✅ Working | Calendar icon on hover (except Inbox).                   |
+| **Reassign Delegate** | ✅ Working | User/Cog icon on Delegate quadrant tasks.                |
+| **Edit Content**      | ✅ Working | Pencil icon on active tasks (including Inbox).           |
 
 ## Logic & Automation
 
-| Feature                    | Status     | Proof / UI Element                                |
-| :------------------------- | :--------- | :------------------------------------------------ |
-| **Auto-Prompt (DO)**       | ✅ Working | Modal: Today/Tomorrow buttons appear on drop.     |
-| **Auto-Prompt (SCHEDULE)** | ✅ Working | Modal: Date picker appears on drop.               |
-| **Auto-Prompt (DELEGATE)** | ✅ Working | Modal: Team list appears on drop.                 |
-| **Delegate -> Self**       | ✅ Working | "Keep for Self" button moves to Urgent/Important. |
-| **Optimistic Updates**     | ✅ Working | UI updates instantly on Delete/Revert.            |
-| **Date Validation**        | ✅ Working | Prevents past date selection in all pickers.      |
+| Feature                    | Status     | Proof / UI Element                                    |
+| :------------------------- | :--------- | :---------------------------------------------------- |
+| **Auto-Prompt (DO)**       | ✅ Working | Modal: Today/Tomorrow buttons appear on drop.         |
+| **Auto-Prompt (SCHEDULE)** | ✅ Working | Modal: Date picker appears on drop.                   |
+| **Auto-Prompt (DELEGATE)** | ✅ Working | Modal: Team list appears on drop.                     |
+| **Delegate -> Self**       | ✅ Working | Moving out of DELEGATE auto-assigns back to "Self".   |
+| **Inbox -> Self**          | ✅ Working | New tasks in Inbox are assigned to "Self" by default. |
+| **Optimistic Updates**     | ✅ Working | UI updates instantly on Delete/Revert.                |
+| **Date Validation**        | ✅ Working | Prevents past date selection in all pickers.          |
 
 ## Modals & Overlays
 
