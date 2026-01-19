@@ -21,8 +21,10 @@ export async function POST(request: Request) {
         const task = await prisma.task.create({
             data: {
                 content: body.content,
-                isImportant: body.isImportant,
-                isUrgent: body.isUrgent,
+                isImportant: body.isImportant || false,
+                isUrgent: body.isUrgent || false,
+                quadrant: body.quadrant || 'INBOX',
+                status: body.status || 'TODO',
             },
         });
         return NextResponse.json(task);

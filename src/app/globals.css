@@ -1,68 +1,30 @@
-:root {
-  --background: #1a0b2e; /* Deep purple */
-  --foreground: #ffffff;
-  --primary-glow: linear-gradient(180deg, rgba(58, 110, 180, 0), rgba(58, 110, 180, 0.3));
-  --accent-glow: 0 0 20px rgba(140, 69, 255, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.2);
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  
-  --font-main: var(--font-outfit), sans-serif;
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply antialiased text-slate-900 bg-[#f8fafc] font-sans;
+  }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background) url('/assets/background.png') no-repeat center center fixed;
-  background-size: cover;
-  font-family: var(--font-main);
-  min-height: 100vh;
-  overflow-x: hidden;
-}
+@layer utilities {
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
 
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-::-webkit-scrollbar-track {
-  background: var(--background);
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(138, 43, 226, 0.5);
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(138, 43, 226, 0.8);
-}
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+  }
 
-/* Glassmorphism Utilities */
-.glass-panel {
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-}
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
 
-.magic-text {
-  background: linear-gradient(to right, #fff, #b49eff, #fff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 0 20px rgba(180, 158, 255, 0.5);
-  animation: shine 3s infinite linear;
-}
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+  }
 
-@keyframes shine {
-  0% { background-position: 0% center; }
-  100% { background-position: 200% center; }
-}
-
-.floating {
-  animation: float 6s ease-in-out infinite;
-}
-
-@keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
-  100% { transform: translateY(0px); }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.1);
+  }
 }

@@ -15,6 +15,7 @@ model Task {
   content     String
   isImportant Boolean  @default(false)
   isUrgent    Boolean  @default(false)
+  quadrant    String   @default("INBOX") // INBOX, DO, SCHEDULE, DELEGATE, ELIMINATE
   status      String   @default("TODO") // TODO, DONE
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
