@@ -1,75 +1,55 @@
-# 🎓 Mental Model Repository
+# 🧪 The Wisdom Lab (Mental Models Repository)
 
-A professional, interactive, and locally-hostable repository for mental models. Designed with a clean, high-contrast "Educative" aesthetic, this monolithic application helps you manage your cognitive tools with clarity and focus.
+A high-precision, interactive workspace designed to sharpen decision-making and boost productivity using world-class mental models.
 
-## ✨ Current Models
-- **Eisenhower Matrix**: Prioritize tasks by urgency and importance in a minimalist, professional interface.
+## 🚀 Key Features
 
----
+### 📅 The Focus Matrix (Eisenhower Matrix v2.0)
+Transform your to-do list into a strategic map by separating the urgent from the essential.
 
-## 🚀 Setting Up on a New Machine
+*   **Dynamic Drag & Drop**: Categorize tasks effortlessly from the **Draft Queue** into one of four distinct quadrants.
+*   **Intelligent Scheduling**:
+    *   **Do First (DO)**: Assign priority as *Today* or *Tomorrow*.
+    *   **Schedule (Plan)**: Full date-picker integration for long-term planning.
+*   **Team Delegation System**: 
+    *   Dedicated **Delegate Manager** for team personas.
+    *   **Smart Assignments**: Tasks default to **"Self"**, with a specific handover prompt when moving to the "Delegate" quadrant.
+*   **Analytics & Metadata**: Logs **Creation Date** and **Completion Date** for every task to support future performance analytics.
+*   **Educational Overlay**: Integrated **Help (?)** portal explaining the Eisenhower philosophy to ensure maximum productivity.
+*   **Adaptive Workspace**: Live **Today's Date** display and a **Focus Depth** slider (3-50 items) for ultimate UI control.
 
-If you are cloning this repository for the first time on a new computer, follow these steps to get the environment running.
+### 🍱 The Models Library
+A curated gallery of frameworks for better thinking.
 
-### 1. Prerequisites
-Ensure you have the following software installed:
-- **Node.js**: Version 18.x or higher is recommended.
-- **npm**: Comes bundled with Node.js.
-- **Git**: For cloning the repository.
-
-### 2. Clone and Install
-📋 **Copy and run these commands:**
-
-```bash
-git clone <your-repo-url>
-```
-```bash
-cd kaushal-mental-models
-```
-```bash
-npm install
-```
-
-### 3. Database Initialization
-This project uses **SQLite** with **Prisma**. To initialize the local database file:
-
-📋 **Command to generate client:**
-```bash
-npx prisma generate
-```
-
-📋 **Command to sync database schema:**
-```bash
-npx prisma db push
-```
-
-### 4. Run the Repository
-📋 **Start the server:**
-```bash
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) to enter the portal.
-
----
-
-## 💾 Database Management & Migrations
-
-The application saves all your data locally in the `dev.db` file. To ensure you don't lose data:
-
-### Keeping Data Safe
-- **Backup**: Always create a copy of `dev.db` before running destructive actions.
-- **Schema Updates**: If you modify `schema.prisma`, run `npx prisma db push`.
-
-### Moving to Another Computer
-1. Follow the **Setup** steps above on the new machine.
-2. Copy your existing `dev.db` file to the root folder on the new machine.
-3. Run `npm run dev`. Your data will be preserved.
-
----
+*   **Eisenhower Matrix**: The core productivity engine (Full Feature).
+*   **Pareto Principle (80/20)**: Focus on the high-impact effort (Upcoming).
+*   **First Principles**: Problem deconstruction system (Upcoming).
+*   **Occam’s Razor**: Simplification logic (Upcoming).
 
 ## 🛠 Tech Stack
-- **Framework**: Next.js 15 (App Router)
-- **Database**: SQLite
-- **ORM**: Prisma
-- **Styling**: Minimalist Vanilla CSS
-- **Fonts**: Inter (via Google Fonts)
+- **Next.js 16**: Modern, high-performance web framework.
+- **Tailwind CSS v4**: Bleeding-edge styling for glassmorphic and vibrant design.
+- **Prisma + SQLite**: Robust local persistence for all tasks, delegates, and settings.
+- **Lucide React**: Professional metadata-aware iconography.
+
+## 🏁 Getting Started
+
+1.  **Clone the Lab**:
+    ```bash
+    git clone [repository-url]
+    ```
+2.  **Install Ingredients**:
+    ```bash
+    npm install
+    ```
+3.  **Deploy Database**:
+    ```bash
+    npx prisma db push
+    ```
+4.  **Ignite the Server**:
+    ```bash
+    npm run dev
+    ```
+
+---
+*Created with ❤️ by Kaushal Soni | Turning mental models into action.*
