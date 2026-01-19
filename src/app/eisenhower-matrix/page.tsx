@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   Plus,
   Trash2,
@@ -24,12 +25,15 @@ import {
   Zap,
   Clock,
   Users2,
+  Pencil,
 } from "lucide-react";
 
 interface Delegate {
   id: number;
   name: string;
   email?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface Task {
@@ -37,9 +41,13 @@ interface Task {
   content: string;
   quadrant: string;
   status: string;
-  dueDate?: string | null;
-  delegateId?: number | null;
-  delegate?: Delegate | null;
+  isImportant: boolean;
+  isUrgent: boolean;
+  dueDate?: string;
+  completedAt?: string;
+  isDeleted: boolean;
+  createdAt: string;
+  delegate?: Delegate;
 }
 
 const QUADRANTS = {
@@ -93,7 +101,21 @@ const QUADRANTS = {
   },
 };
 
-export default function EisenhowerMatrix() {
+export default function EisenhowerMatrixPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center font-black text-indigo-600 animate-pulse">
+          Loading Focus Matrix...
+        </div>
+      }
+    >
+      <EisenhowerMatrixContent />
+    </Suspense>
+  );
+}
+
+function EisenhowerMatrixContent() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [delegates, setDelegates] = useState<Delegate[]>([]);
   const [newTask, setNewTask] = useState("");
@@ -107,12 +129,24 @@ export default function EisenhowerMatrix() {
     taskId: number;
     quadrant: string;
   } | null>(null);
+  const [editingDateTaskId, setEditingDateTaskId] = useState<number | null>(
+    null,
+  );
+  const [editingContentTaskId, setEditingContentTaskId] = useState<
+    number | null
+  >(null);
+  const [editingContentValue, setEditingContentValue] = useState("");
+  const [showDoneList, setShowDoneList] = useState(false);
+  const [showDeletedList, setShowDeletedList] = useState(false);
 
   const [newDelegateName, setNewDelegateName] = useState("");
   const [config, setConfig] = useState<{
     analyticsStartDate: string | null;
   } | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [isTestMode, setIsTestMode] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   useEffect(() => {
     fetchTasks();
@@ -120,13 +154,30 @@ export default function EisenhowerMatrix() {
     fetchConfig();
   }, []);
 
+  useEffect(() => {
+    if (searchParams.get("showHelp") === "true") {
+      setShowHelpModal(true);
+    }
+  }, [searchParams]);
+
+  const handleCloseHelp = () => {
+    if (searchParams.get("showHelp") === "true") {
+      router.push("/");
+    } else {
+      setShowHelpModal(false);
+    }
+  };
+
   const fetchConfig = async () => {
     try {
       const res = await fetch("/api/config");
       if (res.ok) {
         const data = await res.json();
         setConfig(data);
-        if (!data.analyticsStartDate) {
+        if (
+          !data.analyticsStartDate &&
+          searchParams.get("showHelp") !== "true"
+        ) {
           setShowOnboarding(true);
         }
       }
@@ -182,6 +233,23 @@ export default function EisenhowerMatrix() {
     if (!newTask.trim()) return;
 
     try {
+      if (isTestMode) {
+        const tempTask = {
+          id: Math.random(),
+          content: newTask,
+          isImportant: false,
+          isUrgent: false,
+          quadrant: "INBOX",
+          status: "TODO",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          completedAt: null,
+          delegate: delegates.find((d) => d.name === "Self") || delegates[0],
+        };
+        setTasks([tempTask as any, ...tasks]);
+        setNewTask("");
+        return;
+      }
       const res = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -198,11 +266,16 @@ export default function EisenhowerMatrix() {
   };
 
   const deleteTask = async (id: number) => {
-    setTasks(tasks.filter((t) => t.id !== id));
+    // Optimistic update for soft delete
+    setTasks(tasks.map((t) => (t.id === id ? { ...t, isDeleted: true } : t)));
+
+    if (isTestMode) return;
     try {
       await fetch(`/api/tasks?id=${id}`, { method: "DELETE" });
     } catch (error) {
       console.error("Delete task error:", error);
+      // Revert on error
+      fetchTasks();
     }
   };
 
@@ -212,6 +285,7 @@ export default function EisenhowerMatrix() {
 
     const newStatus = task.status === "DONE" ? "TODO" : "DONE";
     setTasks(tasks.map((t) => (t.id === id ? { ...t, status: newStatus } : t)));
+    if (isTestMode) return;
 
     try {
       await fetch("/api/tasks", {
@@ -258,12 +332,42 @@ export default function EisenhowerMatrix() {
     quadrant: string,
     additionalData: any = {},
   ) => {
+    // Constraint: Auto-assign to "Self" if not in designated Delegate quadrant
+    if (quadrant !== "DELEGATE" && quadrant !== "INBOX") {
+      // Case-insensitive check for "Self"
+      const selfDelegate = delegates.find(
+        (d) => d.name.toLowerCase() === "self",
+      );
+      if (selfDelegate) {
+        additionalData.delegateId = selfDelegate.id;
+      }
+    }
+
     // Optimistic update
     setTasks((prev) =>
-      prev.map((t) =>
-        t.id === taskId ? { ...t, quadrant, ...additionalData } : t,
-      ),
+      prev.map((t) => {
+        if (t.id === taskId) {
+          const updatedTask = { ...t, quadrant, ...additionalData };
+          // If delegateId is being updated, find the delegate object for UI
+          if (additionalData.delegateId) {
+            const newDelegate = delegates.find(
+              (d) => d.id === additionalData.delegateId,
+            );
+            if (newDelegate) {
+              updatedTask.delegate = newDelegate;
+            }
+          }
+          // If delegateId is explicitly null (removing delegate), clear the delegate object
+          if (additionalData.delegateId === null) {
+            updatedTask.delegate = null;
+          }
+          return updatedTask;
+        }
+        return t;
+      }),
     );
+
+    if (isTestMode) return;
 
     try {
       await fetch("/api/tasks", {
@@ -279,9 +383,51 @@ export default function EisenhowerMatrix() {
     setAssignmentModal(null);
   };
 
+  const saveTaskContent = async () => {
+    if (!editingContentTaskId || !editingContentValue.trim()) return;
+
+    // Optimistic update
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === editingContentTaskId
+          ? { ...t, content: editingContentValue }
+          : t,
+      ),
+    );
+
+    const idToSave = editingContentTaskId;
+    const contentToSave = editingContentValue;
+    setEditingContentTaskId(null);
+    setEditingContentValue("");
+
+    if (isTestMode) return;
+
+    try {
+      await fetch("/api/tasks", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: idToSave, content: contentToSave }),
+      });
+      fetchTasks();
+    } catch (error) {
+      console.error("Update task content error:", error);
+    }
+  };
+
   // Delegate Management
   const addDelegate = async () => {
     if (!newDelegateName.trim()) return;
+    if (isTestMode) {
+      const tempDelegate = {
+        id: Math.random(),
+        name: newDelegateName,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setDelegates([...delegates, tempDelegate as any]);
+      setNewDelegateName("");
+      return;
+    }
     try {
       const res = await fetch("/api/delegates", {
         method: "POST",
@@ -299,6 +445,8 @@ export default function EisenhowerMatrix() {
   };
 
   const removeDelegate = async (id: number) => {
+    setDelegates(delegates.filter((d) => d.id !== id));
+    if (isTestMode) return;
     try {
       const res = await fetch(`/api/delegates?id=${id}`, { method: "DELETE" });
       if (res.ok) {
@@ -309,10 +457,79 @@ export default function EisenhowerMatrix() {
     }
   };
 
+  const resetData = async (type: "today" | "all") => {
+    if (
+      !confirm(
+        `Are you sure you want to reset ${
+          type === "today" ? "today's" : "all"
+        } data?`,
+      )
+    )
+      return;
+
+    if (isTestMode) {
+      if (type === "all") {
+        setTasks([]);
+      } else {
+        const today = new Date().toDateString();
+        setTasks(
+          tasks.filter((t) => new Date(t.createdAt).toDateString() !== today),
+        );
+      }
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/tasks?reset=${type}`, { method: "DELETE" });
+      if (res.ok) {
+        fetchTasks();
+      }
+    } catch (error) {
+      console.error("Reset error:", error);
+    }
+  };
+
+  const revertDeletion = async (id: number) => {
+    // Optimistic update
+    setTasks(tasks.map((t) => (t.id === id ? { ...t, isDeleted: false } : t)));
+
+    if (isTestMode) return;
+    try {
+      const res = await fetch(`/api/tasks?id=${id}&mode=revert`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        fetchTasks(); // Revert if failed
+      }
+    } catch (error) {
+      console.error("Revert error:", error);
+      fetchTasks();
+    }
+  };
+
+  const hardDeleteTask = async (id: number) => {
+    if (!confirm("Permanently delete this item?")) return;
+    if (isTestMode) {
+      setTasks(tasks.filter((t) => t.id !== id));
+      return;
+    }
+    try {
+      const res = await fetch(`/api/tasks?id=${id}&mode=hard`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        fetchTasks();
+      }
+    } catch (error) {
+      console.error("Hard delete error:", error);
+    }
+  };
+
   const stats = {
-    total: tasks.length,
-    completed: tasks.filter((t) => t.status === "DONE").length,
-    pending: tasks.filter((t) => t.status === "TODO").length,
+    total: tasks.filter((t) => !t.isDeleted).length,
+    completed: tasks.filter((t) => t.status === "DONE" && !t.isDeleted).length,
+    pending: tasks.filter((t) => t.status === "TODO" && !t.isDeleted).length,
+    eliminated: tasks.filter((t) => t.isDeleted).length,
   };
 
   const TaskCard = ({ task }: { task: Task }) => (
@@ -359,8 +576,39 @@ export default function EisenhowerMatrix() {
 
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
         <button
+          onClick={() => {
+            setEditingContentTaskId(task.id);
+            setEditingContentValue(task.content);
+          }}
+          className="p-1.5 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors duration-200"
+          title="Edit Content"
+        >
+          <Pencil className="w-4 h-4" />
+        </button>
+        {task.quadrant !== "INBOX" && (
+          <button
+            onClick={() => setEditingDateTaskId(task.id)}
+            className="p-1.5 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors duration-200"
+            title="Change Due Date"
+          >
+            <Calendar className="w-4 h-4" />
+          </button>
+        )}
+        {task.quadrant === "DELEGATE" && (
+          <button
+            onClick={() =>
+              setAssignmentModal({ taskId: task.id, quadrant: "DELEGATE" })
+            }
+            className="p-1.5 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-colors duration-200"
+            title="Reassign Delegate"
+          >
+            <UserCog className="w-4 h-4" />
+          </button>
+        )}
+        <button
           onClick={() => deleteTask(task.id)}
           className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors duration-200"
+          title="Delete Task"
         >
           <Trash2 className="w-4 h-4" />
         </button>
@@ -369,7 +617,9 @@ export default function EisenhowerMatrix() {
   );
 
   const Quadrant = ({ qConfig }: { qConfig: any }) => {
-    const quadrantTasks = tasks.filter((t) => t.quadrant === qConfig.id);
+    const quadrantTasks = tasks.filter(
+      (t) => t.quadrant === qConfig.id && !t.isDeleted,
+    );
     const isActive = activeQuadrant === qConfig.id;
 
     return (
@@ -473,7 +723,29 @@ export default function EisenhowerMatrix() {
             <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />{" "}
             Back to Models
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {isTestMode && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 text-[10px] font-black uppercase tracking-widest mr-2 animate-pulse">
+                <Zap size={12} className="fill-amber-500" /> Test Mode
+              </div>
+            )}
+            <div className="flex bg-white/50 backdrop-blur-md p-1.5 rounded-[1.5rem] border border-white items-center gap-1 shadow-sm">
+              <button
+                onClick={() => setShowDoneList(true)}
+                className="p-2 px-3 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-2xl transition-all flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest"
+                title="View Completed Tasks"
+              >
+                <CheckCircle2 size={16} /> Done
+              </button>
+              <button
+                onClick={() => setShowDeletedList(true)}
+                className="p-2 px-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-2xl transition-all flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest"
+                title="View Deleted Tasks"
+              >
+                <Trash2 size={16} /> Trash
+              </button>
+            </div>
+            <div className="h-8 w-px bg-slate-200 mx-1" />
             <button
               onClick={() => setShowHelpModal(true)}
               className="p-2.5 text-slate-400 hover:text-indigo-600 bg-white/80 rounded-2xl border border-white shadow-sm transition-all hover:shadow-md"
@@ -487,6 +759,23 @@ export default function EisenhowerMatrix() {
             >
               <UserCog size={14} /> Manage Delegates
             </button>
+            <div className="h-8 w-px bg-slate-200 mx-1" />
+            <div className="flex items-center gap-1 bg-white/40 p-1 rounded-2xl border border-white/50">
+              <button
+                onClick={() => resetData("today")}
+                className="p-2 px-3 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest"
+                title="Delete tasks created today"
+              >
+                Reset Today
+              </button>
+              <button
+                onClick={() => resetData("all")}
+                className="p-2 px-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest"
+                title="Delete all tasks"
+              >
+                Reset All
+              </button>
+            </div>
           </div>
         </div>
 
@@ -531,12 +820,20 @@ export default function EisenhowerMatrix() {
                     {stats.completed}
                   </span>
                 </div>
-                <div className="px-4 py-2 bg-rose-50 border border-rose-100 rounded-2xl flex flex-col items-center justify-center shadow-sm">
+                <div className="px-4 py-2 bg-rose-50 border border-rose-100 rounded-2xl flex flex-col items-center justify-center shadow-sm text-center">
                   <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest">
                     Pending
                   </span>
                   <span className="text-xl font-black text-rose-600 leading-none">
                     {stats.pending}
+                  </span>
+                </div>
+                <div className="px-4 py-2 bg-slate-100 border border-slate-200 rounded-2xl flex flex-col items-center justify-center shadow-sm text-center">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    Eliminated
+                  </span>
+                  <span className="text-xl font-black text-slate-600 leading-none">
+                    {stats.eliminated}
                   </span>
                 </div>
               </div>
@@ -704,7 +1001,7 @@ export default function EisenhowerMatrix() {
                 </div>
               </div>
               <button
-                onClick={() => setShowHelpModal(false)}
+                onClick={handleCloseHelp}
                 className="p-3 hover:bg-slate-100 rounded-2xl transition-all"
               >
                 <X size={28} className="text-slate-400" />
@@ -849,7 +1146,13 @@ export default function EisenhowerMatrix() {
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h3 className="text-xl font-black text-slate-900">
-                  Task Assignment
+                  {assignmentModal.quadrant === "DELEGATE"
+                    ? "Delegate Task"
+                    : assignmentModal.quadrant === "DO"
+                    ? "Plan Execution"
+                    : assignmentModal.quadrant === "SCHEDULE"
+                    ? "Schedule Task"
+                    : "Confirm Action"}
                 </h3>
                 <p className="text-sm font-semibold text-indigo-600/70 italic">
                   "
@@ -866,42 +1169,10 @@ export default function EisenhowerMatrix() {
             </div>
 
             <div className="space-y-4">
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">
-                Choose Action
-              </p>
-
-              {assignmentModal?.quadrant === "DO" ||
-              assignmentModal?.quadrant === "SCHEDULE" ||
-              assignmentModal?.quadrant === "ELIMINATE" ? (
-                <div className="grid grid-cols-1 gap-3">
-                  <button
-                    onClick={() =>
-                      updateTaskQuadrant(
-                        assignmentModal!.taskId,
-                        assignmentModal!.quadrant,
-                        { delegateId: null },
-                      )
-                    }
-                    className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border-2 border-slate-50 hover:border-indigo-400 hover:bg-white transition-all text-left group"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-500 group-hover:text-white transition-all">
-                      <Target size={14} />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="font-black text-xs uppercase tracking-wide text-slate-700">
-                        Confirm Assignment
-                      </span>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">
-                        Add to my {assignmentModal?.quadrant} list
-                      </span>
-                    </div>
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
-                    This task is urgent but not important. It's best to handover
-                    to someone else if possible.
+              {assignmentModal.quadrant === "DELEGATE" && (
+                <div>
+                  <p className="text-slate-500 font-medium mb-4">
+                    Who should handle this task?
                   </p>
                   {delegates.filter((d) => d.name !== "Self").length === 0 ? (
                     <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 text-center">
@@ -909,20 +1180,21 @@ export default function EisenhowerMatrix() {
                         No team members added yet
                       </p>
                       <button
-                        onClick={() =>
-                          updateTaskQuadrant(
-                            assignmentModal!.taskId,
-                            "DELEGATE",
-                            {
-                              delegateId: delegates.find(
-                                (d) => d.name === "Self",
-                              )?.id,
-                            },
-                          )
-                        }
+                        onClick={() => setShowDelegateModal(true)}
+                        className="w-full py-4 mb-2 rounded-2xl bg-white border-2 border-dashed border-amber-300 text-amber-600 font-bold text-xs uppercase tracking-widest hover:bg-amber-50 hover:border-amber-500 transition-all flex items-center justify-center gap-2"
+                      >
+                        <UserPlus size={16} /> Add Team Member
+                      </button>
+                      <button
+                        onClick={() => {
+                          const today = new Date();
+                          updateTaskQuadrant(assignmentModal!.taskId, "DO", {
+                            dueDate: today.toISOString(),
+                          });
+                        }}
                         className="w-full py-4 rounded-2xl bg-amber-50 border-2 border-amber-100 text-amber-600 font-black text-xs uppercase tracking-widest hover:bg-amber-100 transition-all"
                       >
-                        Keep for Self
+                        Keep for Self (Urgent & Important)
                       </button>
                     </div>
                   ) : (
@@ -956,6 +1228,92 @@ export default function EisenhowerMatrix() {
                         ))}
                     </div>
                   )}
+                </div>
+              )}
+
+              {assignmentModal.quadrant === "DO" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => {
+                      const today = new Date();
+                      updateTaskQuadrant(assignmentModal.taskId, "DO", {
+                        dueDate: today.toISOString(),
+                      });
+                    }}
+                    className="p-6 rounded-3xl bg-indigo-50 border-2 border-indigo-100 hover:border-indigo-500 hover:bg-indigo-600 hover:text-white transition-all group text-left"
+                  >
+                    <span className="block text-xl font-black mb-1 group-hover:text-white text-indigo-900">
+                      Today
+                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">
+                      High Priority
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      const tomorrow = new Date();
+                      tomorrow.setDate(tomorrow.getDate() + 1);
+                      updateTaskQuadrant(assignmentModal.taskId, "DO", {
+                        dueDate: tomorrow.toISOString(),
+                      });
+                    }}
+                    className="p-6 rounded-3xl bg-slate-50 border-2 border-slate-100 hover:border-indigo-400 hover:bg-white transition-all text-left"
+                  >
+                    <span className="block text-xl font-black mb-1 text-slate-700">
+                      Tomorrow
+                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">
+                      Medium Priority
+                    </span>
+                  </button>
+                </div>
+              )}
+
+              {assignmentModal.quadrant === "SCHEDULE" && (
+                <div className="flex flex-col gap-4">
+                  <p className="text-slate-500 font-medium">
+                    Select a date to commit to this task.
+                  </p>
+                  <input
+                    type="date"
+                    min={new Date().toISOString().split("T")[0]}
+                    className="w-full p-4 rounded-2xl bg-slate-50 border-2 border-slate-100 outline-none focus:border-emerald-500 font-bold text-slate-700"
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        updateTaskQuadrant(assignmentModal.taskId, "SCHEDULE", {
+                          dueDate: new Date(e.target.value).toISOString(),
+                        });
+                      }
+                    }}
+                  />
+                </div>
+              )}
+
+              {(assignmentModal.quadrant === "ELIMINATE" ||
+                assignmentModal.quadrant === "INBOX") && (
+                <div className="grid grid-cols-1 gap-3">
+                  <button
+                    onClick={() =>
+                      updateTaskQuadrant(
+                        assignmentModal!.taskId,
+                        assignmentModal!.quadrant,
+                        { delegateId: null },
+                      )
+                    }
+                    className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border-2 border-slate-50 hover:border-indigo-400 hover:bg-white transition-all text-left group"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                      <Target size={14} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-black text-xs uppercase tracking-wide text-slate-700">
+                        Confirm Assignment
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">
+                        Add to {assignmentModal?.quadrant}
+                      </span>
+                    </div>
+                  </button>
                 </div>
               )}
             </div>
@@ -1073,10 +1431,199 @@ export default function EisenhowerMatrix() {
                 Yes, Start Today
               </button>
               <button
+                onClick={() => {
+                  setIsTestMode(true);
+                  setShowOnboarding(false);
+                }}
+                className="w-full py-4 px-6 rounded-2xl bg-white border border-slate-100 text-amber-600 font-bold hover:bg-amber-50 hover:border-amber-200 transition-all flex items-center justify-center gap-2 group uppercase tracking-widest"
+              >
+                <Zap size={16} className="fill-amber-500" /> TRY IN TEST MODE
+              </button>
+              <button
                 onClick={() => setAnalyticsStart(null)}
-                className="w-full py-4 rounded-3xl bg-slate-50 text-slate-400 font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all"
+                className="w-full py-4 rounded-3xl bg-slate-50 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:bg-slate-100 transition-all opacity-50"
               >
                 Decide Later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Done Items Modal */}
+      {showDoneList && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] p-8 max-w-2xl w-full shadow-2xl border border-white animate-in zoom-in-95 duration-500">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
+                <CheckCircle2 className="text-emerald-500" /> Done Archive
+              </h3>
+              <button
+                onClick={() => setShowDoneList(false)}
+                className="p-2 hover:bg-slate-50 rounded-xl"
+              >
+                <X size={20} className="text-slate-400" />
+              </button>
+            </div>
+            <div className="space-y-2 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
+              {tasks.filter((t) => t.status === "DONE" && !t.isDeleted)
+                .length === 0 ? (
+                <p className="text-center py-12 text-slate-400 font-bold text-xs uppercase tracking-widest">
+                  No completed items.
+                </p>
+              ) : (
+                tasks
+                  .filter((t) => t.status === "DONE" && !t.isDeleted)
+                  .map((task) => (
+                    <div
+                      key={task.id}
+                      className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100"
+                    >
+                      <span className="text-sm font-bold text-slate-600 line-through opacity-50">
+                        {task.content}
+                      </span>
+                      <button
+                        onClick={() => toggleComplete(task.id)}
+                        className="px-4 py-2 bg-white border border-slate-100 text-indigo-600 font-black text-[10px] uppercase tracking-widest rounded-xl hover:shadow-md transition-all"
+                      >
+                        Restore to TODO
+                      </button>
+                    </div>
+                  ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Deleted Items Modal */}
+      {showDeletedList && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] p-8 max-w-2xl w-full shadow-2xl border border-white animate-in zoom-in-95 duration-500">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 uppercase tracking-tight">
+                <Trash2 className="text-rose-500" /> Trash (Deleted)
+              </h3>
+              <button
+                onClick={() => setShowDeletedList(false)}
+                className="p-2 hover:bg-slate-50 rounded-xl"
+              >
+                <X size={20} className="text-slate-400" />
+              </button>
+            </div>
+            <div className="space-y-2 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
+              {tasks.filter((t) => t.isDeleted).length === 0 ? (
+                <p className="text-center py-12 text-slate-400 font-bold text-xs uppercase tracking-widest">
+                  Trash is empty.
+                </p>
+              ) : (
+                tasks
+                  .filter((t) => t.isDeleted)
+                  .map((task) => (
+                    <div
+                      key={task.id}
+                      className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100"
+                    >
+                      <span className="text-sm font-bold text-slate-600">
+                        {task.content}
+                      </span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => revertDeletion(task.id)}
+                          className="px-4 py-2 bg-emerald-500 text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:shadow-lg transition-all"
+                        >
+                          Revert
+                        </button>
+                        <button
+                          onClick={() => hardDeleteTask(task.id)}
+                          className="px-4 py-2 bg-white border border-rose-100 text-rose-500 font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-rose-50 transition-all"
+                        >
+                          Delete Forever
+                        </button>
+                      </div>
+                    </div>
+                  ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Date Picker Modal */}
+      {editingDateTaskId !== null && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl border border-white animate-in zoom-in-95 duration-300">
+            <div className="flex justify-between items-start mb-6">
+              <h3 className="text-xl font-black text-slate-900">
+                Set Due Date
+              </h3>
+              <button
+                onClick={() => setEditingDateTaskId(null)}
+                className="p-2 hover:bg-slate-100 rounded-2xl transition-all"
+              >
+                <X size={20} className="text-slate-400" />
+              </button>
+            </div>
+            <div className="flex flex-col gap-4">
+              <input
+                type="date"
+                min={new Date().toISOString().split("T")[0]}
+                className="w-full p-4 rounded-2xl bg-slate-50 border-2 border-slate-100 outline-none focus:border-indigo-500 font-bold text-slate-700"
+                onChange={(e) => {
+                  if (e.target.value) {
+                    const task = tasks.find((t) => t.id === editingDateTaskId);
+                    if (task) {
+                      updateTaskQuadrant(editingDateTaskId, task.quadrant, {
+                        dueDate: new Date(e.target.value).toISOString(),
+                      });
+                    }
+                    setEditingDateTaskId(null);
+                  }
+                }}
+              />
+              <button
+                onClick={() => {
+                  const task = tasks.find((t) => t.id === editingDateTaskId);
+                  if (task) {
+                    updateTaskQuadrant(editingDateTaskId, task.quadrant, {
+                      dueDate: null,
+                    });
+                  }
+                  setEditingDateTaskId(null);
+                }}
+                className="w-full py-3 rounded-2xl bg-slate-100 text-slate-500 font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all"
+              >
+                Clear Date
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Edit Content Modal */}
+      {editingContentTaskId !== null && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-white animate-in zoom-in-95 duration-300">
+            <h3 className="text-xl font-black text-slate-900 mb-6">
+              Edit Task
+            </h3>
+            <textarea
+              value={editingContentValue}
+              onChange={(e) => setEditingContentValue(e.target.value)}
+              className="w-full p-4 rounded-2xl bg-slate-50 border-2 border-slate-100 outline-none focus:border-indigo-500 font-bold text-slate-700 min-h-[100px] mb-4"
+              placeholder="Task content..."
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => setEditingContentTaskId(null)}
+                className="flex-1 py-3 rounded-2xl bg-slate-100 text-slate-500 font-black text-xs uppercase tracking-widest hover:bg-slate-200 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveTaskContent}
+                disabled={!editingContentValue.trim()}
+                className="flex-1 py-3 rounded-2xl bg-indigo-600 text-white font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all disabled:opacity-50"
+              >
+                Save Changes
               </button>
             </div>
           </div>

@@ -15,9 +15,15 @@ Transform your to-do list into a strategic map by separating the urgent from the
 - **Team Delegation System**:
   - Dedicated **Delegate Manager** for team personas.
   - **Smart Assignments**: Tasks default to **"Self"**, with a specific handover prompt when moving to the "Delegate" quadrant.
-- **Analytics & Metadata**: Logs **Creation Date** and **Completion Date** for every task to support future performance analytics.
+- **Advanced Archive & Resets**:
+  - **Done Archive**: Specialized view for all completed tasks with _Restore to TODO_ capability.
+  - **Trash (Soft-Delete)**: Deleted tasks are moved to a Trash can, allowing for _Revert_ or _Permanent Deletion_.
+  - **Data Resets**: Quickly wipe _Today's Data_ or _All Data_ for a clean slate.
+- **Onboarding & Analytics**:
+  - **Smart Onboarding**: Prompt for analytics start date on first visit.
+  - **Test Mode**: Explore the full matrix feature set without persisting any data to the database.
 - **Educational Overlay**: Integrated **Help (?)** portal explaining the Eisenhower philosophy to ensure maximum productivity.
-- **Adaptive Workspace**: Live **Today's Date** display and a **Focus Depth** slider (3-50 items) for ultimate UI control.
+- **Adaptive Workspace**: Live **Today's Date** display, **Focus Depth** slider (3-50 items), and real-time **Task Metrics** (Total, Done, Pending).
 
 ### 🍱 The Models Library
 

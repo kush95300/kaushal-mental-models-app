@@ -1,21 +1,18 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma";
 
 export async function GET() {
   try {
+    // Ensure "Self" exists with upsert
+    await (prisma as any).delegate.upsert({
+      where: { name: "Self" },
+      update: {},
+      create: { name: "Self", email: "me@example.com" },
+    });
+
     const delegates = await (prisma as any).delegate.findMany({
       orderBy: { createdAt: "desc" },
     });
-
-    // Ensure "Self" exists
-    if (!delegates.some((d: any) => d.name === "Self")) {
-      const self = await (prisma as any).delegate.create({
-        data: { name: "Self", email: "me@example.com" },
-      });
-      return NextResponse.json([self, ...delegates]);
-    }
 
     return NextResponse.json(delegates);
   } catch (error) {
