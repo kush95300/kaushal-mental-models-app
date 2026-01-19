@@ -9,21 +9,24 @@ A high-precision, interactive workspace designed to sharpen decision-making and 
 Transform your to-do list into a strategic map by separating the urgent from the essential.
 
 - **Dynamic Drag & Drop**: Categorize tasks effortlessly from the **Draft Queue** into one of four distinct quadrants.
-- **Intelligent Scheduling**:
-  - **Do First (DO)**: Assign priority as _Today_ or _Tomorrow_.
-  - **Schedule (Plan)**: Full date-picker integration for long-term planning.
+- **Intelligent Scheduling & Automation**:
+  - **Smart Auto-Promotion**: Tasks due Today/Tomorrow automatically promote to **Urgent & Important (Do First)** if assigned to you, or **Delegate** if assigned to others.
+  - **Context-Aware Moves**: Dragging a task to **Eliminate** automatically clears its due date.
+  - **Graceful Validation**: Moving an incomplete task to the matrix instantly opens the **Edit Mode** with guidance instead of blocking you.
 - **Team Delegation System**:
   - Dedicated **Delegate Manager** for team personas.
-  - **Smart Assignments**: Tasks are automatically assigned to **"Self"** upon creation and whenever moved out of the **Delegate** quadrant, ensuring personal accountability by default.
+  - **Smart Assignments**: Tasks are automatically assigned to **"Self"** upon creation and whenever moved out of the **Delegate** quadrant.
 - **Advanced Archive & Resets**:
   - **Done Archive**: Specialized view for all completed tasks with _Restore to TODO_ capability.
-  - **Trash (Soft-Delete)**: Deleted tasks are moved to a Trash can, allowing for _Revert_ or _Permanent Deletion_.
+  - **Eliminated (Soft-Delete)**: Moving tasks to the **Eliminate** quadrant automatically archives them. View all removed items in the **Eliminated** list at the top.
   - **Data Resets**: Quickly wipe _Today's Data_ or _All Data_ for a clean slate.
 - **Onboarding & Analytics**:
   - **Smart Onboarding**: Prompt for analytics start date on first visit.
   - **Test Mode**: Explore the full matrix feature set without persisting any data to the database.
-- **Educational Overlay**: Integrated **Help (?)** portal explaining the Eisenhower philosophy to ensure maximum productivity.
-- **Adaptive Workspace**: Live **Today's Date** display, **Focus Depth** slider (3-50 items), and real-time **Task Metrics** (Total, Done, Pending).
+- **Premium User Experience**:
+  - **Hover Tooltips**: Instantly view full task descriptions on hover for longer entries.
+  - **Educational Overlay**: Integrated **Help (?)** portal explaining the Eisenhower philosophy.
+  - **Adaptive Workspace**: Live **Today's Date** display, **Focus Depth** slider, and real-time **Task Metrics**.
 
 ### 🍱 The Models Library
 

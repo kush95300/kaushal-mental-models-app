@@ -26,10 +26,22 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const {
+      content,
+      isImportant,
+      isUrgent,
+      quadrant,
+      dueDate,
+      delegateId: incomingDelegateId,
+      estimatedMinutes,
+      status,
+    } = body;
 
     // Ensure we have a delegateId, default to "Self" (usually ID 1)
-    let delegateId = body.delegateId ? parseInt(body.delegateId) : null;
-    if (!delegateId) {
+    let finalDelegateId = incomingDelegateId
+      ? parseInt(incomingDelegateId)
+      : null;
+    if (!finalDelegateId) {
       const selfDelegate = await (prisma as any).delegate.findFirst({
         where: {
           name: {
@@ -37,18 +49,19 @@ export async function POST(request: Request) {
           },
         },
       });
-      if (selfDelegate) delegateId = selfDelegate.id;
+      if (selfDelegate) finalDelegateId = selfDelegate.id;
     }
 
     const task = await prisma.task.create({
       data: {
-        content: body.content,
-        isImportant: body.isImportant || false,
-        isUrgent: body.isUrgent || false,
-        quadrant: body.quadrant || "INBOX",
-        status: body.status || "TODO",
-        dueDate: body.dueDate ? new Date(body.dueDate) : null,
-        delegateId: delegateId,
+        content: content,
+        isImportant: isImportant || false,
+        isUrgent: isUrgent || false,
+        quadrant: quadrant || "INBOX",
+        status: status || "TODO",
+        dueDate: dueDate ? new Date(dueDate) : null,
+        delegateId: finalDelegateId,
+        estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes) : null,
       },
       include: { delegate: true },
     });
@@ -70,6 +83,16 @@ export async function PATCH(request: Request) {
     // Sanitize updates
     if (updates.dueDate) updates.dueDate = new Date(updates.dueDate);
     if (updates.delegateId) updates.delegateId = parseInt(updates.delegateId);
+    if (updates.estimatedMinutes !== undefined) {
+      updates.estimatedMinutes = updates.estimatedMinutes
+        ? parseInt(updates.estimatedMinutes)
+        : null;
+    }
+    if (updates.actualMinutes !== undefined) {
+      updates.actualMinutes = updates.actualMinutes
+        ? parseInt(updates.actualMinutes)
+        : null;
+    }
 
     // Business Rule: If moving out of DELEGATE quadrant, auto-assign to Self
     if (updates.quadrant && updates.quadrant !== "DELEGATE") {
@@ -92,12 +115,9 @@ export async function PATCH(request: Request) {
       updates.completedAt = null;
     }
 
-    // Exclude 'id' from the data payload
-    const { id: _id, ...dataToUpdate } = updates;
-
     const task = await prisma.task.update({
       where: { id: parseInt(id) },
-      data: dataToUpdate,
+      data: updates,
       include: {
         delegate: true,
       },
