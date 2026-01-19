@@ -3,9 +3,13 @@ import prisma from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const tasks = await prisma.task.findMany({
+    const { searchParams } = new URL(request.url);
+    const includeDeleted = searchParams.get("includeDeleted") === "true";
+
+    const tasks = await (prisma as any).task.findMany({
+      where: includeDeleted ? {} : { isDeleted: false },
       orderBy: { createdAt: "desc" },
       include: { delegate: true },
     });
@@ -26,8 +30,12 @@ export async function POST(request: Request) {
     // Ensure we have a delegateId, default to "Self" (usually ID 1)
     let delegateId = body.delegateId ? parseInt(body.delegateId) : null;
     if (!delegateId) {
-      const selfDelegate = await prisma.delegate.findFirst({
-        where: { name: "Self" },
+      const selfDelegate = await (prisma as any).delegate.findFirst({
+        where: {
+          name: {
+            in: ["Self", "self", "SELF"],
+          },
+        },
       });
       if (selfDelegate) delegateId = selfDelegate.id;
     }
@@ -63,6 +71,20 @@ export async function PATCH(request: Request) {
     if (updates.dueDate) updates.dueDate = new Date(updates.dueDate);
     if (updates.delegateId) updates.delegateId = parseInt(updates.delegateId);
 
+    // Business Rule: If moving out of DELEGATE quadrant, auto-assign to Self
+    if (updates.quadrant && updates.quadrant !== "DELEGATE") {
+      const selfDelegate = await (prisma as any).delegate.findFirst({
+        where: {
+          name: {
+            in: ["Self", "self", "SELF"],
+          },
+        },
+      });
+      if (selfDelegate) {
+        updates.delegateId = selfDelegate.id;
+      }
+    }
+
     // Handle analytics tracking
     if (updates.status === "DONE") {
       updates.completedAt = new Date();
@@ -70,10 +92,15 @@ export async function PATCH(request: Request) {
       updates.completedAt = null;
     }
 
+    // Exclude 'id' from the data payload
+    const { id: _id, ...dataToUpdate } = updates;
+
     const task = await prisma.task.update({
-      where: { id },
-      data: updates,
-      include: { delegate: true },
+      where: { id: parseInt(id) },
+      data: dataToUpdate,
+      include: {
+        delegate: true,
+      },
     });
     return NextResponse.json(task);
   } catch (error) {
@@ -89,12 +116,49 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
+    const mode = searchParams.get("mode"); // 'revert' or 'hard'
+    const reset = searchParams.get("reset"); // 'today' or 'all'
+
+    if (reset === "all") {
+      await (prisma as any).task.deleteMany({});
+      return NextResponse.json({ success: true });
+    }
+
+    if (reset === "today") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      await (prisma as any).task.deleteMany({
+        where: {
+          createdAt: {
+            gte: today,
+          },
+        },
+      });
+      return NextResponse.json({ success: true });
+    }
+
     if (!id)
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
 
-    await prisma.task.delete({
-      where: { id: parseInt(id) },
-    });
+    const taskId = parseInt(id);
+
+    if (mode === "revert") {
+      await (prisma as any).task.update({
+        where: { id: taskId },
+        data: { isDeleted: false },
+      });
+    } else if (mode === "hard") {
+      await (prisma as any).task.delete({
+        where: { id: taskId },
+      });
+    } else {
+      // Soft delete by default
+      await (prisma as any).task.update({
+        where: { id: taskId },
+        data: { isDeleted: true },
+      });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete task error:", error);

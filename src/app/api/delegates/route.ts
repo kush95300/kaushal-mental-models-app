@@ -1,21 +1,22 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma";
 
 export async function GET() {
   try {
-    let delegates = await prisma.delegate.findMany({
-      orderBy: { createdAt: "desc" },
+    // Ensure "Self" exists with upsert
+    await (prisma as any).delegate.upsert({
+      where: { name: "Self" },
+      update: {},
+      create: {
+        id: 1, // Attempt to maintain ID 1
+        name: "Self",
+        email: "me@example.com",
+      },
     });
 
-    // Ensure "Self" exists
-    if (!delegates.some((d) => d.name === "Self")) {
-      const self = await prisma.delegate.create({
-        data: { name: "Self", email: "me@example.com" },
-      });
-      delegates = [self, ...delegates];
-    }
+    const delegates = await (prisma as any).delegate.findMany({
+      orderBy: { createdAt: "desc" },
+    });
 
     return NextResponse.json(delegates);
   } catch (error) {
@@ -30,7 +31,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const delegate = await prisma.delegate.create({
+    const delegate = await (prisma as any).delegate.create({
       data: {
         name: body.name,
         email: body.email || null,
@@ -50,7 +51,7 @@ export async function PATCH(request: Request) {
   try {
     const body = await request.json();
     const { id, ...data } = body;
-    const delegate = await prisma.delegate.update({
+    const delegate = await (prisma as any).delegate.update({
       where: { id: parseInt(id) },
       data,
     });
@@ -68,10 +69,30 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
-    if (!id)
+    if (!id) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
+    }
 
-    await prisma.delegate.delete({
+    // Protect "Self"
+    const delegate = await (prisma as any).delegate.findUnique({
+      where: { id: parseInt(id) },
+    });
+
+    if (!delegate) {
+      return NextResponse.json(
+        { error: "Delegate not found" },
+        { status: 404 },
+      );
+    }
+
+    if (delegate.name === "Self") {
+      return NextResponse.json(
+        { error: "Cannot delete the Self delegate" },
+        { status: 403 },
+      );
+    }
+
+    await (prisma as any).delegate.delete({
       where: { id: parseInt(id) },
     });
     return NextResponse.json({ success: true });

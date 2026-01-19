@@ -7,6 +7,7 @@ import {
   Zap,
   Scissors,
   ArrowLeft,
+  HelpCircle,
   Lightbulb,
 } from "lucide-react";
 
@@ -115,30 +116,40 @@ export default function Home() {
                 </div>
               </div>
             ) : (
-              <Link
-                key={model.id}
-                href={model.href || "#"}
-                className="group relative flex flex-col p-8 rounded-[2.5rem] bg-white/70 backdrop-blur-xl border border-white/80 shadow-2xl shadow-slate-200/50 text-left transition-all duration-500 overflow-hidden hover:-translate-y-2 hover:shadow-indigo-200/50 hover:border-indigo-200"
-              >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br opacity-0 group-hover:opacity-5 transition-opacity duration-500 -mr-8 -mt-8 rounded-full blur-3xl pointer-events-none" />
-                <div className="flex justify-between items-start mb-6">
-                  <div className="p-4 rounded-3xl bg-slate-50 group-hover:bg-white group-hover:shadow-lg transition-all">
-                    {model.icon}
+              <div key={model.id} className="relative group">
+                <Link
+                  href={model.href || "#"}
+                  className="group relative flex flex-col p-8 rounded-[2.5rem] bg-white/70 backdrop-blur-xl border border-white/80 shadow-2xl shadow-slate-200/50 text-left transition-all duration-500 overflow-hidden hover:-translate-y-2 hover:shadow-indigo-200/50 hover:border-indigo-200 w-full"
+                >
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br opacity-0 group-hover:opacity-5 transition-opacity duration-500 -mr-8 -mt-8 rounded-full blur-3xl pointer-events-none" />
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="p-4 rounded-3xl bg-slate-50 group-hover:bg-white group-hover:shadow-lg transition-all">
+                      {model.icon}
+                    </div>
+                    <span className="text-xs font-black uppercase tracking-widest text-slate-400 px-3 py-1 bg-slate-100 rounded-full">
+                      {model.tag}
+                    </span>
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-3 py-1 bg-slate-100 rounded-full">
-                    {model.tag}
-                  </span>
-                </div>
-                <h3 className="text-2xl font-black text-slate-800 mb-3 group-hover:text-indigo-600 transition-colors">
-                  {model.title}
-                </h3>
-                <p className="text-sm font-medium text-slate-500 leading-relaxed mb-8">
-                  {model.description}
-                </p>
-                <div className="mt-auto flex items-center gap-2 text-indigo-600 font-bold text-xs uppercase tracking-widest group-hover:translate-x-1 transition-transform">
-                  Launch App <ArrowLeft className="w-4 h-4 rotate-180" />
-                </div>
-              </Link>
+                  <h3 className="text-2xl font-black text-slate-800 mb-3 group-hover:text-indigo-600 transition-colors">
+                    {model.title}
+                  </h3>
+                  <p className="text-sm font-medium text-slate-500 leading-relaxed mb-8">
+                    {model.description}
+                  </p>
+                  <div className="mt-auto flex items-center gap-2 text-indigo-600 font-bold text-xs uppercase tracking-widest">
+                    Launch App <ArrowLeft className="w-4 h-4 rotate-180" />
+                  </div>
+                </Link>
+                {model.id === "EISENHOWER" && (
+                  <Link
+                    href="/eisenhower-matrix?showHelp=true"
+                    className="absolute bottom-6 right-6 w-14 h-14 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-md transition-all z-20"
+                    title="Read about this model"
+                  >
+                    <HelpCircle className="w-8 h-8" />
+                  </Link>
+                )}
+              </div>
             ),
           )}
         </div>
