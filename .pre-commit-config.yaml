@@ -1,0 +1,23 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.0.0
+    hooks:
+      - id: prettier
+        stages: [commit]
+
+  - repo: local
+    hooks:
+      - id: prisma-format
+        name: Prisma Format
+        entry: npx prisma format
+        language: system
+        files: \.prisma$
+        pass_filenames: false
