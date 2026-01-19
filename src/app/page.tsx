@@ -9,6 +9,9 @@ import {
   ArrowLeft,
   HelpCircle,
   Lightbulb,
+  Linkedin,
+  Github,
+  ExternalLink,
 } from "lucide-react";
 
 export default function Home() {
@@ -162,17 +165,60 @@ export default function Home() {
         </p>
         <div className="flex items-center justify-center gap-2 mt-4">
           <span className="h-px w-8 bg-gradient-to-r from-transparent to-slate-200" />
-          <p className="text-xs font-bold text-slate-500 tracking-tight">
+          <p className="text-lg font-bold text-slate-500 tracking-tight">
             Created with{" "}
             <span className="text-rose-500 animate-pulse inline-block mx-0.5">
               ❤️
             </span>{" "}
             by{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 font-extrabold">
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                const links = [
+                  "https://www.linkedin.com/in/sonikaushal/",
+                  "https://github.com/kush95300/",
+                  "https://flowcv.me/kaushal-soni",
+                ];
+                const randomLink =
+                  links[Math.floor(Math.random() * links.length)];
+                window.open(randomLink, "_blank", "noopener,noreferrer");
+              }}
+              className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 font-extrabold hover:opacity-80 transition-opacity cursor-pointer inline-block"
+            >
               Kaushal Soni
-            </span>
+            </a>
           </p>
           <span className="h-px w-8 bg-gradient-to-l from-transparent to-slate-200" />
+        </div>
+        <div className="flex items-center justify-center gap-4 mt-6">
+          <a
+            href="https://www.linkedin.com/in/sonikaushal/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-md transition-all"
+            title="LinkedIn"
+          >
+            <Linkedin size={20} />
+          </a>
+          <a
+            href="https://github.com/kush95300/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-slate-900 hover:border-slate-300 hover:shadow-md transition-all"
+            title="GitHub"
+          >
+            <Github size={20} />
+          </a>
+          <a
+            href="https://flowcv.me/kaushal-soni"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-emerald-600 hover:border-emerald-200 hover:shadow-md transition-all"
+            title="FlowCV Portfolio"
+          >
+            <ExternalLink size={20} />
+          </a>
         </div>
       </footer>
     </main>

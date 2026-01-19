@@ -11,19 +11,21 @@ datasource db {
 }
 
 model Task {
-  id          Int       @id @default(autoincrement())
-  content     String
-  isImportant Boolean   @default(false)
-  isUrgent    Boolean   @default(false)
-  quadrant    String    @default("INBOX") // INBOX, DO, SCHEDULE, DELEGATE, ELIMINATE
-  status      String    @default("TODO") // TODO, DONE
-  dueDate     DateTime?
-  delegateId  Int?
-  delegate    Delegate? @relation(fields: [delegateId], references: [id])
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  completedAt DateTime?
-  isDeleted   Boolean   @default(false)
+  id               Int       @id @default(autoincrement())
+  content          String
+  isImportant      Boolean   @default(false)
+  isUrgent         Boolean   @default(false)
+  quadrant         String    @default("INBOX") // INBOX, DO, SCHEDULE, DELEGATE, ELIMINATE
+  status           String    @default("TODO") // TODO, DONE
+  estimatedMinutes Int?
+  actualMinutes    Int?
+  dueDate          DateTime?
+  delegateId       Int?
+  delegate         Delegate? @relation(fields: [delegateId], references: [id])
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  completedAt      DateTime?
+  isDeleted        Boolean   @default(false)
 }
 
 model Delegate {
