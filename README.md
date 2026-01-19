@@ -14,7 +14,7 @@ Transform your to-do list into a strategic map by separating the urgent from the
   - **Schedule (Plan)**: Full date-picker integration for long-term planning.
 - **Team Delegation System**:
   - Dedicated **Delegate Manager** for team personas.
-  - **Smart Assignments**: Tasks default to **"Self"**, with a specific handover prompt when moving to the "Delegate" quadrant.
+  - **Smart Assignments**: Tasks are automatically assigned to **"Self"** upon creation and whenever moved out of the **Delegate** quadrant, ensuring personal accountability by default.
 - **Advanced Archive & Resets**:
   - **Done Archive**: Specialized view for all completed tasks with _Restore to TODO_ capability.
   - **Trash (Soft-Delete)**: Deleted tasks are moved to a Trash can, allowing for _Revert_ or _Permanent Deletion_.
