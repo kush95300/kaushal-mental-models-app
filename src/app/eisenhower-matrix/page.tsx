@@ -108,13 +108,49 @@ export default function EisenhowerMatrix() {
     quadrant: string;
   } | null>(null);
 
-  // Filter states
   const [newDelegateName, setNewDelegateName] = useState("");
+  const [config, setConfig] = useState<{
+    analyticsStartDate: string | null;
+  } | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     fetchTasks();
     fetchDelegates();
+    fetchConfig();
   }, []);
+
+  const fetchConfig = async () => {
+    try {
+      const res = await fetch("/api/config");
+      if (res.ok) {
+        const data = await res.json();
+        setConfig(data);
+        if (!data.analyticsStartDate) {
+          setShowOnboarding(true);
+        }
+      }
+    } catch (error) {
+      console.error("Fetch config error:", error);
+    }
+  };
+
+  const setAnalyticsStart = async (startDate: string | null) => {
+    try {
+      const res = await fetch("/api/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ analyticsStartDate: startDate }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setConfig(data);
+        setShowOnboarding(false);
+      }
+    } catch (error) {
+      console.error("Update config error:", error);
+    }
+  };
 
   const fetchTasks = async () => {
     try {
@@ -276,6 +312,7 @@ export default function EisenhowerMatrix() {
   const stats = {
     total: tasks.length,
     completed: tasks.filter((t) => t.status === "DONE").length,
+    pending: tasks.filter((t) => t.status === "TODO").length,
   };
 
   const TaskCard = ({ task }: { task: Task }) => (
@@ -477,60 +514,29 @@ export default function EisenhowerMatrix() {
                   Matrix
                 </span>
               </h1>
-              <div className="px-4 py-2 bg-indigo-50 border border-indigo-100 rounded-2xl flex flex-col items-center justify-center shadow-sm">
-                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
-                  Tasks
-                </span>
-                <span className="text-xl font-black text-indigo-600 leading-none">
-                  {stats.total}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-end gap-2">
-            <div className="flex items-center gap-6 bg-white/80 backdrop-blur-md p-4 px-6 rounded-[2rem] border border-white/80 shadow-xl shadow-slate-200/40 transition-all hover:shadow-2xl">
-              <div className="flex flex-col gap-1 pr-6 border-r border-slate-100">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  Focus Depth
-                </span>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="range"
-                    min="3"
-                    max="50"
-                    value={visibleLimit}
-                    onChange={(e) => setVisibleLimit(parseInt(e.target.value))}
-                    className="w-24 h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600 transition-all hover:accent-purple-600"
-                  />
-                  <span className="text-xs font-black text-indigo-600 w-4">
-                    {visibleLimit}
+              <div className="flex gap-3">
+                <div className="px-4 py-2 bg-indigo-50 border border-indigo-100 rounded-2xl flex flex-col items-center justify-center shadow-sm">
+                  <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+                    Total
+                  </span>
+                  <span className="text-xl font-black text-indigo-600 leading-none">
+                    {stats.total}
                   </span>
                 </div>
-              </div>
-
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">
-                  Momentum
-                </span>
-                <div className="flex items-center gap-3 mt-1">
-                  <div className="w-40 h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                    <div
-                      className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 transition-all duration-1000 ease-out"
-                      style={{
-                        width: `${
-                          stats.total > 0
-                            ? (stats.completed / stats.total) * 100
-                            : 0
-                        }%`,
-                      }}
-                    />
-                  </div>
-                  <span className="text-sm font-black text-indigo-600 tabular-nums">
-                    {stats.total > 0
-                      ? Math.round((stats.completed / stats.total) * 100)
-                      : 0}
-                    %
+                <div className="px-4 py-2 bg-emerald-50 border border-emerald-100 rounded-2xl flex flex-col items-center justify-center shadow-sm">
+                  <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">
+                    Done
+                  </span>
+                  <span className="text-xl font-black text-emerald-600 leading-none">
+                    {stats.completed}
+                  </span>
+                </div>
+                <div className="px-4 py-2 bg-rose-50 border border-rose-100 rounded-2xl flex flex-col items-center justify-center shadow-sm">
+                  <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest">
+                    Pending
+                  </span>
+                  <span className="text-xl font-black text-rose-600 leading-none">
+                    {stats.pending}
                   </span>
                 </div>
               </div>
@@ -538,97 +544,146 @@ export default function EisenhowerMatrix() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 flex-grow">
-          <div className="lg:col-span-3 flex flex-col gap-8">
-            <div className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-7 shadow-2xl shadow-indigo-100/50 border border-white/80">
-              <h2 className="text-xl font-black mb-5 text-slate-800 flex items-center gap-3">
-                <PlusCircle className="w-6 h-6 text-indigo-500" /> New Task
-              </h2>
-              <form onSubmit={handleAddTask} className="space-y-4">
-                <input
-                  type="text"
-                  value={newTask}
-                  onChange={(e) => setNewTask(e.target.value)}
-                  placeholder="Capture a thought..."
-                  className="w-full px-5 py-4 rounded-2xl bg-white/80 border-slate-200 border-2 focus:border-indigo-400 focus:ring-0 transition-all text-sm font-bold shadow-inner placeholder:text-slate-300"
-                />
-                <button
-                  type="submit"
-                  disabled={!newTask.trim()}
-                  className="w-full py-4 px-6 bg-slate-900 hover:bg-indigo-600 disabled:opacity-30 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all transform active:scale-95 flex items-center justify-center gap-2"
-                >
-                  <Plus className="w-4 h-4" /> Add to Inbox
-                </button>
-              </form>
-            </div>
-
-            <div
-              className={`flex-grow bg-slate-100/30 backdrop-blur-sm rounded-[2.5rem] p-7 border-2 border-dashed transition-all duration-500 min-h-[350px] ${
-                activeQuadrant === "INBOX"
-                  ? "border-indigo-400 bg-indigo-50/50 scale-[1.02]"
-                  : "border-slate-300/50 hover:bg-slate-100/50"
-              }`}
-              onDragOver={(e) => onDragOver(e, "INBOX")}
-              onDrop={(e) => onDrop(e, "INBOX")}
-            >
-              <h2 className="text-xs font-black mb-6 text-slate-400 uppercase tracking-[0.2em]">
-                Draft Queue
-              </h2>
-              <div
-                className="space-y-3 overflow-y-auto custom-scrollbar pr-1 scroll-smooth"
-                style={{ maxHeight: `${visibleLimit * 54 + 16}px` }}
-              >
-                {tasks.filter((t) => t.quadrant === "INBOX").length === 0 ? (
-                  <div className="flex flex-col items-center justify-center pt-16 opacity-30 text-slate-400">
-                    <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center mb-4">
-                      <Move className="w-6 h-6" />
-                    </div>
-                    <p className="text-[11px] font-bold uppercase text-center leading-relaxed">
-                      Drag back here to
-                      <br />
-                      park your tasks
-                    </p>
-                  </div>
-                ) : (
-                  tasks
-                    .filter((t) => t.quadrant === "INBOX")
-                    .map((task) => <TaskCard key={task.id} task={task} />)
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="lg:col-span-9">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-full">
-              <Quadrant qConfig={QUADRANTS.DO} />
-              <Quadrant qConfig={QUADRANTS.SCHEDULE} />
-              <Quadrant qConfig={QUADRANTS.DELEGATE} />
-              <Quadrant qConfig={QUADRANTS.ELIMINATE} />
-            </div>
-          </div>
-        </div>
-
-        <footer className="mt-16 py-8 text-center relative z-10 group">
-          <div className="w-12 h-1 bg-slate-200 mx-auto rounded-full mb-6 transition-all group-hover:w-24 group-hover:bg-indigo-400" />
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2">
-            Turning mental models into action
-          </p>
-          <div className="flex items-center justify-center gap-2 mt-4">
-            <span className="h-px w-8 bg-gradient-to-r from-transparent to-slate-200" />
-            <p className="text-xs font-bold text-slate-500 tracking-tight">
-              Created with{" "}
-              <span className="text-rose-500 animate-pulse inline-block mx-0.5">
-                ❤️
-              </span>{" "}
-              by{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 font-extrabold">
-                Kaushal Soni
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-6 bg-white/80 backdrop-blur-md p-4 px-6 rounded-[2rem] border border-white/80 shadow-xl shadow-slate-200/40 transition-all hover:shadow-2xl">
+            <div className="flex flex-col gap-1 pr-6 border-r border-slate-100">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">
+                Focus Depth
               </span>
-            </p>
-            <span className="h-px w-8 bg-gradient-to-l from-transparent to-slate-200" />
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min="3"
+                  max="50"
+                  value={visibleLimit}
+                  onChange={(e) => setVisibleLimit(parseInt(e.target.value))}
+                  className="w-24 h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600 transition-all hover:accent-purple-600"
+                />
+                <span className="text-xs font-black text-indigo-600 w-4">
+                  {visibleLimit}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">
+                Momentum
+              </span>
+              <div className="flex items-center gap-3 mt-1">
+                <div className="w-40 h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                  <div
+                    className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 transition-all duration-1000 ease-out"
+                    style={{
+                      width: `${
+                        stats.total > 0
+                          ? (stats.completed / (stats.total || 1)) * 100
+                          : 0
+                      }%`,
+                    }}
+                  />
+                </div>
+                <span className="text-sm font-black text-indigo-600 tabular-nums">
+                  {stats.total > 0
+                    ? Math.round((stats.completed / (stats.total || 1)) * 100)
+                    : 0}
+                  %
+                </span>
+              </div>
+            </div>
           </div>
-        </footer>
+        </div>
       </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 flex-grow">
+        <div className="lg:col-span-3 flex flex-col gap-8">
+          <div className="bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-7 shadow-2xl shadow-indigo-100/50 border border-white/80">
+            <h2 className="text-xl font-black mb-5 text-slate-800 flex items-center gap-3">
+              <PlusCircle className="w-6 h-6 text-indigo-500" /> New Task
+            </h2>
+            <form onSubmit={handleAddTask} className="space-y-4">
+              <input
+                type="text"
+                value={newTask}
+                onChange={(e) => setNewTask(e.target.value)}
+                placeholder="Capture a thought..."
+                className="w-full px-5 py-4 rounded-2xl bg-white/80 border-slate-200 border-2 focus:border-indigo-400 focus:ring-0 transition-all text-sm font-bold shadow-inner placeholder:text-slate-300"
+              />
+              <button
+                type="submit"
+                disabled={!newTask.trim()}
+                className="w-full py-4 px-6 bg-slate-900 hover:bg-indigo-600 disabled:opacity-30 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all transform active:scale-95 flex items-center justify-center gap-2"
+              >
+                <Plus className="w-4 h-4" /> Add to Inbox
+              </button>
+            </form>
+          </div>
+
+          <div
+            className={`flex-grow bg-slate-100/30 backdrop-blur-sm rounded-[2.5rem] p-7 border-2 border-dashed transition-all duration-500 min-h-[350px] ${
+              activeQuadrant === "INBOX"
+                ? "border-indigo-400 bg-indigo-50/50 scale-[1.02]"
+                : "border-slate-300/50 hover:bg-slate-100/50"
+            }`}
+            onDragOver={(e) => onDragOver(e, "INBOX")}
+            onDrop={(e) => onDrop(e, "INBOX")}
+          >
+            <h2 className="text-xs font-black mb-6 text-slate-400 uppercase tracking-[0.2em]">
+              Draft Queue
+            </h2>
+            <div
+              className="space-y-3 overflow-y-auto custom-scrollbar pr-1 scroll-smooth"
+              style={{ maxHeight: `${visibleLimit * 54 + 16}px` }}
+            >
+              {tasks.filter((t) => t.quadrant === "INBOX").length === 0 ? (
+                <div className="flex flex-col items-center justify-center pt-16 opacity-30 text-slate-400">
+                  <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center mb-4">
+                    <Move className="w-6 h-6" />
+                  </div>
+                  <p className="text-[11px] font-bold uppercase text-center leading-relaxed">
+                    Drag back here to
+                    <br />
+                    park your tasks
+                  </p>
+                </div>
+              ) : (
+                tasks
+                  .filter((t) => t.quadrant === "INBOX")
+                  .map((task) => <TaskCard key={task.id} task={task} />)
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:col-span-9">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-full">
+            <Quadrant qConfig={QUADRANTS.DO} />
+            <Quadrant qConfig={QUADRANTS.SCHEDULE} />
+            <Quadrant qConfig={QUADRANTS.DELEGATE} />
+            <Quadrant qConfig={QUADRANTS.ELIMINATE} />
+          </div>
+        </div>
+      </div>
+
+      <footer className="mt-16 py-8 text-center relative z-10 group">
+        <div className="w-12 h-1 bg-slate-200 mx-auto rounded-full mb-6 transition-all group-hover:w-24 group-hover:bg-indigo-400" />
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2">
+          Turning mental models into action
+        </p>
+        <div className="flex items-center justify-center gap-2 mt-4">
+          <span className="h-px w-8 bg-gradient-to-r from-transparent to-slate-200" />
+          <p className="text-xs font-bold text-slate-500 tracking-tight">
+            Created with{" "}
+            <span className="text-rose-500 animate-pulse inline-block mx-0.5">
+              ❤️
+            </span>{" "}
+            by{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 font-extrabold">
+              Kaushal Soni
+            </span>
+          </p>
+          <span className="h-px w-8 bg-gradient-to-l from-transparent to-slate-200" />
+        </div>
+      </footer>
 
       {/* Educational Help Modal */}
       {showHelpModal && (
@@ -796,126 +851,114 @@ export default function EisenhowerMatrix() {
                 <h3 className="text-xl font-black text-slate-900">
                   Task Assignment
                 </h3>
-                <p className="text-sm font-medium text-slate-500 mt-1 italic leading-tight">
-                  "{tasks.find((t) => t.id === assignmentModal.taskId)?.content}
+                <p className="text-sm font-semibold text-indigo-600/70 italic">
+                  "
+                  {tasks.find((t) => t.id === assignmentModal?.taskId)?.content}
                   "
                 </p>
               </div>
               <button
                 onClick={() => setAssignmentModal(null)}
-                className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+                className="p-2 hover:bg-slate-100 rounded-2xl transition-all"
               >
                 <X size={20} className="text-slate-400" />
               </button>
             </div>
 
-            {assignmentModal.quadrant === "DO" && (
-              <div className="space-y-4">
-                <p className="text-xs font-extrabold uppercase tracking-widest text-rose-500">
-                  Pick critical deadline
-                </p>
-                <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-4">
+              <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2">
+                Choose Action
+              </p>
+
+              {assignmentModal?.quadrant === "DO" ||
+              assignmentModal?.quadrant === "SCHEDULE" ||
+              assignmentModal?.quadrant === "ELIMINATE" ? (
+                <div className="grid grid-cols-1 gap-3">
                   <button
                     onClick={() =>
-                      updateTaskQuadrant(assignmentModal.taskId, "DO", {
-                        dueDate: new Date().toISOString(),
-                      })
+                      updateTaskQuadrant(
+                        assignmentModal!.taskId,
+                        assignmentModal!.quadrant,
+                        { delegateId: null },
+                      )
                     }
-                    className="py-4 rounded-2xl bg-rose-50 border-2 border-rose-100 text-rose-600 font-black text-xs uppercase tracking-widest hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all"
+                    className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border-2 border-slate-50 hover:border-indigo-400 hover:bg-white transition-all text-left group"
                   >
-                    Today
-                  </button>
-                  <button
-                    onClick={() => {
-                      const tomorrow = new Date();
-                      tomorrow.setDate(tomorrow.getDate() + 1);
-                      updateTaskQuadrant(assignmentModal.taskId, "DO", {
-                        dueDate: tomorrow.toISOString(),
-                      });
-                    }}
-                    className="py-4 rounded-2xl bg-slate-50 border-2 border-slate-100 text-slate-600 font-black text-xs uppercase tracking-widest hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all"
-                  >
-                    Tomorrow
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                      <Target size={14} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="font-black text-xs uppercase tracking-wide text-slate-700">
+                        Confirm Assignment
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">
+                        Add to my {assignmentModal?.quadrant} list
+                      </span>
+                    </div>
                   </button>
                 </div>
-              </div>
-            )}
-
-            {assignmentModal.quadrant === "SCHEDULE" && (
-              <div className="space-y-4">
-                <p className="text-xs font-extrabold uppercase tracking-widest text-indigo-500">
-                  Select target date
-                </p>
-                <input
-                  type="date"
-                  className="w-full p-4 rounded-2xl bg-slate-50 border-2 border-slate-100 focus:border-indigo-400 outline-none font-bold text-sm"
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      updateTaskQuadrant(assignmentModal.taskId, "SCHEDULE", {
-                        dueDate: new Date(e.target.value).toISOString(),
-                      });
-                    }
-                  }}
-                />
-              </div>
-            )}
-
-            {assignmentModal.quadrant === "DELEGATE" && (
-              <div className="space-y-4">
-                <p className="text-xs font-extrabold uppercase tracking-widest text-amber-500">
-                  Hand over to team
-                </p>
-                {delegates.filter((d) => d.name !== "Self").length === 0 ? (
-                  <div className="space-y-3">
-                    <p className="text-sm font-bold text-slate-400 py-4 text-center">
-                      No other delegates found. Add teammates to hand over
-                      tasks!
-                    </p>
-                    <button
-                      onClick={() =>
-                        updateTaskQuadrant(assignmentModal.taskId, "DELEGATE", {
-                          delegateId: delegates.find((d) => d.name === "Self")
-                            ?.id,
-                        })
-                      }
-                      className="w-full py-4 rounded-2xl bg-amber-50 border-2 border-amber-100 text-amber-600 font-black text-xs uppercase tracking-widest hover:bg-amber-100 transition-all"
-                    >
-                      Keep for Self
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
-                    {delegates
-                      .filter((d) => d.name !== "Self")
-                      .map((d) => (
-                        <button
-                          key={d.id}
-                          onClick={() =>
-                            updateTaskQuadrant(
-                              assignmentModal.taskId,
-                              "DELEGATE",
-                              { delegateId: d.id },
-                            )
-                          }
-                          className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border-2 border-slate-50 hover:border-amber-400 hover:bg-white transition-all text-left group"
-                        >
-                          <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-all">
-                            <Users size={14} />
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="font-black text-xs uppercase tracking-wide text-slate-700">
-                              {d.name}
-                            </span>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase">
-                              Delegate Member
-                            </span>
-                          </div>
-                        </button>
-                      ))}
-                  </div>
-                )}
-              </div>
-            )}
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                    This task is urgent but not important. It's best to handover
+                    to someone else if possible.
+                  </p>
+                  {delegates.filter((d) => d.name !== "Self").length === 0 ? (
+                    <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 text-center">
+                      <p className="text-[10px] font-black text-amber-700 uppercase mb-3">
+                        No team members added yet
+                      </p>
+                      <button
+                        onClick={() =>
+                          updateTaskQuadrant(
+                            assignmentModal!.taskId,
+                            "DELEGATE",
+                            {
+                              delegateId: delegates.find(
+                                (d) => d.name === "Self",
+                              )?.id,
+                            },
+                          )
+                        }
+                        className="w-full py-4 rounded-2xl bg-amber-50 border-2 border-amber-100 text-amber-600 font-black text-xs uppercase tracking-widest hover:bg-amber-100 transition-all"
+                      >
+                        Keep for Self
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+                      {delegates
+                        .filter((d) => d.name !== "Self")
+                        .map((d) => (
+                          <button
+                            key={d.id}
+                            onClick={() =>
+                              updateTaskQuadrant(
+                                assignmentModal!.taskId,
+                                "DELEGATE",
+                                { delegateId: d.id },
+                              )
+                            }
+                            className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 border-2 border-slate-50 hover:border-amber-400 hover:bg-white transition-all text-left group"
+                          >
+                            <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-all">
+                              <Users size={14} />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-black text-xs uppercase tracking-wide text-slate-700">
+                                {d.name}
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase">
+                                Delegate Member
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -989,7 +1032,12 @@ export default function EisenhowerMatrix() {
                       </div>
                       <button
                         onClick={() => removeDelegate(delegate.id)}
-                        className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all opacity-0 group-hover/item:opacity-100"
+                        disabled={delegate.name === "Self"}
+                        className={`p-2 rounded-xl transition-all opacity-0 group-hover/item:opacity-100 ${
+                          delegate.name === "Self"
+                            ? "text-slate-200 cursor-not-allowed"
+                            : "text-slate-300 hover:text-rose-500 hover:bg-rose-50"
+                        }`}
                       >
                         <Trash2 size={16} />
                       </button>
@@ -997,6 +1045,39 @@ export default function EisenhowerMatrix() {
                   ))
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Onboarding Modal */}
+      {showOnboarding && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xl animate-in fade-in duration-500">
+          <div className="bg-white rounded-[3rem] p-10 max-w-lg w-full shadow-2xl border border-white animate-in zoom-in-95 duration-500 text-center">
+            <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-8 text-indigo-600 ring-8 ring-indigo-50/50">
+              <Target size={40} className="animate-pulse" />
+            </div>
+            <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">
+              Ready to Master Your Time?
+            </h2>
+            <p className="text-slate-500 font-semibold mb-8 leading-relaxed">
+              To provide accurate productivity analytics, we need to know when
+              you're starting your journey. Would you like to set your tracking
+              start date to today?
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => setAnalyticsStart(new Date().toISOString())}
+                className="w-full py-5 rounded-3xl bg-indigo-600 text-white font-black text-sm uppercase tracking-widest hover:bg-slate-900 transition-all shadow-xl shadow-indigo-200 hover:shadow-slate-300"
+              >
+                Yes, Start Today
+              </button>
+              <button
+                onClick={() => setAnalyticsStart(null)}
+                className="w-full py-4 rounded-3xl bg-slate-50 text-slate-400 font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all"
+              >
+                Decide Later
+              </button>
             </div>
           </div>
         </div>
