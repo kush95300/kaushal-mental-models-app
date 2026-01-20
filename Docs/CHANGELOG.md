@@ -12,14 +12,14 @@ All notable changes to this project will be documented in this file.
 
 ## [v1.1.0] - 2025-01-19
 
-### Added
+### Added (v1.1.0)
 
 - Eisenhower Matrix Page features (Drag & Drop, Quadrants).
 - "Smart Scheduling" logic.
 
 ## [v1.0.0] - 2025-01-15
 
-### Added
+### Added (v1.0.0)
 
 - Initial Release.
 - Homepage with Mental Models list.

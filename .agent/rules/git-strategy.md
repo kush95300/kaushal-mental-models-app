@@ -71,13 +71,17 @@ Consistency is enforced to ensure the monolith remains readable as it grows.
 2. **Create Branch:** `git checkout -b feat/your-feature`
 3. **Merge Back:** Once tested, merge into `develop`.
 
-### The "Larger Upgrade" (To Main)
+### Release Strategy
 
-When a milestone is reached on `develop`:
+When a milestone is reached on `develop` or significant UI changes are verified:
 
 1. `git checkout main`
 2. `git merge develop`
-3. `git tag -a v1.x.x -m "Release description"`
+3. **Tagging Rule:** Do NOT tag every commit. Only create a tag (e.g., `v1.x.x` or `v1.x.x-patch`) when:
+   - There is a visible UI change that is stable.
+   - A major feature is completed.
+   - A critical bug fix is verified.
+4. `git tag -a v1.x.x -m "Release description"`
 
 ### Emergency Hotfix (The Exception)
 

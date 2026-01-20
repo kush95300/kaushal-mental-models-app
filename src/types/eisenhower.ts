@@ -15,9 +15,10 @@ export interface Task {
   isUrgent: boolean;
   estimatedMinutes: number | null;
   actualMinutes: number | null;
-  dueDate?: string;
-  completedAt?: string;
+  dueDate?: string | null;
+  completedAt?: string | null;
   isDeleted: boolean;
   createdAt: string;
   delegate?: Delegate;
+  delegateId?: number | null;
 }
