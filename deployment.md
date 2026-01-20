@@ -23,13 +23,13 @@ The application will be live at: **[http://localhost:3000](http://localhost:3000
 ### Step 1: Professional Portal (Home Page)
 
 - Navigate to the home page.
-- You should see the **Focus Matrix** title with a clean minimalist header.
-- Verify the **Eisenhower Matrix** card has a professional description and an "Open Tool" button.
+- You should see the **Mental Models** title with "The Wisdom Lab" header.
+- Verify the **Eisenhower Matrix** card has an educational description and a **"Launch App"** button.
 
 ### Step 2: Integrated Navigation
 
-- Click **"Open Tool"**.
-- Ensure the **"← Back to Home"** link is present at the top left of the matrix page.
+- Click **"Launch App"**.
+- Ensure the **"← Back to Models"** link is present at the top left of the matrix page.
 - Click it to verify you can return to the home screen smoothly.
 
 ### Step 3: Persistence Check (Onboarding)
@@ -40,10 +40,11 @@ The application will be live at: **[http://localhost:3000](http://localhost:3000
 
 ### Step 4: Real-time Categorization (Drag & Drop)
 
-- Create a task in the **Inbox** (bottom left).
+- Create a task in the **Inbox** (left panel).
 - Drag it to any quadrant (Do First, Schedule, Delegate, Eliminate).
-- Verify the **Modal Prompt** appears (e.g., asking for Due Date or Delegate).
+- Verify the **Assignment Modal** appears for Do, Schedule, and Delegate.
 - Complete the specific prompt and verify the task stays in the target quadrant.
+- **Verification**: Check that the update is persisted using **Server Actions** (refresh page to confirm).
 
 ### Step 5: Advanced Features
 

@@ -10,11 +10,26 @@ import {
   ExternalLink,
   Wind,
   Lightbulb,
+  Flame,
+  Calendar,
+  Users,
 } from "lucide-react";
 import { MatrixHeader } from "@/components/eisenhower-matrix/MatrixHeader";
 import { StatsView } from "@/components/eisenhower-matrix/StatsView";
 import { MainTaskForm } from "@/components/eisenhower-matrix/MainTaskForm";
 import { MatrixGrid } from "@/components/eisenhower-matrix/MatrixGrid";
+
+import { useTaskOperations } from "@/hooks/useTaskOperations";
+import { HelpModal } from "@/components/eisenhower-matrix/modals/HelpModal";
+import { AssignmentModal } from "@/components/eisenhower-matrix/modals/AssignmentModal";
+import { DelegateModal } from "@/components/eisenhower-matrix/modals/DelegateModal";
+import { OnboardingModal } from "@/components/eisenhower-matrix/modals/OnboardingModal";
+import { DoneListModal } from "@/components/eisenhower-matrix/modals/DoneListModal";
+import { DeletedListModal } from "@/components/eisenhower-matrix/modals/DeletedListModal";
+import { DatePickerModal } from "@/components/eisenhower-matrix/modals/DatePickerModal";
+import { EditContentModal } from "@/components/eisenhower-matrix/modals/EditContentModal";
+import { CompletionModal } from "@/components/eisenhower-matrix/modals/CompletionModal";
+import { Task, Delegate } from "@/types/eisenhower";
 
 const QUADRANTS = {
   DO: {
@@ -217,7 +232,9 @@ function EisenhowerMatrixContent() {
     // Hook expects delegateId.
     // Logic in hook for test mode uses "Self", logic in API uses "Self".
     // We should pass the ID.
-    const selfDelegate = delegates.find((d) => d.name.toLowerCase() === "self");
+    const selfDelegate = delegates.find(
+      (d: Delegate) => d.name.toLowerCase() === "self",
+    );
     await addTask(
       newTask,
       parseInt(newEstimatedMinutes) || null,
@@ -229,7 +246,7 @@ function EisenhowerMatrixContent() {
   };
 
   const toggleComplete = async (id: number) => {
-    const task = tasks.find((t) => t.id === id);
+    const task = tasks.find((t: Task) => t.id === id);
     if (!task) return;
 
     if (task.status !== "DONE" && task.quadrant === "INBOX") {
@@ -267,7 +284,7 @@ function EisenhowerMatrixContent() {
     e.preventDefault();
     if (draggedTaskId === null) return;
 
-    const task = tasks.find((t) => t.id === draggedTaskId);
+    const task = tasks.find((t: Task) => t.id === draggedTaskId);
     if (
       task?.quadrant === "INBOX" &&
       quadrantId !== "INBOX" &&
@@ -337,12 +354,14 @@ function EisenhowerMatrixContent() {
   };
 
   const stats = {
-    total: tasks.filter((t) => !t.isDeleted).length,
-    completed: tasks.filter((t) => t.status === "DONE" && !t.isDeleted).length,
-    pending: tasks.filter((t) => t.status === "TODO" && !t.isDeleted).length,
-    eliminated: tasks.filter((t) => t.isDeleted).length,
+    total: tasks.filter((t: Task) => !t.isDeleted).length,
+    completed: tasks.filter((t: Task) => t.status === "DONE" && !t.isDeleted)
+      .length,
+    pending: tasks.filter((t: Task) => t.status === "TODO" && !t.isDeleted)
+      .length,
+    eliminated: tasks.filter((t: Task) => t.isDeleted).length,
     delegated: tasks.filter(
-      (t) =>
+      (t: Task) =>
         !t.isDeleted && t.delegate && t.delegate.name.toLowerCase() !== "self",
     ).length,
   };
@@ -487,11 +506,11 @@ function EisenhowerMatrixContent() {
           onClose={() => setShowCompletionModal(false)}
           onConfirm={handleCompletionConfirm}
           taskContent={
-            tasks.find((t) => t.id === completingTaskId)?.content || ""
+            tasks.find((t: Task) => t.id === completingTaskId)?.content || ""
           }
           estimatedMinutes={
-            tasks.find((t) => t.id === completingTaskId)?.estimatedMinutes ||
-            null
+            tasks.find((t: Task) => t.id === completingTaskId)
+              ?.estimatedMinutes || null
           }
         />
       )}

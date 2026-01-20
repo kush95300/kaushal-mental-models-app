@@ -17,10 +17,11 @@ export const isTomorrow = (date: Date): boolean => {
   );
 };
 
-export const formatFriendlyDate = (dateString: string): string => {
+export const formatFriendlyDate = (dateString: string | Date): string => {
   if (!dateString) return "";
   const date = new Date(dateString);
-  if (isNaN(date.getTime())) return dateString;
+  if (isNaN(date.getTime()))
+    return typeof dateString === "string" ? dateString : "";
 
   if (isToday(date)) return "Today";
   if (isTomorrow(date)) return "Tomorrow";
@@ -31,7 +32,7 @@ export const formatFriendlyDate = (dateString: string): string => {
   });
 };
 
-export const shouldAutoPromote = (dateString: string): boolean => {
+export const shouldAutoPromote = (dateString: string | Date): boolean => {
   if (!dateString) return false;
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return false;
@@ -54,7 +55,7 @@ export const shouldAutoPromote = (dateString: string): boolean => {
   );
 };
 
-export const isOverdue = (dateString: string): boolean => {
+export const isOverdue = (dateString: string | Date): boolean => {
   if (!dateString) return false;
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return false;

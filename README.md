@@ -22,7 +22,10 @@ Transform your to-do list into a strategic map by separating the urgent from the
   - **Data Resets**: Quickly wipe _Today's Data_ or _All Data_ for a clean slate.
 - **Onboarding & Analytics**:
   - **Smart Onboarding**: Prompt for analytics start date on first visit.
-  - **Test Mode**: Explore the full matrix feature set without persisting any data to the database.
+- **Server Actions Architecture (v1.2)**:
+  - **Unified Operations**: All task and delegate management moved to high-performance **Server Actions**.
+  - **Optimistic UI**: Instant visual feedback for task creation, movement, and deletion before server confirmation.
+  - **Modular Component Design**: Page structure refactored into focused components (`MatrixHeader`, `StatsView`, `MainTaskForm`, `MatrixGrid`) for easier maintenance.
 - **Premium User Experience**:
   - **Hover Tooltips**: Instantly view full task descriptions on hover for longer entries.
   - **Educational Overlay**: Integrated **Help (?)** portal explaining the Eisenhower philosophy.
@@ -39,29 +42,36 @@ A curated gallery of frameworks for better thinking.
 
 ## 🛠 Tech Stack
 
-- **Next.js 16**: Modern, high-performance web framework.
+- **Next.js 16**: Modern, high-performance web framework utilizing **Server Actions**.
 - **Tailwind CSS v4**: Bleeding-edge styling for glassmorphic and vibrant design.
-- **Prisma + SQLite**: Robust local persistence for all tasks, delegates, and settings.
+- **Prisma + SQLite**: Robust local persistence with optimized database indexes.
 - **Lucide React**: Professional metadata-aware iconography.
 
 ## 🏁 Getting Started
 
-1.  **Clone the Lab**:
-    ```bash
-    git clone [repository-url]
-    ```
-2.  **Install Ingredients**:
-    ```bash
-    npm install
-    ```
-3.  **Deploy Database**:
-    ```bash
-    npx prisma db push
-    ```
-4.  **Ignite the Server**:
-    ```bash
-    npm run dev
-    ```
+1. **Clone the Lab**:
+
+```bash
+git clone [repository-url]
+```
+
+1. **Install Ingredients**:
+
+```bash
+npm install
+```
+
+1. **Deploy Database**:
+
+```bash
+npx prisma db push
+```
+
+1. **Ignite the Server**:
+
+```bash
+npm run dev
+```
 
 ## 🤝 Contributing
 
