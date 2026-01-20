@@ -75,19 +75,21 @@ Consistency is enforced to ensure the monolith remains readable as it grows.
 
 When a milestone is reached on `develop` or significant UI changes are verified:
 
-1. `git checkout main`
-2. `git merge develop`
-3. **Tagging Rule:** Do NOT tag every commit. Only create a tag (e.g., `v1.x.x` or `v1.x.x-patch`) when:
+1. **Create Pull Request**: Raise a PR from `develop` to `main` on GitHub.
+2. **No Direct Merges**: Direct `git merge develop` on the local `main` branch is strictly forbidden.
+3. **Admin Review**: Wait for the PR to be reviewed and merged on the GitHub platform.
+4. **Tagging Rule**: Once the PR is merged into `main`, pull the latest `main` locally and create a tag (e.g., `v1.x.x` or `v1.x.x-patch`) when:
    - There is a visible UI change that is stable.
    - A major feature is completed.
    - A critical bug fix is verified.
-4. `git tag -a v1.x.x -m "Release description"`
+5. `git checkout main && git pull origin main`
+6. `git tag -a v1.x.x -m "Release description" && git push origin --tags`
 
 ### Emergency Hotfix (The Exception)
 
 1. **Branch from Main:** `git checkout main` -> `git checkout -b hotfix/urgent-fix`
-2. **Fix & Merge to Main:** `git checkout main` -> `git merge hotfix/urgent-fix`
-3. **Sync with Develop:** `git checkout develop` -> `git merge hotfix/urgent-fix`
+2. **Fix & PR to Main:** Instead of direct merge, create a PR from `hotfix/urgent-fix` to `main`.
+3. **Sync with Develop:** After the PR is merged to `main`, merge the fix into `develop` as well.
 
 ---
 
@@ -104,7 +106,9 @@ When a milestone is reached on `develop` or significant UI changes are verified:
 └── package.json         # Project configuration & dependencies
 
 ## ⚠️ Repository Guardrails
-- No Direct Commits to Main: Except via a hotfix/ branch.
-- Strict Naming: Do not use spaces or uppercase in file names (except for UI components).
-- Secret Management: Never commit .env files. Ensure they are listed in .gitignore.
+
+- **Zero Direct Merges/Commits to Main**: Merges to `main` MUST proceed through a Pull Request on GitHub. No exceptions.
+- **Develop is Open**: Merging feature branches locally into `develop` for testing is allowed and encouraged.
+- **Strict Naming**: Do not use spaces or uppercase in file names (except for UI components).
+- **Secret Management**: Never commit .env files. Ensure they are listed in .gitignore.
 ```
