@@ -17,14 +17,26 @@ We follow a modified semantic versioning tailored to the "Mental Models" product
 
 ## Feature Roadmap (Eisenhower Matrix v1.x)
 
-### v1.2.0 - Refactoring & Foundation
+### v1.2.1 - Actions & Schema Types
 
-**Goal**: Clean codebase, robust architecture.
+**Goal**: Establish the Server Actions layer.
 
-- [ ] **Structure**: Breakdown `page.tsx` into atomic components.
-- [ ] **Logic**: Move data mutations to Server Actions (`actions/task.ts`).
-- [ ] **Docs**: Create `Docs/` with User Flows, Design System, and **Git Tag Changelog**.
-- [ ] **Git**: Enforce new commit message rules.
+- [ ] Create `src/actions/task.ts` & `src/actions/delegate.ts`.
+- [ ] Standardize `src/types/eisenhower.ts`.
+
+### v1.2.2 - Hook Migration
+
+**Goal**: Move business logic out of the component.
+
+- [ ] Refactor `useTaskOperations.ts` to use Server Actions.
+- [ ] Implement optimistic updates in hook.
+
+### v1.2.3 - UI Integration & Logic
+
+**Goal**: Connect the matrix to the new backend.
+
+- [ ] Resolve merge conflicts in `page.tsx`.
+- [ ] Standardize local state management.
 
 ### v1.3.0 - Workspaces & Context
 

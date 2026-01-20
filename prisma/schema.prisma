@@ -26,6 +26,10 @@ model Task {
   updatedAt        DateTime  @updatedAt
   completedAt      DateTime?
   isDeleted        Boolean   @default(false)
+
+  @@index([quadrant])
+  @@index([status])
+  @@index([dueDate])
 }
 
 model Delegate {
