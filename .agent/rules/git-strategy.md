@@ -45,37 +45,45 @@ Consistency is enforced to ensure the monolith remains readable as it grows.
 | **Utilities**     | `kebab-case.js`  | `date-utility.js`, `error-handler.js`        |
 | **Styles**        | `kebab-case.css` | `global-layout.css`                          |
 
-### 3. Commit Messages
+## 3. Commit Messages
 
-**Pattern:** `type(scope): description`
+**Pattern:** `type(scope): description` or `type(scope): [Phase-X] description`
 
-- `feat(api): add post endpoint for data ingestion`
-- `fix(client): resolve flickering on button hover`
-- `hotfix(server): fix crash on invalid JSON input`
+**Rules:**
 
----
+1. **Type**: `feat`, `fix`, `refactor`, `docs`, `chore`.
+2. **Scope**: Component affected (e.g., `matrix`, `api`, `db`).
+3. **Phase Tag**: **Mandatory** when working on a specific Implementation Plan phase.
+4. **Description**: Concise summary (imperative mood).
+
+**Examples:**
+
+- `feat(api): [Phase-1] add server actions for task mutations`
+- `fix(ui): [Phase-2] resolve drag-and-drop flickering`
+- `docs(readme): update installation guide`
+- `refactor(db): [Phase-3] optimize query indexing`
 
 ## 🔄 Core Workflows
 
 ### Standard Development (Feature/Fix)
 
-1.  **Switch to Develop:** `git checkout develop`
-2.  **Create Branch:** `git checkout -b feat/your-feature`
-3.  **Merge Back:** Once tested, merge into `develop`.
+1. **Switch to Develop:** `git checkout develop`
+2. **Create Branch:** `git checkout -b feat/your-feature`
+3. **Merge Back:** Once tested, merge into `develop`.
 
 ### The "Larger Upgrade" (To Main)
 
 When a milestone is reached on `develop`:
 
-1.  `git checkout main`
-2.  `git merge develop`
-3.  `git tag -a v1.x.x -m "Release description"`
+1. `git checkout main`
+2. `git merge develop`
+3. `git tag -a v1.x.x -m "Release description"`
 
 ### Emergency Hotfix (The Exception)
 
-1.  **Branch from Main:** `git checkout main` -> `git checkout -b hotfix/urgent-fix`
-2.  **Fix & Merge to Main:** `git checkout main` -> `git merge hotfix/urgent-fix`
-3.  **Sync with Develop:** `git checkout develop` -> `git merge hotfix/urgent-fix`
+1. **Branch from Main:** `git checkout main` -> `git checkout -b hotfix/urgent-fix`
+2. **Fix & Merge to Main:** `git checkout main` -> `git merge hotfix/urgent-fix`
+3. **Sync with Develop:** `git checkout develop` -> `git merge hotfix/urgent-fix`
 
 ---
 
