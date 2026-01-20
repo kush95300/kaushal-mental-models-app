@@ -1,6 +1,18 @@
 import { useState, useEffect, useCallback } from "react";
 import { Task, Delegate } from "@/types/eisenhower";
 import { shouldAutoPromote } from "@/lib/dateUtils";
+import {
+  getTasks,
+  createTask,
+  updateTask as updateTaskAction,
+  deleteTaskAction,
+  resetTasksAction,
+} from "@/actions/task";
+import {
+  getDelegates,
+  createDelegate,
+  deleteDelegateAction,
+} from "@/actions/delegate";
 
 interface UseTaskOperationsProps {
   isTestMode: boolean;
@@ -15,66 +27,65 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
   // Fetch Delegates
   const fetchDelegates = useCallback(async () => {
     try {
-      const res = await fetch("/api/delegates");
-      if (res.ok) {
-        const data = await res.json();
-        setDelegates(data);
+      if (isTestMode) {
+        setDelegates([
+          { id: 1, name: "Self", email: null, createdAt: "", updatedAt: "" },
+        ]);
+        return;
+      }
+      const res = await getDelegates();
+      if (res.success && res.data) {
+        setDelegates(res.data);
       }
     } catch (error) {
       console.error("Fetch delegates error:", error);
     }
-  }, []);
+  }, [isTestMode]);
 
   // Fetch Tasks & Smart Scheduling
   const fetchTasks = useCallback(async () => {
     try {
-      const res = await fetch("/api/tasks");
-      if (res.ok) {
-        let data = await res.json();
+      if (isTestMode) {
+        setLoading(false);
+        return;
+      }
+      const res = await getTasks();
+      if (res.success) {
+        let data = res.data;
 
         // Auto-move tasks due today/tomorrow to DO quadrant
-        if (!isTestMode) {
-          let hasUpdates = false;
-          const updates = data.map(async (t: Task) => {
-            if (!t.dueDate || t.status === "DONE" || t.quadrant === "DO")
-              return t;
-
-            if (shouldAutoPromote(t.dueDate)) {
-              const isSelf =
-                !t.delegate || t.delegate.name.toLowerCase() === "self";
-              const targetQuadrant = isSelf ? "DO" : "DELEGATE";
-
-              if (t.quadrant !== targetQuadrant) {
-                hasUpdates = true;
-                t.quadrant = targetQuadrant;
-                try {
-                  await fetch("/api/tasks", {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      id: t.id,
-                      quadrant: targetQuadrant,
-                    }),
-                  });
-                } catch (e) {
-                  console.error("Auto-move error", e);
-                }
-              }
-            }
+        let hasUpdates = false;
+        const updates = data!.map(async (t: Task) => {
+          if (!t.dueDate || t.status === "DONE" || t.quadrant === "DO")
             return t;
-          });
 
-          if (hasUpdates) {
-            data = await Promise.all(updates);
+          if (shouldAutoPromote(t.dueDate)) {
+            const isSelf =
+              !t.delegate || t.delegate.name.toLowerCase() === "self";
+            const targetQuadrant = isSelf ? "DO" : "DELEGATE";
+
+            if (t.quadrant !== targetQuadrant) {
+              hasUpdates = true;
+              t.quadrant = targetQuadrant;
+              await updateTaskAction(t.id, { quadrant: targetQuadrant });
+            }
           }
+          return t;
+        });
+
+        if (hasUpdates) {
+          data = await Promise.all(updates);
         }
-        setTasks(data);
+        if (data) {
+          setTasks(data);
+        }
       }
     } catch (error) {
       console.error("Fetch tasks error:", error);
+    } finally {
+      setLoading(false);
+      setLastRefreshed(new Date());
     }
-    setLoading(false);
-    setLastRefreshed(new Date());
   }, [isTestMode]);
 
   // Initial Load
@@ -103,7 +114,9 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
         status: "TODO",
         createdAt: new Date().toISOString(),
         completedAt: null,
-        delegate: delegates.find((d) => d.id === delegateId) || delegates[0],
+        delegate: delegateId
+          ? delegates.find((d) => d.id === delegateId) || null
+          : delegates[0] || null,
         isDeleted: false,
         dueDate: null,
         actualMinutes: null,
@@ -113,23 +126,9 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
       return;
     }
 
-    try {
-      const res = await fetch("/api/tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          content,
-          estimatedMinutes,
-          quadrant: "INBOX",
-          delegateId,
-        }),
-      });
-      if (res.ok) {
-        const task = await res.json();
-        setTasks((prev) => [task, ...prev]);
-      }
-    } catch (error) {
-      console.error("Add task error:", error);
+    const res = await createTask({ content, estimatedMinutes, delegateId });
+    if (res.success && res.data) {
+      setTasks((prev) => [res.data!, ...prev]);
     }
   };
 
@@ -138,6 +137,7 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
     status: string,
     actualMinutes: number | null,
   ) => {
+    // Optimistic Update
     setTasks((prev) =>
       prev.map((t) =>
         t.id === id
@@ -151,16 +151,7 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
     );
 
     if (isTestMode) return;
-
-    try {
-      await fetch("/api/tasks", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status, actualMinutes }),
-      });
-    } catch (error) {
-      console.error("Update task status error:", error);
-    }
+    await updateTaskAction(id, { status, actualMinutes });
   };
 
   const updateTaskQuadrant = async (
@@ -168,7 +159,7 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
     quadrant: string,
     additionalData: Partial<Task> = {},
   ) => {
-    // Smart Scheduling Logic embedded for consistency
+    // Smart Scheduling Logic
     if (quadrant !== "DELEGATE") {
       const selfDelegate = delegates.find(
         (d) => d.name.toLowerCase() === "self",
@@ -178,34 +169,40 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
 
     // Auto-schedule logic
     if (additionalData.dueDate && !isTestMode) {
-      // Logic from original page.tsx...
-      // For brevity in this artifact, assume logic is migrated identically
-      // If due date + Self -> Schedule or Do
+      const task = tasks.find((t) => t.id === taskId);
+      const isSelf =
+        !task?.delegate || task.delegate.name.toLowerCase() === "self";
+      if (isSelf && shouldAutoPromote(additionalData.dueDate)) {
+        quadrant = "DO";
+      }
     }
 
     // Optimistic Update
     setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === taskId) {
-          // ... merging logic
-          return { ...t, quadrant, ...additionalData };
-        }
-        return t;
-      }),
+      prev.map((t) =>
+        t.id === taskId ? { ...t, quadrant, ...additionalData } : t,
+      ),
     );
 
     if (isTestMode) return;
-
-    try {
-      await fetch("/api/tasks", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: taskId, quadrant, ...additionalData }),
-      });
-      fetchTasks(); // Refresh to ensure backend consistency
-    } catch (error) {
-      console.error("Update quadrant error:", error);
+    const res = await updateTaskAction(taskId, { quadrant, ...additionalData });
+    if (!res.success) {
+      fetchTasks();
     }
+  };
+
+  const updateTaskContent = async (
+    id: number,
+    content: string,
+    estimatedMinutes: number | null,
+  ) => {
+    // Optimistic Update
+    setTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, content, estimatedMinutes } : t)),
+    );
+
+    if (isTestMode) return;
+    await updateTaskAction(id, { content, estimatedMinutes });
   };
 
   const deleteTask = async (id: number) => {
@@ -213,12 +210,7 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
       prev.map((t) => (t.id === id ? { ...t, isDeleted: true } : t)),
     );
     if (isTestMode) return;
-    try {
-      await fetch(`/api/tasks?id=${id}`, { method: "DELETE" });
-    } catch (error) {
-      console.error("Delete task error:", error);
-      fetchTasks();
-    }
+    await deleteTaskAction(id, "soft");
   };
 
   const hardDeleteTask = async (id: number) => {
@@ -227,12 +219,8 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
       setTasks((prev) => prev.filter((t) => t.id !== id));
       return;
     }
-    try {
-      await fetch(`/api/tasks?id=${id}&mode=hard`, { method: "DELETE" });
-      fetchTasks();
-    } catch (error) {
-      console.error("Hard delete error:", error);
-    }
+    await deleteTaskAction(id, "hard");
+    fetchTasks();
   };
 
   const revertDeletion = async (id: number) => {
@@ -240,20 +228,47 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
       prev.map((t) => (t.id === id ? { ...t, isDeleted: false } : t)),
     );
     if (isTestMode) return;
-    try {
-      const res = await fetch(`/api/tasks?id=${id}&mode=revert`, {
-        method: "DELETE",
-      });
-      if (!res.ok) fetchTasks();
-    } catch (error) {
-      console.error("Revert error:", error);
-      fetchTasks();
+    await deleteTaskAction(id, "revert");
+    fetchTasks();
+  };
+
+  const addDelegateOp = async (name: string, email?: string) => {
+    if (isTestMode) {
+      const tempDelegate: Delegate = {
+        id: Math.random(),
+        name,
+        email: email || null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setDelegates((prev) => [...prev, tempDelegate]);
+      return;
     }
+    const res = await createDelegate({ name, email });
+    if (res.success && res.data) {
+      setDelegates((prev) => [...prev, res.data!]);
+    }
+  };
+
+  const removeDelegateOp = async (id: number) => {
+    setDelegates((prev) => prev.filter((d) => d.id !== id));
+    if (isTestMode) return;
+    const res = await deleteDelegateAction(id);
+    if (!res.success) fetchDelegates();
+  };
+
+  const resetDataOp = async (type: "today" | "all") => {
+    if (isTestMode) {
+      setTasks([]);
+      return;
+    }
+    const res = await resetTasksAction(type);
+    if (res.success) fetchTasks();
   };
 
   return {
     tasks,
-    setTasks, // Expose for complex local updates if needed, primarily internal
+    setTasks,
     delegates,
     setDelegates,
     loading,
@@ -262,8 +277,12 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
     addTask,
     updateTaskStatus,
     updateTaskQuadrant,
+    updateTaskContent,
     deleteTask,
     hardDeleteTask,
     revertDeletion,
+    addDelegateOp,
+    removeDelegateOp,
+    resetDataOp,
   };
 }
