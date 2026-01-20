@@ -17,26 +17,28 @@ We follow a modified semantic versioning tailored to the "Mental Models" product
 
 ## Feature Roadmap (Eisenhower Matrix v1.x)
 
-### v1.2.1 - Actions & Schema Types
+### v1.2.1 - Actions & Schema Types [x]
 
 **Goal**: Establish the Server Actions layer.
 
-- [ ] Create `src/actions/task.ts` & `src/actions/delegate.ts`.
-- [ ] Standardize `src/types/eisenhower.ts`.
+- [x] Create `src/actions/task.ts` & `src/actions/delegate.ts`.
+- [x] Standardize `src/types/eisenhower.ts`.
+- [x] Optimize Schema Indexes.
 
-### v1.2.2 - Hook Migration
+### v1.2.2 - Hook Migration [x]
 
 **Goal**: Move business logic out of the component.
 
-- [ ] Refactor `useTaskOperations.ts` to use Server Actions.
-- [ ] Implement optimistic updates in hook.
+- [x] Refactor `useTaskOperations.ts` to use Server Actions.
+- [x] Implement optimistic updates in hook.
 
-### v1.2.3 - UI Integration & Logic
+### v1.2.3 - UI Integration & Refactoring [x]
 
-**Goal**: Connect the matrix to the new backend.
+**Goal**: Connect the matrix to the new backend and modularize.
 
-- [ ] Resolve merge conflicts in `page.tsx`.
-- [ ] Standardize local state management.
+- [x] Resolve merge conflicts in `page.tsx`.
+- [x] Standardize local state management.
+- [x] Extract large UI blocks into modular components.
 
 ### v1.3.0 - Workspaces & Context
 
