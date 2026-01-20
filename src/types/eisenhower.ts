@@ -1,9 +1,9 @@
 export interface Delegate {
   id: number;
   name: string;
-  email?: string;
-  createdAt: string;
-  updatedAt: string;
+  email: string | null | undefined;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 }
 
 export interface Task {
@@ -15,9 +15,11 @@ export interface Task {
   isUrgent: boolean;
   estimatedMinutes: number | null;
   actualMinutes: number | null;
-  dueDate?: string;
-  completedAt?: string;
+  dueDate?: string | Date | null;
+  completedAt?: string | Date | null;
   isDeleted: boolean;
-  createdAt: string;
-  delegate?: Delegate;
+  createdAt: string | Date;
+  delegate?: Delegate | null;
+  delegateId?: number | null;
+  updatedAt?: string | Date;
 }

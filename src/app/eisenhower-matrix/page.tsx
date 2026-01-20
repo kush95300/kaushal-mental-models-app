@@ -1,35 +1,27 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  Plus,
-  Trash2,
-  CheckCircle2,
-  Flame,
-  Calendar,
-  Users,
-  Wind,
-  Lightbulb,
-  ArrowLeft,
-  UserCog,
-  HelpCircle,
-  Zap,
-  Clock,
   PlusCircle,
   Linkedin,
   Github,
   ExternalLink,
-  RefreshCcw,
+  Wind,
+  Lightbulb,
+  Flame,
+  Calendar,
+  Users,
 } from "lucide-react";
+import { MatrixHeader } from "@/components/eisenhower-matrix/MatrixHeader";
+import { StatsView } from "@/components/eisenhower-matrix/StatsView";
+import { MainTaskForm } from "@/components/eisenhower-matrix/MainTaskForm";
+import { MatrixGrid } from "@/components/eisenhower-matrix/MatrixGrid";
 
-import { Task, Delegate } from "@/types/eisenhower";
-import { TaskCard } from "@/components/eisenhower-matrix/TaskCard";
-import { Quadrant } from "@/components/eisenhower-matrix/Quadrant";
+import { useTaskOperations } from "@/hooks/useTaskOperations";
 import { HelpModal } from "@/components/eisenhower-matrix/modals/HelpModal";
 import { AssignmentModal } from "@/components/eisenhower-matrix/modals/AssignmentModal";
-import { shouldAutoPromote } from "@/lib/dateUtils";
 import { DelegateModal } from "@/components/eisenhower-matrix/modals/DelegateModal";
 import { OnboardingModal } from "@/components/eisenhower-matrix/modals/OnboardingModal";
 import { DoneListModal } from "@/components/eisenhower-matrix/modals/DoneListModal";
@@ -37,6 +29,7 @@ import { DeletedListModal } from "@/components/eisenhower-matrix/modals/DeletedL
 import { DatePickerModal } from "@/components/eisenhower-matrix/modals/DatePickerModal";
 import { EditContentModal } from "@/components/eisenhower-matrix/modals/EditContentModal";
 import { CompletionModal } from "@/components/eisenhower-matrix/modals/CompletionModal";
+import { Task, Delegate } from "@/types/eisenhower";
 
 const QUADRANTS = {
   DO: {
@@ -104,13 +97,10 @@ export default function EisenhowerMatrixPage() {
 }
 
 function EisenhowerMatrixContent() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [delegates, setDelegates] = useState<Delegate[]>([]);
   const [newTask, setNewTask] = useState("");
   const [newEstimatedMinutes, setNewEstimatedMinutes] = useState<string>("");
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
   const [activeQuadrant, setActiveQuadrant] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [visibleLimit, setVisibleLimit] = useState(5);
   const [showDelegateModal, setShowDelegateModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
@@ -139,49 +129,30 @@ function EisenhowerMatrixContent() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isTestMode, setIsTestMode] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState(60); // seconds
-  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [currentDateDisplay, setCurrentDateDisplay] = useState("");
   const [modalWarning, setModalWarning] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  useEffect(() => {
-    fetchTasks();
-    fetchDelegates();
-    fetchConfig();
-    setCurrentDateDisplay(
-      new Date().toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-      }),
-    );
-  }, []);
+  const {
+    tasks,
+    delegates,
+    loading,
+    fetchTasks,
+    addTask,
+    updateTaskStatus,
+    updateTaskQuadrant,
+    updateTaskContent,
+    deleteTask,
+    hardDeleteTask,
+    revertDeletion,
+    addDelegateOp,
+    removeDelegateOp,
+    resetDataOp,
+  } = useTaskOperations({ isTestMode });
 
-  // Auto-refresh interval
-  useEffect(() => {
-    if (refreshInterval === 0) return;
-    const interval = setInterval(() => {
-      fetchTasks();
-    }, refreshInterval * 1000);
-    return () => clearInterval(interval);
-  }, [refreshInterval]);
-
-  useEffect(() => {
-    if (searchParams.get("showHelp") === "true") {
-      setShowHelpModal(true);
-    }
-  }, [searchParams]);
-
-  const handleCloseHelp = () => {
-    if (searchParams.get("showHelp") === "true") {
-      router.push("/");
-    } else {
-      setShowHelpModal(false);
-    }
-  };
-
-  const fetchConfig = async () => {
+  // Helper functions defined before effects to avoid usage before declaration
+  const fetchConfig = useCallback(async () => {
     try {
       const res = await fetch("/api/config");
       if (res.ok) {
@@ -197,7 +168,7 @@ function EisenhowerMatrixContent() {
     } catch (error) {
       console.error("Fetch config error:", error);
     }
-  };
+  }, [searchParams]);
 
   const setAnalyticsStart = async (startDate: string | null) => {
     try {
@@ -216,75 +187,40 @@ function EisenhowerMatrixContent() {
     }
   };
 
-  const fetchTasks = async () => {
-    try {
-      const res = await fetch("/api/tasks");
-      if (res.ok) {
-        let data = await res.json();
+  useEffect(() => {
+    // fetchDelegates handled by hook
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchConfig();
+    setCurrentDateDisplay(
+      new Date().toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      }),
+    );
+  }, [fetchConfig]);
 
-        // Auto-move tasks due today/tomorrow to DO quadrant
-        if (!isTestMode) {
-          const now = new Date();
-          const today = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate(),
-          );
-          const tomorrow = new Date(today);
-          tomorrow.setDate(tomorrow.getDate() + 1);
+  // Auto-refresh interval
+  useEffect(() => {
+    if (refreshInterval === 0) return;
+    const interval = setInterval(() => {
+      fetchTasks();
+    }, refreshInterval * 1000);
+    return () => clearInterval(interval);
+  }, [refreshInterval, fetchTasks]);
 
-          let hasUpdates = false;
-          const updates = data.map(async (t: Task) => {
-            if (!t.dueDate || t.status === "DONE" || t.quadrant === "DO")
-              return t;
-
-            if (shouldAutoPromote(t.dueDate)) {
-              const isSelf =
-                !t.delegate || t.delegate.name.toLowerCase() === "self";
-              const targetQuadrant = isSelf ? "DO" : "DELEGATE";
-
-              if (t.quadrant !== targetQuadrant) {
-                hasUpdates = true;
-                t.quadrant = targetQuadrant;
-                try {
-                  await fetch("/api/tasks", {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      id: t.id,
-                      quadrant: targetQuadrant,
-                    }),
-                  });
-                } catch (e) {
-                  console.error("Auto-move error", e);
-                }
-              }
-            }
-            return t;
-          });
-
-          if (hasUpdates) {
-            data = await Promise.all(updates);
-          }
-        }
-        setTasks(data);
-      }
-    } catch (error) {
-      console.error("Fetch tasks error:", error);
+  useEffect(() => {
+    if (searchParams.get("showHelp") === "true") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setShowHelpModal(true);
     }
-    setLoading(false);
-    setLastRefreshed(new Date());
-  };
+  }, [searchParams]);
 
-  const fetchDelegates = async () => {
-    try {
-      const res = await fetch("/api/delegates");
-      if (res.ok) {
-        const data = await res.json();
-        setDelegates(data);
-      }
-    } catch (error) {
-      console.error("Fetch delegates error:", error);
+  const handleCloseHelp = () => {
+    if (searchParams.get("showHelp") === "true") {
+      router.push("/");
+    } else {
+      setShowHelpModal(false);
     }
   };
 
@@ -292,71 +228,29 @@ function EisenhowerMatrixContent() {
     e.preventDefault();
     if (!newTask.trim()) return;
 
-    try {
-      if (isTestMode) {
-        const tempTask = {
-          id: Math.random(),
-          content: newTask,
-          estimatedMinutes: parseInt(newEstimatedMinutes) || null,
-          isImportant: false,
-          isUrgent: false,
-          quadrant: "INBOX",
-          status: "TODO",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          completedAt: null,
-          delegate: delegates.find((d) => d.name === "Self") || delegates[0],
-          isDeleted: false,
-        };
-        setTasks([tempTask as any, ...tasks]);
-        setNewTask("");
-        setNewEstimatedMinutes("");
-        return;
-      }
-      const selfDelegate = delegates.find(
-        (d) => d.name.toLowerCase() === "self",
-      );
-      const res = await fetch("/api/tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          content: newTask,
-          estimatedMinutes: parseInt(newEstimatedMinutes) || null,
-          quadrant: "INBOX",
-          delegateId: selfDelegate?.id || null,
-        }),
-      });
-      if (res.ok) {
-        const task = await res.json();
-        setTasks([task, ...tasks]);
-        setNewTask("");
-        setNewEstimatedMinutes("");
-      }
-    } catch (error) {
-      console.error("Add task error:", error);
-    }
-  };
+    // Resolve self delegate if needed or pass logic to hook?
+    // Hook expects delegateId.
+    // Logic in hook for test mode uses "Self", logic in API uses "Self".
+    // We should pass the ID.
+    const selfDelegate = delegates.find(
+      (d: Delegate) => d.name.toLowerCase() === "self",
+    );
+    await addTask(
+      newTask,
+      parseInt(newEstimatedMinutes) || null,
+      selfDelegate?.id || null,
+    );
 
-  const deleteTask = async (id: number) => {
-    setTasks(tasks.map((t) => (t.id === id ? { ...t, isDeleted: true } : t)));
-    if (isTestMode) return;
-    try {
-      await fetch(`/api/tasks?id=${id}`, { method: "DELETE" });
-    } catch (error) {
-      console.error("Delete task error:", error);
-      fetchTasks();
-    }
+    setNewTask("");
+    setNewEstimatedMinutes("");
   };
 
   const toggleComplete = async (id: number) => {
-    console.log("toggleComplete called for id:", id);
-    const task = tasks.find((t) => t.id === id);
-    if (!task) {
-      console.error("Task not found for id:", id);
-      return;
-    }
+    const task = tasks.find((t: Task) => t.id === id);
+    if (!task) return;
 
     if (task.status !== "DONE" && task.quadrant === "INBOX") {
+      // Simple alert replacement or modal
       alert("First assign it or move to matrix then do it.");
       return;
     }
@@ -377,35 +271,6 @@ function EisenhowerMatrixContent() {
     setCompletingTaskId(null);
   };
 
-  const updateTaskStatus = async (
-    id: number,
-    status: string,
-    actualMinutes: number | null,
-  ) => {
-    setTasks(
-      tasks.map((t) =>
-        t.id === id
-          ? {
-              ...t,
-              status,
-              actualMinutes: status === "TODO" ? null : actualMinutes,
-            }
-          : t,
-      ),
-    );
-    if (isTestMode) return;
-
-    try {
-      await fetch("/api/tasks", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status, actualMinutes }),
-      });
-    } catch (error) {
-      console.error("Update task error:", error);
-    }
-  };
-
   const onDragStart = (id: number) => {
     setDraggedTaskId(id);
   };
@@ -419,13 +284,12 @@ function EisenhowerMatrixContent() {
     e.preventDefault();
     if (draggedTaskId === null) return;
 
-    const task = tasks.find((t) => t.id === draggedTaskId);
+    const task = tasks.find((t: Task) => t.id === draggedTaskId);
     if (
       task?.quadrant === "INBOX" &&
       quadrantId !== "INBOX" &&
       !task.estimatedMinutes
     ) {
-      // Graceful validation: Open edit modal with warning instead of blocking alert
       setEditingContentTaskId(task.id);
       setEditingContentValue(task.content);
       setEditingEstimatedMinutes("");
@@ -452,177 +316,28 @@ function EisenhowerMatrixContent() {
     setActiveQuadrant(null);
   };
 
-  const updateTaskQuadrant = async (
-    taskId: number,
-    quadrant: string,
-    additionalData: any = {},
-  ) => {
-    if (quadrant !== "DELEGATE") {
-      const selfDelegate = delegates.find(
-        (d) => d.name.toLowerCase() === "self",
-      );
-      if (selfDelegate) {
-        additionalData.delegateId = selfDelegate.id;
-      }
-    }
-
-    // Smart Scheduling Logic: Route based on Date + Assignee
-    if (additionalData.dueDate && !isTestMode) {
-      // Resolve Delegate Name
-      const taskToUpdate = tasks.find((t) => t.id === taskId);
-      let delegateName = taskToUpdate?.delegate?.name || "Self";
-
-      if (additionalData.delegateId) {
-        const newDelegate = delegates.find(
-          (d) => d.id === additionalData.delegateId,
-        );
-        if (newDelegate) delegateName = newDelegate.name;
-      } else if (additionalData.delegateId === null) {
-        delegateName = "Self";
-      }
-
-      const isSelf = delegateName.toLowerCase() === "self";
-      const isUrgent = shouldAutoPromote(additionalData.dueDate); // Today or Tomorrow
-
-      if (isSelf) {
-        if (isUrgent) {
-          quadrant = "DO";
-        } else {
-          // Future date + Self -> Schedule
-          quadrant = "SCHEDULE";
-        }
-      } else {
-        // Assigned to Others
-        if (isUrgent) {
-          quadrant = "DELEGATE";
-        }
-        // Else (Future + Other): Remain in same (do not force change quadrant)
-      }
-    }
-
-    // Clear due date if moving to Eliminate
-    if (quadrant === "ELIMINATE") {
-      additionalData.dueDate = null;
-    }
-
-    setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === taskId) {
-          const updatedTask = { ...t, quadrant, ...additionalData };
-          if (additionalData.delegateId) {
-            const newDelegate = delegates.find(
-              (d) => d.id === additionalData.delegateId,
-            );
-            if (newDelegate) {
-              updatedTask.delegate = newDelegate;
-            }
-          }
-          if (additionalData.delegateId === null) {
-            updatedTask.delegate = null;
-          }
-          return updatedTask;
-        }
-        return t;
-      }),
-    );
-
-    setAssignmentModal(null);
-    if (isTestMode) return;
-
-    try {
-      await fetch("/api/tasks", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: taskId, quadrant, ...additionalData }),
-      });
-      fetchTasks();
-    } catch (error) {
-      console.error("Update task error:", error);
-    }
-  };
-
   const saveTaskContent = async () => {
     if (!editingContentTaskId) return;
 
-    // Optimistic update
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === editingContentTaskId
-          ? {
-              ...t,
-              content: editingContentValue,
-              estimatedMinutes: parseInt(editingEstimatedMinutes) || null,
-            }
-          : t,
-      ),
-    );
-
-    const idToSave = editingContentTaskId;
-    const contentToSave = editingContentValue;
+    const contentToSave = editingContentValue.trim();
     const minutesToSave = parseInt(editingEstimatedMinutes) || null;
 
+    if (!contentToSave) return;
+
+    await updateTaskContent(editingContentTaskId, contentToSave, minutesToSave);
     setEditingContentTaskId(null);
     setEditingContentValue("");
     setEditingEstimatedMinutes("");
-
-    if (isTestMode) return;
-
-    try {
-      await fetch("/api/tasks", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: idToSave,
-          content: contentToSave,
-          estimatedMinutes: minutesToSave,
-        }),
-      });
-      fetchTasks();
-    } catch (error) {
-      console.error("Update task content error:", error);
-    }
   };
 
   const addDelegate = async () => {
     if (!newDelegateName.trim()) return;
-    if (isTestMode) {
-      const tempDelegate = {
-        id: Math.random(),
-        name: newDelegateName,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setDelegates([...delegates, tempDelegate as any]);
-      setNewDelegateName("");
-      return;
-    }
-    try {
-      const res = await fetch("/api/delegates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newDelegateName }),
-      });
-      if (res.ok) {
-        const d = await res.json();
-        setDelegates([...delegates, d]);
-        setNewDelegateName("");
-      }
-    } catch (error) {
-      console.error("Add delegate error:", error);
-    }
+    await addDelegateOp(newDelegateName);
+    setNewDelegateName("");
   };
 
   const removeDelegate = async (id: number) => {
-    setDelegates(delegates.filter((d) => d.id !== id));
-    if (isTestMode) return;
-    try {
-      const res = await fetch(`/api/delegates?id=${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setDelegates(delegates.filter((d) => d.id !== id));
-      }
-    } catch (error) {
-      console.error("Remove delegate error:", error);
-    }
+    await removeDelegateOp(id);
   };
 
   const resetData = async (type: "today" | "all") => {
@@ -635,69 +350,18 @@ function EisenhowerMatrixContent() {
     )
       return;
 
-    if (isTestMode) {
-      if (type === "all") {
-        setTasks([]);
-      } else {
-        const today = new Date().toDateString();
-        setTasks(
-          tasks.filter((t) => new Date(t.createdAt).toDateString() !== today),
-        );
-      }
-      return;
-    }
-
-    try {
-      const res = await fetch(`/api/tasks?reset=${type}`, { method: "DELETE" });
-      if (res.ok) {
-        fetchTasks();
-      }
-    } catch (error) {
-      console.error("Reset error:", error);
-    }
-  };
-
-  const revertDeletion = async (id: number) => {
-    setTasks(tasks.map((t) => (t.id === id ? { ...t, isDeleted: false } : t)));
-    if (isTestMode) return;
-    try {
-      const res = await fetch(`/api/tasks?id=${id}&mode=revert`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        fetchTasks();
-      }
-    } catch (error) {
-      console.error("Revert error:", error);
-      fetchTasks();
-    }
-  };
-
-  const hardDeleteTask = async (id: number) => {
-    if (!confirm("Permanently delete this item?")) return;
-    if (isTestMode) {
-      setTasks(tasks.filter((t) => t.id !== id));
-      return;
-    }
-    try {
-      const res = await fetch(`/api/tasks?id=${id}&mode=hard`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        fetchTasks();
-      }
-    } catch (error) {
-      console.error("Hard delete error:", error);
-    }
+    await resetDataOp(type);
   };
 
   const stats = {
-    total: tasks.filter((t) => !t.isDeleted).length,
-    completed: tasks.filter((t) => t.status === "DONE" && !t.isDeleted).length,
-    pending: tasks.filter((t) => t.status === "TODO" && !t.isDeleted).length,
-    eliminated: tasks.filter((t) => t.isDeleted).length,
+    total: tasks.filter((t: Task) => !t.isDeleted).length,
+    completed: tasks.filter((t: Task) => t.status === "DONE" && !t.isDeleted)
+      .length,
+    pending: tasks.filter((t: Task) => t.status === "TODO" && !t.isDeleted)
+      .length,
+    eliminated: tasks.filter((t: Task) => t.isDeleted).length,
     delegated: tasks.filter(
-      (t) =>
+      (t: Task) =>
         !t.isDeleted && t.delegate && t.delegate.name.toLowerCase() !== "self",
     ).length,
   };
@@ -725,350 +389,50 @@ function EisenhowerMatrixContent() {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto w-full flex-grow flex flex-col">
-        <div className="flex justify-between items-center mb-6">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-slate-400 hover:text-indigo-600 font-bold text-xs uppercase tracking-widest transition-all group w-fit"
-          >
-            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />{" "}
-            Back to Models
-          </Link>
-          <div className="hidden"></div>
-          <div className="flex items-center gap-2">
-            {isTestMode && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 text-[10px] font-black uppercase tracking-widest mr-2 animate-pulse">
-                <Zap size={12} className="fill-amber-500" /> Test Mode
-              </div>
-            )}
-            <div className="flex bg-white/50 backdrop-blur-md p-1.5 rounded-[1.5rem] border border-white items-center gap-1 shadow-sm">
-              <button
-                onClick={() => setShowDoneList(true)}
-                className="p-2 px-3 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-2xl transition-all flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest"
-                title="View Completed Tasks"
-              >
-                <CheckCircle2 size={16} /> Done
-                <span className="bg-emerald-500/10 text-emerald-600 px-1.5 py-0.5 rounded-lg text-[8px]">
-                  {
-                    tasks.filter((t) => t.status === "DONE" && !t.isDeleted)
-                      .length
-                  }
-                </span>
-              </button>
-              <button
-                onClick={() => setShowDeletedList(true)}
-                className="p-2 px-3 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-2xl transition-all flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest"
-                title="View Eliminated (Deleted) Tasks"
-              >
-                <Trash2 size={16} /> Eliminated
-                <span className="bg-emerald-500/10 text-emerald-600 px-1.5 py-0.5 rounded-md text-[8px]">
-                  {tasks.filter((t) => t.isDeleted).length}
-                </span>
-              </button>
-            </div>
-            <div className="h-8 w-px bg-slate-200 mx-1" />
-            <button
-              onClick={() => setShowHelpModal(true)}
-              className="p-2.5 text-slate-400 hover:text-indigo-600 bg-white/80 rounded-2xl border border-white shadow-sm transition-all hover:shadow-md"
-              title="How to use the Matrix"
-            >
-              <HelpCircle size={18} />
-            </button>
-            <button
-              onClick={() => setShowDelegateModal(true)}
-              className="flex items-center gap-2 text-amber-500 hover:text-amber-600 font-black text-[10px] uppercase tracking-widest transition-all bg-white/80 p-2.5 px-4 rounded-2xl border border-white shadow-sm hover:shadow-md"
-            >
-              <UserCog size={14} /> Manage Delegates
-            </button>
-            <div className="flex bg-white/50 backdrop-blur-md p-1.5 rounded-[1.5rem] border border-white items-center gap-1 shadow-sm ml-2">
-              <button
-                onClick={() => fetchTasks()}
-                className="p-2 px-3 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest group"
-                title="Force Refresh"
-              >
-                <RefreshCcw
-                  size={14}
-                  className="group-hover:rotate-180 transition-transform duration-500"
-                />
-              </button>
-              <div className="h-4 w-px bg-slate-200" />
-              <select
-                value={refreshInterval}
-                onChange={(e) => setRefreshInterval(Number(e.target.value))}
-                className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-400 outline-none cursor-pointer hover:text-indigo-600"
-                title="Auto-refresh Interval"
-              >
-                <option value={0}>Off</option>
-                <option value={30}>30s</option>
-                <option value={60}>1m</option>
-                <option value={300}>5m</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-4 bg-white/50 backdrop-blur-md px-4 py-2 rounded-[1.5rem] border border-white shadow-sm ml-2">
-              <div className="flex flex-col">
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap leading-none mb-1">
-                  Focus Depth
-                </span>
-                <span className="text-[10px] font-black text-indigo-600 leading-none">
-                  {visibleLimit} Items
-                </span>
-              </div>
-              <input
-                type="range"
-                min="5"
-                max="50"
-                value={visibleLimit}
-                onChange={(e) => setVisibleLimit(parseInt(e.target.value))}
-                className="w-24 accent-indigo-600 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer hover:accent-indigo-500 transition-all"
-              />
-            </div>
-            <div className="h-8 w-px bg-slate-200 mx-1" />
-            <div className="flex items-center gap-1 bg-white/40 p-1 rounded-2xl border border-white/50">
-              <button
-                onClick={() => resetData("today")}
-                className="p-2 px-3 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest"
-                title="Delete tasks created today"
-              >
-                Reset Today
-              </button>
-              <button
-                onClick={() => resetData("all")}
-                className="p-2 px-3 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest"
-                title="Delete all tasks"
-              >
-                Reset All
-              </button>
-            </div>
-          </div>
-        </div>
+        <MatrixHeader
+          isTestMode={isTestMode}
+          tasks={tasks}
+          refreshInterval={refreshInterval}
+          setRefreshInterval={setRefreshInterval}
+          visibleLimit={visibleLimit}
+          setVisibleLimit={setVisibleLimit}
+          setShowDoneList={setShowDoneList}
+          setShowDeletedList={setShowDeletedList}
+          setShowHelpModal={setShowHelpModal}
+          setShowDelegateModal={setShowDelegateModal}
+          fetchTasks={fetchTasks}
+          resetData={resetData}
+        />
 
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/60 backdrop-blur-md border border-white/80 text-indigo-600 text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
-                <Lightbulb className="w-3 h-3 text-amber-500" /> Eisenhower
-                Matrix
-              </div>
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50/80 backdrop-blur-md border border-indigo-100 text-indigo-700 text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
-                Focus Matrix
-              </div>
-            </div>
-            <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tight">
-              Master Your <span className="text-indigo-600">Productivity</span>
-            </h1>
-          </div>
-
-          <div className="flex flex-col items-end gap-3">
-            <div className="text-slate-400/60 font-black uppercase tracking-[0.2em] text-sm hidden md:block">
-              {currentDateDisplay}
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {[
-                {
-                  label: "Todo",
-                  value: stats.pending,
-                  color: "text-indigo-600",
-                },
-                {
-                  label: "Done",
-                  value: stats.completed,
-                  color: "text-emerald-500",
-                },
-                {
-                  label: "Eliminated",
-                  value: stats.eliminated,
-                  color: "text-rose-500",
-                },
-                {
-                  label: "Delegated",
-                  value: stats.delegated,
-                  color: "text-amber-500",
-                },
-                { label: "Total", value: stats.total, color: "text-slate-900" },
-              ].map((stat) => (
-                <div
-                  key={stat.label}
-                  className="bg-white/60 backdrop-blur-md p-4 rounded-3xl border border-white shadow-sm"
-                >
-                  <div className={`text-2xl font-black ${stat.color}`}>
-                    {stat.value}
-                  </div>
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    {stat.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <StatsView currentDateDisplay={currentDateDisplay} stats={stats} />
       </div>
 
-      <div className="bg-white p-4 rounded-[3rem] shadow-xl shadow-slate-200/50 mb-12 border border-slate-100">
-        <form
-          onSubmit={handleAddTask}
-          className="flex flex-col md:flex-row gap-3"
-        >
-          <div className="flex-grow flex items-center gap-3 bg-slate-50 p-4 rounded-[2rem] border-2 border-transparent focus-within:border-indigo-100 transition-all">
-            <Plus className="text-indigo-400 w-5 h-5 flex-shrink-0" />
-            <input
-              type="text"
-              value={newTask}
-              onChange={(e) => setNewTask(e.target.value)}
-              placeholder="What objective are we capturing?"
-              className="w-full bg-transparent outline-none font-bold text-sm md:text-base placeholder:text-slate-300"
-            />
-          </div>
+      <MainTaskForm
+        newTask={newTask}
+        setNewTask={setNewTask}
+        newEstimatedMinutes={newEstimatedMinutes}
+        setNewEstimatedMinutes={setNewEstimatedMinutes}
+        handleAddTask={handleAddTask}
+      />
 
-          <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-[2rem] border-2 border-transparent focus-within:border-indigo-100 transition-all w-full md:w-auto">
-            <div className="bg-white rounded-2xl px-4 py-2 flex flex-col items-center justify-center shadow-sm border border-slate-100 focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100 transition-all w-20">
-              <input
-                type="number"
-                min="0"
-                value={
-                  Math.floor((parseInt(newEstimatedMinutes) || 0) / 60) || ""
-                }
-                onChange={(e) => {
-                  const h = parseInt(e.target.value) || 0;
-                  const m = (parseInt(newEstimatedMinutes) || 0) % 60;
-                  setNewEstimatedMinutes(
-                    h > 0 || m > 0 ? (h * 60 + m).toString() : "",
-                  );
-                }}
-                className="w-full bg-transparent outline-none font-black text-xl text-slate-700 text-center placeholder:text-slate-200"
-                placeholder="0"
-              />
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                HR
-              </span>
-            </div>
-            <span className="text-slate-300 font-bold mb-4">:</span>
-            <div className="bg-white rounded-2xl px-4 py-2 flex flex-col items-center justify-center shadow-sm border border-slate-100 focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100 transition-all w-20">
-              <input
-                type="number"
-                min="0"
-                max="59"
-                value={(parseInt(newEstimatedMinutes) || 0) % 60 || ""}
-                onChange={(e) => {
-                  const h = Math.floor(
-                    (parseInt(newEstimatedMinutes) || 0) / 60,
-                  );
-                  let m = parseInt(e.target.value) || 0;
-                  if (m > 59) m = 59;
-                  setNewEstimatedMinutes(
-                    h > 0 || m > 0 ? (h * 60 + m).toString() : "",
-                  );
-                }}
-                className="w-full bg-transparent outline-none font-black text-xl text-slate-700 text-center placeholder:text-slate-200"
-                placeholder="0"
-              />
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                MIN
-              </span>
-            </div>
-          </div>
-          <button
-            type="submit"
-            disabled={!newTask.trim()}
-            className="px-8 py-4 bg-indigo-600 hover:bg-slate-900 text-white font-black text-xs uppercase tracking-[0.2em] rounded-[1.5rem] transition-all shadow-lg shadow-indigo-200 active:scale-95 disabled:opacity-50 disabled:shadow-none"
-          >
-            Add to Inbox
-          </button>
-        </form>
-      </div>
-
-      {loading ? (
-        <div className="flex-grow flex flex-col items-center justify-center gap-4 opacity-50 py-20">
-          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-          <p className="font-black text-xs uppercase tracking-widest text-indigo-600">
-            Synchronizing Focus...
-          </p>
-        </div>
-      ) : (
-        <div className="flex-grow grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
-          {/* Inbox / Queue */}
-          <div className="flex flex-col h-full bg-white/40 backdrop-blur-md rounded-[2.5rem] p-6 border-2 border-dashed border-slate-200 min-h-[400px]">
-            <div className="flex justify-between items-center mb-6 px-2">
-              <div>
-                <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">
-                  Draft Queue
-                </h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl font-black text-slate-800">
-                    Inbox
-                  </span>
-                  <span className="bg-slate-200 text-slate-500 text-[10px] font-black px-2 py-0.5 rounded-full">
-                    {
-                      tasks.filter(
-                        (t) => t.quadrant === "INBOX" && !t.isDeleted,
-                      ).length
-                    }
-                  </span>
-                </div>
-              </div>
-              <div className="p-2.5 bg-slate-100 text-slate-400 rounded-2xl">
-                <PlusCircle className="w-5 h-5" />
-              </div>
-            </div>
-
-            <div
-              className="flex-grow space-y-3 overflow-y-auto custom-scrollbar pr-2"
-              style={{ maxHeight: `${visibleLimit * 64}px` }}
-            >
-              {tasks.filter((t) => t.quadrant === "INBOX" && !t.isDeleted)
-                .length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center px-4 opacity-20">
-                  <Wind className="w-12 h-12 mb-4" />
-                  <p className="text-[10px] font-black uppercase tracking-widest">
-                    Inbox is clear.
-                    <br />
-                    Ready for input.
-                  </p>
-                </div>
-              ) : (
-                tasks
-                  .filter((t) => t.quadrant === "INBOX" && !t.isDeleted)
-                  .map((task) => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      onDragStart={onDragStart}
-                      toggleComplete={toggleComplete}
-                      deleteTask={deleteTask}
-                      setEditingContentTaskId={setEditingContentTaskId}
-                      setEditingContentValue={setEditingContentValue}
-                      setEditingEstimatedMinutes={setEditingEstimatedMinutes}
-                      setEditingDateTaskId={setEditingDateTaskId}
-                      setAssignmentModal={setAssignmentModal}
-                    />
-                  ))
-              )}
-            </div>
-          </div>
-
-          {/* Matrix Core */}
-          <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {Object.values(QUADRANTS).map((q) => (
-              <Quadrant
-                key={q.id}
-                qConfig={q}
-                tasks={tasks}
-                activeQuadrant={activeQuadrant}
-                visibleLimit={visibleLimit}
-                onDragOver={onDragOver}
-                onDrop={onDrop}
-                setActiveQuadrant={setActiveQuadrant}
-                onDragStart={onDragStart}
-                toggleComplete={toggleComplete}
-                deleteTask={deleteTask}
-                setEditingContentTaskId={setEditingContentTaskId}
-                setEditingContentValue={setEditingContentValue}
-                setEditingEstimatedMinutes={setEditingEstimatedMinutes}
-                setEditingDateTaskId={setEditingDateTaskId}
-                setAssignmentModal={setAssignmentModal}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      <MatrixGrid
+        loading={loading}
+        tasks={tasks}
+        visibleLimit={visibleLimit}
+        activeQuadrant={activeQuadrant}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        onDragStart={onDragStart}
+        setActiveQuadrant={setActiveQuadrant}
+        toggleComplete={toggleComplete}
+        deleteTask={deleteTask}
+        setEditingContentTaskId={setEditingContentTaskId}
+        setEditingContentValue={setEditingContentValue}
+        setEditingEstimatedMinutes={setEditingEstimatedMinutes}
+        setEditingDateTaskId={setEditingDateTaskId}
+        setAssignmentModal={setAssignmentModal}
+        QUAD_CONFIG={QUADRANTS}
+      />
 
       <footer className="mt-16 py-8 text-center relative z-10 group">
         <div className="w-12 h-1 bg-slate-200 mx-auto rounded-full mb-6 transition-all group-hover:w-24 group-hover:bg-indigo-400" />
@@ -1142,11 +506,11 @@ function EisenhowerMatrixContent() {
           onClose={() => setShowCompletionModal(false)}
           onConfirm={handleCompletionConfirm}
           taskContent={
-            tasks.find((t) => t.id === completingTaskId)?.content || ""
+            tasks.find((t: Task) => t.id === completingTaskId)?.content || ""
           }
           estimatedMinutes={
-            tasks.find((t) => t.id === completingTaskId)?.estimatedMinutes ||
-            null
+            tasks.find((t: Task) => t.id === completingTaskId)
+              ?.estimatedMinutes || null
           }
         />
       )}
