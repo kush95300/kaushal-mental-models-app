@@ -137,26 +137,6 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     const mode = searchParams.get("mode"); // 'revert' or 'hard'
-    const reset = searchParams.get("reset"); // 'today' or 'all'
-
-    if (reset === "all") {
-      await (prisma as any).task.deleteMany({});
-      return NextResponse.json({ success: true });
-    }
-
-    if (reset === "today") {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      await (prisma as any).task.deleteMany({
-        where: {
-          createdAt: {
-            gte: today,
-          },
-        },
-      });
-      return NextResponse.json({ success: true });
-    }
-
     if (!id)
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
 
