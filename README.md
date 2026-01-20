@@ -22,6 +22,7 @@ Transform your to-do list into a strategic map by separating the urgent from the
   - **Data Resets**: Quickly wipe _Today's Data_ or _All Data_ for a clean slate.
 - **Onboarding & Analytics**:
   - **Smart Onboarding**: Prompt for analytics start date on first visit.
+  - **Test Mode**: Explore the full matrix feature set without persisting any data to the database.
 - **Server Actions Architecture (v1.2)**:
   - **Unified Operations**: All task and delegate management moved to high-performance **Server Actions**.
   - **Optimistic UI**: Instant visual feedback for task creation, movement, and deletion before server confirmation.
