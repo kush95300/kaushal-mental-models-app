@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Task, Delegate } from "@/types/eisenhower";
 import { shouldAutoPromote } from "@/lib/dateUtils";
 import {
@@ -13,23 +13,97 @@ import {
   createDelegate,
   deleteDelegateAction,
 } from "@/actions/delegate";
+import {
+  getWorkspaces,
+  getUserConfig,
+  updateActiveWorkspace,
+  createWorkspace,
+  updateWorkspace as updateWorkspaceAction,
+  deleteWorkspace as deleteWorkspaceAction,
+  updateMaxDailyMinutes,
+} from "@/actions/workspace";
+import { Workspace, UserConfig } from "@/types/eisenhower";
 
 interface UseTaskOperationsProps {
   isTestMode: boolean;
 }
 
-export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
+export function useTaskOperations({
+  isTestMode: initialIsTestMode,
+}: UseTaskOperationsProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [delegates, setDelegates] = useState<Delegate[]>([]);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<number | null>(
+    null,
+  );
+  const [isTestMode, setIsTestMode] = useState(initialIsTestMode);
   const [loading, setLoading] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [maxDailyMinutes, setMaxDailyMinutes] = useState(480);
+
+  const dailyWorkload = useMemo(() => {
+    return tasks
+      .filter((t) => !t.isDeleted && t.quadrant === "DO" && t.status !== "DONE")
+      .reduce((sum, t) => sum + (t.estimatedMinutes || 0), 0);
+  }, [tasks]);
+
+  const isOverburdened = dailyWorkload > maxDailyMinutes;
+
+  // Fetch Workspaces & Config
+  const fetchWorkspaces = useCallback(async () => {
+    try {
+      if (isTestMode) {
+        setWorkspaces([
+          {
+            id: 1,
+            name: "Work",
+            description: "Default work context",
+            color: "indigo",
+            createdAt: "",
+            updatedAt: "",
+          },
+          {
+            id: 2,
+            name: "Personal",
+            description: "Default personal context",
+            color: "rose",
+            createdAt: "",
+            updatedAt: "",
+          },
+        ]);
+        setActiveWorkspaceId(1);
+        return;
+      }
+      const res = await getWorkspaces();
+      if (res.success && res.data) {
+        setWorkspaces(res.data);
+      }
+      const configRes = await getUserConfig();
+      if (configRes.success && configRes.data) {
+        if (!isTestMode) {
+          const config = configRes.data as unknown as UserConfig;
+          setActiveWorkspaceId(config.activeWorkspaceId);
+          setMaxDailyMinutes(config.maxDailyMinutes);
+        }
+      }
+    } catch (error) {
+      console.error("Fetch workspaces error:", error);
+    }
+  }, [isTestMode]);
 
   // Fetch Delegates
   const fetchDelegates = useCallback(async () => {
     try {
       if (isTestMode) {
         setDelegates([
-          { id: 1, name: "Self", email: null, createdAt: "", updatedAt: "" },
+          {
+            id: 1,
+            name: "Self",
+            email: null,
+            createdAt: "",
+            updatedAt: "",
+          },
         ]);
         return;
       }
@@ -45,11 +119,11 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
   // Fetch Tasks & Smart Scheduling
   const fetchTasks = useCallback(async () => {
     try {
-      if (isTestMode) {
-        setLoading(false);
+      if (isTestMode || !activeWorkspaceId) {
+        if (isTestMode) setLoading(false);
         return;
       }
-      const res = await getTasks();
+      const res = await getTasks(activeWorkspaceId);
       if (res.success) {
         let data = res.data;
 
@@ -86,14 +160,16 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
       setLoading(false);
       setLastRefreshed(new Date());
     }
-  }, [isTestMode]);
+  }, [isTestMode, activeWorkspaceId]);
 
-  // Initial Load
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchTasks();
+    fetchWorkspaces();
     fetchDelegates();
-  }, [fetchTasks, fetchDelegates]);
+  }, [fetchWorkspaces, fetchDelegates]);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
 
   // Actions
   const addTask = async (
@@ -118,6 +194,7 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
           ? delegates.find((d) => d.id === delegateId) || null
           : delegates[0] || null,
         isDeleted: false,
+        workspaceId: activeWorkspaceId as number,
         dueDate: null,
         actualMinutes: null,
         delegateId: delegateId,
@@ -126,9 +203,14 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
       return;
     }
 
-    const res = await createTask({ content, estimatedMinutes, delegateId });
+    const res = await createTask({
+      content,
+      estimatedMinutes,
+      delegateId,
+      workspaceId: activeWorkspaceId as number,
+    });
     if (res.success && res.data) {
-      setTasks((prev) => [res.data!, ...prev]);
+      setTasks((prev) => [res.data as unknown as Task, ...prev]);
     }
   };
 
@@ -141,11 +223,11 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
     setTasks((prev) =>
       prev.map((t) =>
         t.id === id
-          ? {
+          ? ({
               ...t,
               status,
               actualMinutes: status === "TODO" ? null : actualMinutes,
-            }
+            } as Task)
           : t,
       ),
     );
@@ -180,7 +262,7 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
     // Optimistic Update
     setTasks((prev) =>
       prev.map((t) =>
-        t.id === taskId ? { ...t, quadrant, ...additionalData } : t,
+        t.id === taskId ? ({ ...t, quadrant, ...additionalData } as Task) : t,
       ),
     );
 
@@ -198,7 +280,9 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
   ) => {
     // Optimistic Update
     setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, content, estimatedMinutes } : t)),
+      prev.map((t) =>
+        t.id === id ? ({ ...t, content, estimatedMinutes } as Task) : t,
+      ),
     );
 
     if (isTestMode) return;
@@ -266,11 +350,69 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
     if (res.success) fetchTasks();
   };
 
+  const selectWorkspaceOp = async (id: number | null) => {
+    if (id === null) {
+      setIsTestMode(true);
+      setActiveWorkspaceId(null);
+      setTasks([]);
+    } else {
+      setIsTestMode(false);
+      setActiveWorkspaceId(id);
+      if (!isTestMode) {
+        await updateActiveWorkspace(id);
+      }
+    }
+  };
+
+  const addWorkspaceOp = async (name: string, description: string) => {
+    const res = await createWorkspace({ name, description });
+    if (res.success && res.data) {
+      setWorkspaces((prev) => [...prev, res.data as Workspace]);
+    }
+  };
+
+  const updateWorkspaceOp = async (
+    id: number,
+    name: string,
+    description: string,
+  ) => {
+    const res = await updateWorkspaceAction(id, { name, description });
+    if (res.success && res.data) {
+      setWorkspaces((prev) =>
+        prev.map((w) => (w.id === id ? (res.data as Workspace) : w)),
+      );
+    }
+  };
+
+  const deleteWorkspaceOp = async (id: number) => {
+    const res = await deleteWorkspaceAction(id);
+    if (res.success) {
+      setWorkspaces((prev) => prev.filter((w) => w.id !== id));
+      if (activeWorkspaceId === id) {
+        setActiveWorkspaceId(null);
+      }
+    }
+  };
+
+  const updateMaxMinutesOp = async (minutes: number) => {
+    setMaxDailyMinutes(minutes);
+    if (!isTestMode) {
+      await updateMaxDailyMinutes(minutes);
+    }
+  };
+
   return {
     tasks,
     setTasks,
     delegates,
     setDelegates,
+    workspaces,
+    activeWorkspaceId,
+    isTestMode,
+    selectWorkspaceOp,
+    addWorkspaceOp,
+    updateWorkspaceOp,
+    deleteWorkspaceOp,
     loading,
     lastRefreshed,
     fetchTasks,
@@ -284,5 +426,9 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
     addDelegateOp,
     removeDelegateOp,
     resetDataOp,
+    maxDailyMinutes,
+    updateMaxMinutesOp,
+    dailyWorkload,
+    isOverburdened,
   };
 }

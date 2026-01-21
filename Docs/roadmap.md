@@ -44,18 +44,18 @@ We follow a modified semantic versioning tailored to the "Mental Models" product
 
 **Goal**: Support "Work" vs "Personal" separation.
 
-- [ ] **Models**: Create `Workspace` entity in Prisma.
-- [ ] **UI**: Workspace Switcher in Header.
-- [ ] **Test Mode**: robust "Sandbox" implementation (no DB persistence).
-- [ ] **Metadata**: Add `tags` and `actualTime` to Task schema.
+- [x] **Models**: Create `Workspace` entity in Prisma.
+- [x] **UI**: Workspace Switcher in Header & Startup Modal.
+- [x] **Test Mode**: robust "Sandbox" implementation (no DB persistence).
+- [x] **Metadata**: Add `tags` and `actualTime` to Task schema.
 
 ### v1.4.0 - Time Management
 
 **Goal**: Prevent burnout.
 
-- [ ] **Config**: "Max Daily Hours" setting.
-- [ ] **Logic**: Overburden Alert (`Sum(DO) > Limit`).
-- [ ] **View**: Calendar View for Scheduled tasks.
+- [x] **Config**: "Max Daily Hours" setting.
+- [x] **Logic**: Overburden Alert (`Sum(DO) > Limit`).
+- [x] **View**: Calendar View for Scheduled tasks.
 
 ### v1.5.0 - Analytics Engine
 

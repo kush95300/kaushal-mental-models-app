@@ -70,3 +70,45 @@ export const isOverdue = (dateString: string | Date): boolean => {
 
   return checkDate.getTime() < today.getTime();
 };
+
+export const getCalendarGrid = (currentDate: Date) => {
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  const firstDayOfMonth = new Date(year, month, 1);
+  const lastDayOfMonth = new Date(year, month + 1, 0);
+
+  const daysInMonth = lastDayOfMonth.getDate();
+  const startingDayOfWeek = firstDayOfMonth.getDay(); // 0 = Sunday
+
+  const days = [];
+
+  // Padding for previous month
+  for (let i = 0; i < startingDayOfWeek; i++) {
+    const paddingDate = new Date(year, month, -startingDayOfWeek + 1 + i);
+    days.push({ date: paddingDate, isCurrentMonth: false });
+  }
+
+  // Current month days
+  for (let i = 1; i <= daysInMonth; i++) {
+    const date = new Date(year, month, i);
+    days.push({ date: date, isCurrentMonth: true });
+  }
+
+  // Padding for next month to complete the last week
+  const remainingSlots = 42 - days.length; // 6 rows * 7 days
+  for (let i = 1; i <= remainingSlots; i++) {
+    const paddingDate = new Date(year, month + 1, i);
+    days.push({ date: paddingDate, isCurrentMonth: false });
+  }
+
+  return days;
+};
+
+export const isSameDay = (d1: Date, d2: Date) => {
+  return (
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate()
+  );
+};

@@ -10,8 +10,12 @@ import {
   UserCog,
   RefreshCcw,
   Zap,
+  Settings,
+  LayoutGrid,
+  Calendar as CalendarIcon,
 } from "lucide-react";
-import { Task } from "@/types/eisenhower";
+import { Task, Workspace } from "@/types/eisenhower";
+import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 
 interface MatrixHeaderProps {
   isTestMode: boolean;
@@ -26,6 +30,14 @@ interface MatrixHeaderProps {
   setShowDelegateModal: (val: boolean) => void;
   fetchTasks: () => void;
   resetData: (type: "today" | "all") => void;
+  workspaces: Workspace[];
+  activeWorkspaceId: number;
+  updateWorkspaceOp: (id: number) => void;
+  addWorkspaceOp: (name: string, color: string) => void;
+  onSettingsClick: () => void;
+  isOverburdened: boolean;
+  viewMode: "matrix" | "calendar";
+  setViewMode: (mode: "matrix" | "calendar") => void;
 }
 
 export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
@@ -41,6 +53,14 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
   setShowDelegateModal,
   fetchTasks,
   resetData,
+  workspaces,
+  activeWorkspaceId,
+  updateWorkspaceOp,
+  addWorkspaceOp,
+  onSettingsClick,
+  isOverburdened,
+  viewMode,
+  setViewMode,
 }) => {
   return (
     <div className="flex justify-between items-center mb-6">
@@ -51,14 +71,43 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
         <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />{" "}
         Back to Models
       </Link>
-      <div className="hidden"></div>
+      <WorkspaceSwitcher
+        workspaces={workspaces}
+        activeWorkspaceId={activeWorkspaceId}
+        onSwitch={updateWorkspaceOp}
+        onAdd={addWorkspaceOp}
+      />
+      <div className="flex bg-white/90 backdrop-blur-sm p-1 rounded-[1.5rem] border border-white items-center shadow-sm mx-4">
+        <button
+          onClick={() => setViewMode("matrix")}
+          className={`p-2 rounded-2xl transition-all flex items-center justify-center ${
+            viewMode === "matrix"
+              ? "bg-indigo-600 text-white shadow-md shadow-indigo-200"
+              : "text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
+          }`}
+          title="Matrix View"
+        >
+          <LayoutGrid size={18} />
+        </button>
+        <button
+          onClick={() => setViewMode("calendar")}
+          className={`p-2 rounded-2xl transition-all flex items-center justify-center ${
+            viewMode === "calendar"
+              ? "bg-indigo-600 text-white shadow-md shadow-indigo-200"
+              : "text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
+          }`}
+          title="Calendar View"
+        >
+          <CalendarIcon size={18} />
+        </button>
+      </div>
       <div className="flex items-center gap-2">
         {isTestMode && (
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 text-[10px] font-black uppercase tracking-widest mr-2 animate-pulse">
             <Zap size={12} className="fill-amber-500" /> Test Mode
           </div>
         )}
-        <div className="flex bg-white/50 backdrop-blur-md p-1.5 rounded-[1.5rem] border border-white items-center gap-1 shadow-sm">
+        <div className="flex bg-white/90 backdrop-blur-sm p-1.5 rounded-[1.5rem] border border-white items-center gap-1 shadow-sm">
           <button
             onClick={() => setShowDoneList(true)}
             className="p-2 px-3 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-2xl transition-all flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest"
@@ -89,12 +138,26 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
           <HelpCircle size={18} />
         </button>
         <button
+          onClick={onSettingsClick}
+          className={`p-2.5 text-slate-400 hover:text-indigo-600 bg-white/80 rounded-2xl border border-white shadow-sm transition-all hover:shadow-md ${
+            isOverburdened
+              ? "border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-500 hover:text-rose-600"
+              : ""
+          }`}
+          title="Settings & Time Management"
+        >
+          <Settings
+            size={18}
+            className={isOverburdened ? "animate-pulse" : ""}
+          />
+        </button>
+        <button
           onClick={() => setShowDelegateModal(true)}
           className="flex items-center gap-2 text-amber-500 hover:text-amber-600 font-black text-[10px] uppercase tracking-widest transition-all bg-white/80 p-2.5 px-4 rounded-2xl border border-white shadow-sm hover:shadow-md"
         >
           <UserCog size={14} /> Manage Delegates
         </button>
-        <div className="flex bg-white/50 backdrop-blur-md p-1.5 rounded-[1.5rem] border border-white items-center gap-1 shadow-sm ml-2">
+        <div className="flex bg-white/90 backdrop-blur-sm p-1.5 rounded-[1.5rem] border border-white items-center gap-1 shadow-sm ml-2">
           <button
             onClick={() => fetchTasks()}
             className="p-2 px-3 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest group"
@@ -118,7 +181,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
             <option value={300}>5m</option>
           </select>
         </div>
-        <div className="flex items-center gap-4 bg-white/50 backdrop-blur-md px-4 py-2 rounded-[1.5rem] border border-white shadow-sm ml-2">
+        <div className="flex items-center gap-4 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-[1.5rem] border border-white shadow-sm ml-2">
           <div className="flex flex-col">
             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap leading-none mb-1">
               Focus Depth

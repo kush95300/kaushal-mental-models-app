@@ -11,27 +11,29 @@ datasource db {
 }
 
 model Task {
-  id               Int        @id @default(autoincrement())
+  id               Int       @id @default(autoincrement())
   content          String
-  isImportant      Boolean    @default(false)
-  isUrgent         Boolean    @default(false)
-  quadrant         String     @default("INBOX") // INBOX, DO, SCHEDULE, DELEGATE, ELIMINATE
-  status           String     @default("TODO") // TODO, DONE
+  isImportant      Boolean   @default(false)
+  isUrgent         Boolean   @default(false)
+  quadrant         String    @default("INBOX") // INBOX, DO, SCHEDULE, DELEGATE, ELIMINATE
+  status           String    @default("TODO") // TODO, DONE
   estimatedMinutes Int?
   actualMinutes    Int?
   dueDate          DateTime?
   delegateId       Int?
-  delegate         Delegate?  @relation(fields: [delegateId], references: [id])
-  workspaceId      Int?       @default(1)
-  workspace        Workspace? @relation(fields: [workspaceId], references: [id])
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  delegate         Delegate? @relation(fields: [delegateId], references: [id])
+  workspaceId      Int       @default(1)
+  workspace        Workspace @relation(fields: [workspaceId], references: [id])
+  tags             String? // Comma-separated tags
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
   completedAt      DateTime?
-  isDeleted        Boolean    @default(false)
+  isDeleted        Boolean   @default(false)
 
   @@index([quadrant])
   @@index([status])
   @@index([dueDate])
+  @@index([workspaceId])
 }
 
 model Delegate {
@@ -45,18 +47,18 @@ model Delegate {
 
 model Workspace {
   id          Int      @id @default(autoincrement())
-  name        String
+  name        String   @unique
   description String?
   color       String   @default("indigo")
-  userId      Int      @default(1) // Placeholder for future auth
+  tasks       Task[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  tasks       Task[]
 }
 
 model UserConfig {
   id                 Int       @id @default(1)
   activeWorkspaceId  Int       @default(1)
+  maxDailyMinutes    Int       @default(480) // 8 hours * 60 minutes
   analyticsStartDate DateTime?
   updatedAt          DateTime  @updatedAt
 }

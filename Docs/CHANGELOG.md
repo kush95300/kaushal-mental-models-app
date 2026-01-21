@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.4.0] - 2026-01-21
+
+### Added
+
+- **Time Management Config**: Global "Max Daily Hours" setting to define workload capacity.
+- **Overburden Alert**: Real-time visual indicator in the Header and Stats view when "Urgent & Important" tasks exceed daily capacity.
+- **Calendar View**: Monthly grid view to visualize and manage scheduled tasks.
+- **Settings Modal**: Dedicated UI for configuring global preferences.
+
+## [v1.3.0] - 2026-01-21
+
+### Added
+
+- **Workspaces**: Database schema, UI modal, and header switcher to manage distinct task contexts (e.g., Work, Personal).
+- **Test Mode**: Explicit non-persistent sandbox mode accessible from the startup modal.
+- **Task Metadata**: Added `description`, `workspaceId`, and `tags` to support broader contexts.
+- **Manage Workspaces**: Create, update description, and delete workspaces directly from the UI.
+
 ## [v1.2.3] - 2026-01-21
 
 ### Changed

@@ -12,17 +12,32 @@ interface StatsViewProps {
     delegated: number;
     total: number;
   };
+  dailyWorkload: number;
+  maxDailyMinutes: number;
+  isOverburdened: boolean;
 }
 
 export const StatsView: React.FC<StatsViewProps> = ({
   currentDateDisplay,
   stats,
+  dailyWorkload,
+  maxDailyMinutes,
+  isOverburdened,
 }) => {
+  const workloadHours = (dailyWorkload / 60).toFixed(1);
+  const maxHours = (maxDailyMinutes / 60).toFixed(1);
+  const workloadLabel = `Max: ${maxHours}h`;
+
   const statItems = [
     { label: "Todo", value: stats.pending, color: "text-indigo-600" },
     { label: "Done", value: stats.completed, color: "text-emerald-500" },
     { label: "Eliminated", value: stats.eliminated, color: "text-rose-500" },
     { label: "Delegated", value: stats.delegated, color: "text-amber-500" },
+    {
+      label: workloadLabel,
+      value: `${workloadHours}h`,
+      color: isOverburdened ? "text-rose-600 animate-pulse" : "text-indigo-600",
+    },
     { label: "Total", value: stats.total, color: "text-slate-900" },
   ];
 
@@ -30,10 +45,10 @@ export const StatsView: React.FC<StatsViewProps> = ({
     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
       <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/60 backdrop-blur-md border border-white/80 text-indigo-600 text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 backdrop-blur-sm border border-white/80 text-indigo-600 text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
             <Lightbulb className="w-3 h-3 text-amber-500" /> Eisenhower Matrix
           </div>
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50/80 backdrop-blur-md border border-indigo-100 text-indigo-700 text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50/90 backdrop-blur-sm border border-indigo-100 text-indigo-700 text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
             Focus Matrix
           </div>
         </div>
@@ -46,11 +61,11 @@ export const StatsView: React.FC<StatsViewProps> = ({
         <div className="text-slate-400/60 font-black uppercase tracking-[0.2em] text-sm hidden md:block">
           {currentDateDisplay}
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
           {statItems.map((stat) => (
             <div
               key={stat.label}
-              className="bg-white/60 backdrop-blur-md p-4 rounded-3xl border border-white shadow-sm"
+              className="bg-white/80 backdrop-blur-sm p-4 rounded-3xl border border-white shadow-sm"
             >
               <div className={`text-2xl font-black ${stat.color}`}>
                 {stat.value}

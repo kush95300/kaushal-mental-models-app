@@ -1,23 +1,23 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, Suspense } from "react";
-import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  PlusCircle,
-  Linkedin,
-  Github,
-  ExternalLink,
   Wind,
   Lightbulb,
   Flame,
   Calendar,
   Users,
+  Linkedin,
+  Github,
+  ExternalLink,
 } from "lucide-react";
 import { MatrixHeader } from "@/components/eisenhower-matrix/MatrixHeader";
 import { StatsView } from "@/components/eisenhower-matrix/StatsView";
 import { MainTaskForm } from "@/components/eisenhower-matrix/MainTaskForm";
 import { MatrixGrid } from "@/components/eisenhower-matrix/MatrixGrid";
+import { CalendarView } from "@/components/eisenhower-matrix/CalendarView";
+import { WorkspaceSelectionModal } from "@/components/eisenhower-matrix/WorkspaceSelectionModal";
 
 import { useTaskOperations } from "@/hooks/useTaskOperations";
 import { HelpModal } from "@/components/eisenhower-matrix/modals/HelpModal";
@@ -29,6 +29,7 @@ import { DeletedListModal } from "@/components/eisenhower-matrix/modals/DeletedL
 import { DatePickerModal } from "@/components/eisenhower-matrix/modals/DatePickerModal";
 import { EditContentModal } from "@/components/eisenhower-matrix/modals/EditContentModal";
 import { CompletionModal } from "@/components/eisenhower-matrix/modals/CompletionModal";
+import { SettingsModal } from "@/components/eisenhower-matrix/modals/SettingsModal";
 import { Task, Delegate } from "@/types/eisenhower";
 
 const QUADRANTS = {
@@ -103,6 +104,8 @@ function EisenhowerMatrixContent() {
   const [activeQuadrant, setActiveQuadrant] = useState<string | null>(null);
   const [visibleLimit, setVisibleLimit] = useState(5);
   const [showDelegateModal, setShowDelegateModal] = useState(false);
+  const [showWorkspaceModal, setShowWorkspaceModal] = useState(true);
+  const [selectionMade, setSelectionMade] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [assignmentModal, setAssignmentModal] = useState<{
     taskId: number;
@@ -121,13 +124,14 @@ function EisenhowerMatrixContent() {
   const [showDeletedList, setShowDeletedList] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completingTaskId, setCompletingTaskId] = useState<number | null>(null);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [viewMode, setViewMode] = useState<"matrix" | "calendar">("matrix");
 
   const [newDelegateName, setNewDelegateName] = useState("");
   const [, setConfig] = useState<{
     analyticsStartDate: string | null;
   } | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [isTestMode, setIsTestMode] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState(60); // seconds
   const [currentDateDisplay, setCurrentDateDisplay] = useState("");
   const [modalWarning, setModalWarning] = useState<string | null>(null);
@@ -149,7 +153,28 @@ function EisenhowerMatrixContent() {
     addDelegateOp,
     removeDelegateOp,
     resetDataOp,
-  } = useTaskOperations({ isTestMode });
+    workspaces,
+    activeWorkspaceId,
+    isTestMode,
+    selectWorkspaceOp,
+    addWorkspaceOp,
+    updateWorkspaceOp,
+    deleteWorkspaceOp,
+    maxDailyMinutes,
+    updateMaxMinutesOp,
+    dailyWorkload,
+    isOverburdened,
+  } = useTaskOperations({ isTestMode: false });
+
+  const handleSwitchWorkspace = () => {
+    setShowWorkspaceModal(true);
+  };
+
+  const handleWorkspaceSelect = async (id: number | null) => {
+    await selectWorkspaceOp(id);
+    setSelectionMade(true);
+    setShowWorkspaceModal(false);
+  };
 
   // Helper functions defined before effects to avoid usage before declaration
   const fetchConfig = useCallback(async () => {
@@ -213,6 +238,7 @@ function EisenhowerMatrixContent() {
     if (searchParams.get("showHelp") === "true") {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowHelpModal(true);
+      setShowWorkspaceModal(false);
     }
   }, [searchParams]);
 
@@ -376,8 +402,8 @@ function EisenhowerMatrixContent() {
         <div className="absolute bottom-[10%] left-[-5%] opacity-[0.03] text-indigo-500">
           <Lightbulb size={400} strokeWidth={0.5} />
         </div>
-        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-indigo-200/30 rounded-full blur-[120px] animate-blob-slow" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[45vw] h-[45vw] bg-amber-100/30 rounded-full blur-[120px] animate-blob-slow animation-delay-2000" />
+        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-indigo-200/20 rounded-full blur-[80px] animate-blob-slow" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[45vw] h-[45vw] bg-amber-100/20 rounded-full blur-[80px] animate-blob-slow animation-delay-2000" />
         <div
           className="absolute inset-0 opacity-[0.03]"
           style={{
@@ -402,37 +428,80 @@ function EisenhowerMatrixContent() {
           setShowDelegateModal={setShowDelegateModal}
           fetchTasks={fetchTasks}
           resetData={resetData}
+          workspaces={workspaces}
+          activeWorkspaceId={activeWorkspaceId || 0}
+          updateWorkspaceOp={handleSwitchWorkspace}
+          addWorkspaceOp={() => {}} // Not used in header anymore
+          onSettingsClick={() => setShowSettingsModal(true)}
+          isOverburdened={isOverburdened}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
         />
 
-        <StatsView currentDateDisplay={currentDateDisplay} stats={stats} />
+        <StatsView
+          currentDateDisplay={currentDateDisplay}
+          stats={stats}
+          dailyWorkload={dailyWorkload}
+          maxDailyMinutes={maxDailyMinutes}
+          isOverburdened={isOverburdened}
+        />
       </div>
 
-      <MainTaskForm
-        newTask={newTask}
-        setNewTask={setNewTask}
-        newEstimatedMinutes={newEstimatedMinutes}
-        setNewEstimatedMinutes={setNewEstimatedMinutes}
-        handleAddTask={handleAddTask}
+      <WorkspaceSelectionModal
+        isOpen={showWorkspaceModal}
+        onClose={() => {
+          if (selectionMade) {
+            setShowWorkspaceModal(false);
+          } else {
+            router.push("/");
+          }
+        }}
+        workspaces={workspaces}
+        onSelect={handleWorkspaceSelect}
+        onCreate={addWorkspaceOp}
+        onUpdate={updateWorkspaceOp}
+        onDelete={deleteWorkspaceOp}
       />
 
-      <MatrixGrid
-        loading={loading}
-        tasks={tasks}
-        visibleLimit={visibleLimit}
-        activeQuadrant={activeQuadrant}
-        onDragOver={onDragOver}
-        onDrop={onDrop}
-        onDragStart={onDragStart}
-        setActiveQuadrant={setActiveQuadrant}
-        toggleComplete={toggleComplete}
-        deleteTask={deleteTask}
-        setEditingContentTaskId={setEditingContentTaskId}
-        setEditingContentValue={setEditingContentValue}
-        setEditingEstimatedMinutes={setEditingEstimatedMinutes}
-        setEditingDateTaskId={setEditingDateTaskId}
-        setAssignmentModal={setAssignmentModal}
-        QUAD_CONFIG={QUADRANTS}
-      />
+      {viewMode === "matrix" ? (
+        <>
+          <MainTaskForm
+            newTask={newTask}
+            setNewTask={setNewTask}
+            newEstimatedMinutes={newEstimatedMinutes}
+            setNewEstimatedMinutes={setNewEstimatedMinutes}
+            handleAddTask={handleAddTask}
+          />
+
+          <MatrixGrid
+            loading={loading}
+            tasks={tasks}
+            visibleLimit={visibleLimit}
+            activeQuadrant={activeQuadrant}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+            onDragStart={onDragStart}
+            setActiveQuadrant={setActiveQuadrant}
+            toggleComplete={toggleComplete}
+            deleteTask={deleteTask}
+            setEditingContentTaskId={setEditingContentTaskId}
+            setEditingContentValue={setEditingContentValue}
+            setEditingEstimatedMinutes={setEditingEstimatedMinutes}
+            setEditingDateTaskId={setEditingDateTaskId}
+            setAssignmentModal={setAssignmentModal}
+            QUAD_CONFIG={QUADRANTS}
+          />
+        </>
+      ) : (
+        <CalendarView
+          tasks={tasks}
+          onTaskClick={(task) => {
+            setEditingContentTaskId(task.id);
+            setEditingContentValue(task.content);
+            setEditingEstimatedMinutes(task.estimatedMinutes?.toString() || "");
+          }}
+        />
+      )}
 
       <footer className="mt-16 py-8 text-center relative z-10 group">
         <div className="w-12 h-1 bg-slate-200 mx-auto rounded-full mb-6 transition-all group-hover:w-24 group-hover:bg-indigo-400" />
@@ -538,7 +607,7 @@ function EisenhowerMatrixContent() {
       {showOnboarding && (
         <OnboardingModal
           setAnalyticsStart={setAnalyticsStart}
-          setIsTestMode={setIsTestMode}
+          setIsTestMode={() => selectWorkspaceOp(null)}
           setShowOnboarding={setShowOnboarding}
         />
       )}
@@ -582,6 +651,12 @@ function EisenhowerMatrixContent() {
           saveTaskContent={saveTaskContent}
         />
       )}
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        maxDailyMinutes={maxDailyMinutes}
+        onUpdateMaxMinutes={updateMaxMinutesOp}
+      />
 
       {/* Estimated Minutes Input in Edit Modal - Since I can't easily edit the EditContentModal again without another write, I'll add a temporary overlay or just update it now */}
     </div>
