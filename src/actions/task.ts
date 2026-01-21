@@ -4,8 +4,65 @@ import prisma from "@/lib/prisma";
 import { Task, Delegate } from "@/types/eisenhower";
 import { revalidatePath } from "next/cache";
 
+async function promoteDueTasks() {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dayAfterTomorrow = new Date(today);
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+
+    // 1. Promote to DO (Self/No delegate)
+    await prisma.task.updateMany({
+      where: {
+        isDeleted: false,
+        status: "TODO",
+        dueDate: {
+          gte: today,
+          lt: dayAfterTomorrow,
+        },
+        quadrant: { not: "DO" },
+        OR: [
+          { delegateId: null },
+          { delegate: { name: { in: ["Self", "self", "SELF"] } } },
+        ],
+      },
+      data: {
+        quadrant: "DO",
+      },
+    });
+
+    // 2. Promote to DELEGATE (Others)
+    await prisma.task.updateMany({
+      where: {
+        isDeleted: false,
+        status: "TODO",
+        dueDate: {
+          gte: today,
+          lt: dayAfterTomorrow,
+        },
+        quadrant: { not: "DELEGATE" },
+        delegateId: { not: null },
+        delegate: { name: { notIn: ["Self", "self", "SELF"] } },
+      },
+      data: {
+        quadrant: "DELEGATE",
+      },
+    });
+  } catch (error) {
+    console.error("Auto-promotion error:", error);
+    // Non-blocking error
+  }
+}
+
 export async function getTasks(includeDeleted = false) {
   try {
+    // ⚡ Bolt: Performance optimization
+    // Run auto-promotion on server-side with bulk updates instead of
+    // client-side iteration and multiple requests.
+    if (!includeDeleted) {
+      await promoteDueTasks();
+    }
+
     const tasks = (await prisma.task.findMany({
       where: includeDeleted ? {} : { isDeleted: false },
       orderBy: { createdAt: "desc" },

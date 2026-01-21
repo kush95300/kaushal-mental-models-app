@@ -42,7 +42,7 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
     }
   }, [isTestMode]);
 
-  // Fetch Tasks & Smart Scheduling
+  // Fetch Tasks
   const fetchTasks = useCallback(async () => {
     try {
       if (isTestMode) {
@@ -50,35 +50,8 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
         return;
       }
       const res = await getTasks();
-      if (res.success) {
-        let data = res.data;
-
-        // Auto-move tasks due today/tomorrow to DO quadrant
-        let hasUpdates = false;
-        const updates = data!.map(async (t: Task) => {
-          if (!t.dueDate || t.status === "DONE" || t.quadrant === "DO")
-            return t;
-
-          if (shouldAutoPromote(t.dueDate)) {
-            const isSelf =
-              !t.delegate || t.delegate.name.toLowerCase() === "self";
-            const targetQuadrant = isSelf ? "DO" : "DELEGATE";
-
-            if (t.quadrant !== targetQuadrant) {
-              hasUpdates = true;
-              t.quadrant = targetQuadrant;
-              await updateTaskAction(t.id, { quadrant: targetQuadrant });
-            }
-          }
-          return t;
-        });
-
-        if (hasUpdates) {
-          data = await Promise.all(updates);
-        }
-        if (data) {
-          setTasks(data);
-        }
+      if (res.success && res.data) {
+        setTasks(res.data);
       }
     } catch (error) {
       console.error("Fetch tasks error:", error);
@@ -90,7 +63,6 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
 
   // Initial Load
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTasks();
     fetchDelegates();
   }, [fetchTasks, fetchDelegates]);
