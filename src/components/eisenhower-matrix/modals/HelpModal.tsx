@@ -42,8 +42,8 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => (
           those that are truly{" "}
           <span className="italic font-bold text-indigo-500">Important</span>.
           By categorizing your workload into four quadrants, you can escape the
-          "Urgency Trap," stop reacting to noise, and start investing your
-          energy in deep work, strategic planning, and long-term growth.
+          &quot;Urgency Trap,&quot; stop reacting to noise, and start investing
+          your energy in deep work, strategic planning, and long-term growth.
         </p>
       </div>
 
@@ -110,7 +110,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => (
             URGENT BUT NOT IMPORTANT
           </p>
           <p className="text-sm text-slate-600 font-medium leading-relaxed">
-            Tasks that feel pressing but don't contribute to your goals.
+            Tasks that feel pressing but don&apos;t contribute to your goals.
             Meetings, phone calls, or emails.
             <br />
             <br />
@@ -147,8 +147,8 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => (
 
       <div className="mt-10 p-6 bg-slate-900 rounded-[2rem] text-center">
         <p className="text-sm text-slate-300 font-bold italic">
-          "What is important is seldom urgent and what is urgent is seldom
-          important."
+          &quot;What is important is seldom urgent and what is urgent is seldom
+          important.&quot;
         </p>
         <p className="text-[10px] text-indigo-400 font-black uppercase mt-2 tracking-widest">
           — Dwight D. Eisenhower

@@ -6,7 +6,7 @@ import { Task } from "@/types/eisenhower";
 import { TaskCard } from "./TaskCard";
 import { formatMinutes } from "@/lib/formatTime";
 
-interface QuadrantConfig {
+export interface QuadrantConfig {
   id: string;
   title: string;
   subtitle: string;
@@ -72,7 +72,7 @@ export const Quadrant: React.FC<QuadrantProps> = ({
         isActive
           ? "scale-[1.02] border-indigo-400 shadow-2xl z-10 bg-white"
           : qConfig.borderColor +
-            " bg-white/60 backdrop-blur-md shadow-lg shadow-slate-200/50"
+            " bg-white/80 backdrop-blur-sm shadow-lg shadow-slate-200/50"
       }`}
       onDragOver={(e) => onDragOver(e, qConfig.id)}
       onDragLeave={() => setActiveQuadrant(null)}

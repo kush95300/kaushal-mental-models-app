@@ -3,11 +3,19 @@
 import prisma from "@/lib/prisma";
 import { Task, Delegate } from "@/types/eisenhower";
 import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 
-export async function getTasks(includeDeleted = false) {
+export async function getTasks(workspaceId?: number, includeDeleted = false) {
   try {
+    const where: Prisma.TaskWhereInput = includeDeleted
+      ? {}
+      : { isDeleted: false };
+    if (workspaceId) {
+      where.workspaceId = workspaceId;
+    }
+
     const tasks = (await prisma.task.findMany({
-      where: includeDeleted ? {} : { isDeleted: false },
+      where,
       orderBy: { createdAt: "desc" },
       include: { delegate: true },
     })) as unknown as Task[];
@@ -27,6 +35,7 @@ export async function createTask(data: {
   delegateId?: number | null;
   estimatedMinutes?: number | null;
   status?: string;
+  workspaceId?: number;
 }) {
   try {
     let finalDelegateId = data.delegateId;
@@ -47,6 +56,7 @@ export async function createTask(data: {
         dueDate: data.dueDate ? new Date(data.dueDate) : null,
         delegateId: finalDelegateId,
         estimatedMinutes: data.estimatedMinutes || null,
+        workspaceId: data.workspaceId || 1,
       },
       include: { delegate: true },
     });
@@ -61,10 +71,18 @@ export async function createTask(data: {
 
 export async function updateTask(id: number, updates: Partial<Task>) {
   try {
-    const data: any = { ...updates };
+    const data: Prisma.TaskUpdateInput = { ...updates };
 
-    if (data.dueDate) data.dueDate = new Date(data.dueDate);
-    if (data.delegateId) data.delegateId = parseInt(data.delegateId as any);
+    if (updates.dueDate)
+      data.dueDate = new Date(updates.dueDate as string | Date);
+    if (updates.delegateId)
+      data.delegate = {
+        connect: { id: parseInt(updates.delegateId as unknown as string) },
+      };
+
+    // Cleanup incompatible types
+    delete (data as any).delegateId;
+    delete (data as any).id;
 
     // Business Rule: If moving out of DELEGATE quadrant, auto-assign to Self
     if (data.quadrant && data.quadrant !== "DELEGATE") {

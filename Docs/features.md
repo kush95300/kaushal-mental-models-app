@@ -43,6 +43,17 @@
 | **Permanent Delete** | ✅ Working | From Eliminated Queue working.                                     |
 | **Manage Delegates** | ✅ Working | Adding/Deleting members working.                                   |
 
+## Workspaces (v1.3.0)
+
+| Feature            | Status     | Notes                                                        |
+| :----------------- | :--------- | :----------------------------------------------------------- |
+| **Startup Modal**  | ✅ Working | Explicit choice between Test Mode & Workspace Mode.          |
+| **Create Space**   | ✅ Working | Can create new named workspaces.                             |
+| **Switch Context** | ✅ Working | Switching workspaces instantly filters tasks.                |
+| **Data Isolation** | ✅ Working | Tasks in "Work" do not appear in "Personal".                 |
+| **Describe Space** | ✅ Working | Can add descriptions to workspaces.                          |
+| **Delete Space**   | ✅ Working | Deleting workspace deletes associated tasks (Cascade logic). |
+
 ## Modes
 
 | Feature            | Status     | Notes                                     |

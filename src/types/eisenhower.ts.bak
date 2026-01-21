@@ -1,3 +1,20 @@
+export interface Workspace {
+  id: number;
+  name: string;
+  description: string | null;
+  color: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+export interface UserConfig {
+  id: number;
+  activeWorkspaceId: number;
+  maxDailyMinutes: number;
+  analyticsStartDate: string | Date | null;
+  updatedAt: string | Date;
+}
+
 export interface Delegate {
   id: number;
   name: string;
@@ -18,27 +35,10 @@ export interface Task {
   dueDate?: string | Date | null;
   completedAt?: string | Date | null;
   isDeleted: boolean;
+  workspaceId: number;
+  tags?: string | null;
   createdAt: string | Date;
   delegate?: Delegate | null;
   delegateId?: number | null;
   updatedAt?: string | Date;
-  workspaceId?: number | null;
-  tags?: string | null;
-}
-
-export interface UserConfig {
-  id: number;
-  activeWorkspaceId: number;
-  analyticsStartDate: string | Date | null;
-  updatedAt: string | Date;
-}
-
-export interface Workspace {
-  id: number;
-  name: string;
-  description?: string | null;
-  color: string;
-  userId: number;
-  createdAt: string | Date;
-  updatedAt: string | Date;
 }

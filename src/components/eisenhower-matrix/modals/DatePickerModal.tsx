@@ -8,7 +8,11 @@ interface DatePickerModalProps {
   editingDateTaskId: number | null;
   tasks: Task[];
   onClose: () => void;
-  updateTaskQuadrant: (taskId: number, quadrant: string, updates: any) => void;
+  updateTaskQuadrant: (
+    taskId: number,
+    quadrant: string,
+    updates: Partial<Task>,
+  ) => void;
 }
 
 export const DatePickerModal: React.FC<DatePickerModalProps> = ({

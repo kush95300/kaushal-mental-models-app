@@ -2,7 +2,7 @@
 
 import React from "react";
 import { PlusCircle, Wind } from "lucide-react";
-import { Quadrant } from "./Quadrant";
+import { Quadrant, QuadrantConfig } from "./Quadrant";
 import { TaskCard } from "./TaskCard";
 import { Task } from "@/types/eisenhower";
 
@@ -24,7 +24,7 @@ interface MatrixGridProps {
   setAssignmentModal: (
     data: { taskId: number; quadrant: string } | null,
   ) => void;
-  QUAD_CONFIG: Record<string, any>;
+  QUAD_CONFIG: Record<string, QuadrantConfig>;
 }
 
 export const MatrixGrid: React.FC<MatrixGridProps> = ({
@@ -63,7 +63,7 @@ export const MatrixGrid: React.FC<MatrixGridProps> = ({
   return (
     <div className="flex-grow grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
       {/* Inbox / Queue */}
-      <div className="flex flex-col h-full bg-white/40 backdrop-blur-md rounded-[2.5rem] p-6 border-2 border-dashed border-slate-200 min-h-[400px]">
+      <div className="flex flex-col h-full bg-white/60 backdrop-blur-sm rounded-[2.5rem] p-6 border-2 border-dashed border-slate-200 min-h-[400px]">
         <div className="flex justify-between items-center mb-6 px-2">
           <div>
             <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">

@@ -23,9 +23,9 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
         Ready to Master Your Time?
       </h2>
       <p className="text-slate-500 font-semibold mb-8 leading-relaxed">
-        To provide accurate productivity analytics, we need to know when you're
-        starting your journey. Would you like to set your tracking start date to
-        today?
+        To provide accurate productivity analytics, we need to know when
+        you&apos;re starting your journey. Would you like to set your tracking
+        start date to today?
       </p>
       <div className="flex flex-col gap-3">
         <button

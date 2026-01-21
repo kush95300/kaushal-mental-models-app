@@ -9,7 +9,11 @@ interface AssignmentModalProps {
   tasks: Task[];
   delegates: Delegate[];
   onClose: () => void;
-  updateTaskQuadrant: (taskId: number, quadrant: string, updates: any) => void;
+  updateTaskQuadrant: (
+    taskId: number,
+    quadrant: string,
+    updates: Partial<Task>,
+  ) => void;
   setShowDelegateModal: (show: boolean) => void;
   setShowOnboarding: (show: boolean) => void;
 }
@@ -41,7 +45,7 @@ export const AssignmentModal: React.FC<AssignmentModalProps> = ({
                 : "Confirm Action"}
             </h3>
             <p className="text-sm font-semibold text-indigo-600/70 italic">
-              "{currentTask?.content}"
+              &quot;{currentTask?.content}&quot;
             </p>
           </div>
           <button
