@@ -63,20 +63,22 @@ export const MatrixGrid: React.FC<MatrixGridProps> = ({
   return (
     <div className="flex-grow grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
       {/* Inbox / Queue */}
-      <div className="flex flex-col h-full bg-white/60 backdrop-blur-sm rounded-[2.5rem] p-6 border-2 border-dashed border-slate-200 min-h-[400px]">
+      <div className="flex flex-col h-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm rounded-[2.5rem] p-6 border-2 border-dashed border-slate-200 dark:border-slate-800 min-h-[400px]">
         <div className="flex justify-between items-center mb-6 px-2">
           <div>
-            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">
+            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
               Draft Queue
             </h3>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-black text-slate-800">Inbox</span>
-              <span className="bg-slate-200 text-slate-500 text-[10px] font-black px-2 py-0.5 rounded-full">
+              <span className="text-2xl font-black text-slate-800 dark:text-slate-200">
+                Inbox
+              </span>
+              <span className="bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-black px-2 py-0.5 rounded-full">
                 {inboxTasks.length}
               </span>
             </div>
           </div>
-          <div className="p-2.5 bg-slate-100 text-slate-400 rounded-2xl">
+          <div className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-2xl">
             <PlusCircle className="w-5 h-5" />
           </div>
         </div>
@@ -86,9 +88,9 @@ export const MatrixGrid: React.FC<MatrixGridProps> = ({
           style={{ maxHeight: `${visibleLimit * 64}px` }}
         >
           {inboxTasks.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center px-4 opacity-20">
-              <Wind className="w-12 h-12 mb-4" />
-              <p className="text-[10px] font-black uppercase tracking-widest">
+            <div className="h-full flex flex-col items-center justify-center text-center px-4 opacity-20 dark:opacity-40">
+              <Wind className="w-12 h-12 mb-4 text-slate-900 dark:text-white" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">
                 Inbox is clear.
                 <br />
                 Ready for input.

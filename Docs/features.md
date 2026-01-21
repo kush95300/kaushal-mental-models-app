@@ -60,3 +60,12 @@
 | :----------------- | :--------- | :---------------------------------------- |
 | **Test Mode**      | ✅ Working | All features identical to Get Ready mode. |
 | **Get Ready Mode** | ✅ Working | Same parity as Test Mode.                 |
+
+## Theme & Customization (v1.7.0)
+
+| Feature                 | Status     | Notes                                                       |
+| :---------------------- | :--------- | :---------------------------------------------------------- |
+| **Dark/Light Toggle**   | ✅ Working | Correctly applies classes and persists via `localStorage`.  |
+| **Global Theme Sync**   | ✅ Working | Centralized `ThemeProvider` ensures all pages stay in sync. |
+| **Tailwind v4 Support** | ✅ Working | Custom `@variant dark` defined in CSS for latest engine.    |
+| **Visual Transitions**  | ✅ Working | Smooth transitions across backgrounds and card elements.    |

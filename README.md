@@ -27,10 +27,11 @@ Transform your to-do list into a strategic map by separating the urgent from the
   - **Unified Operations**: All task and delegate management moved to high-performance **Server Actions**.
   - **Optimistic UI**: Instant visual feedback for task creation, movement, and deletion before server confirmation.
   - **Modular Component Design**: Page structure refactored into focused components (`MatrixHeader`, `StatsView`, `MainTaskForm`, `MatrixGrid`) for easier maintenance.
-- **Premium User Experience**:
-  - **Hover Tooltips**: Instantly view full task descriptions on hover for longer entries.
-  - **Educational Overlay**: Integrated **Help (?)** portal explaining the Eisenhower philosophy.
-  - **Adaptive Workspace**: Live **Today's Date** display, **Focus Depth** slider, and real-time **Task Metrics**.
+- **Unified Theme Engine (v1.7.0)**:
+  - **Global State Management**: Transitioned from localized state to a centralized `ThemeProvider` context, ensuring perfectly synchronized dark mode across the entire app.
+  - **Tailwind v4 Integration**: Optimized for the latest CSS-first engine with custom `@variant dark` support.
+  - **Cross-Component Persistence**: Theme state is shared instantly between the Matrix, Home page, and Analytics without redundant triggers.
+  - **Adaptive Workspace**: Live **Today's Date** display, **Workload Balance** metrics, and real-time **Task Analytics**.
 
 ### 🍱 The Models Library
 

@@ -70,16 +70,16 @@ export const Quadrant: React.FC<QuadrantProps> = ({
     <div
       className={`relative flex flex-col h-full min-h-[300px] rounded-[2rem] border-2 transition-all duration-500 overflow-hidden ${
         isActive
-          ? "scale-[1.02] border-indigo-400 shadow-2xl z-10 bg-white"
+          ? "scale-[1.02] border-indigo-400 shadow-2xl z-10 bg-white dark:bg-slate-900"
           : qConfig.borderColor +
-            " bg-white/80 backdrop-blur-sm shadow-lg shadow-slate-200/50"
+            " bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-lg shadow-slate-200/50 dark:shadow-none"
       }`}
       onDragOver={(e) => onDragOver(e, qConfig.id)}
       onDragLeave={() => setActiveQuadrant(null)}
       onDrop={(e) => onDrop(e, qConfig.id)}
     >
       <div
-        className={`p-5 flex items-center justify-between border-b ${qConfig.borderColor} ${qConfig.lightColor} transition-colors duration-300`}
+        className={`p-5 flex items-center justify-between border-b ${qConfig.borderColor} ${qConfig.lightColor} dark:bg-slate-800/50 dark:border-slate-800 transition-colors duration-300`}
       >
         <div className="flex items-center gap-3">
           <div
@@ -89,23 +89,23 @@ export const Quadrant: React.FC<QuadrantProps> = ({
           </div>
           <div>
             <h3
-              className={`font-black text-sm uppercase tracking-wider ${qConfig.textColor}`}
+              className={`font-black text-sm uppercase tracking-wider ${qConfig.textColor} dark:text-slate-200`}
             >
               {qConfig.title}
             </h3>
-            <p className="text-[10px] font-bold opacity-60 italic tracking-wide">
+            <p className="text-[10px] font-bold opacity-60 italic tracking-wide dark:text-slate-400">
               {qConfig.subtitle}
             </p>
           </div>
         </div>
         <div className="flex flex-col items-end gap-1">
           <span
-            className={`text-xs font-black px-2.5 py-1 rounded-full ${qConfig.color} bg-opacity-10 ${qConfig.textColor} animate-pulse`}
+            className={`text-xs font-black px-2.5 py-1 rounded-full ${qConfig.color} bg-opacity-10 ${qConfig.textColor} dark:text-slate-300 animate-pulse`}
           >
             {quadrantTasks.length}
           </span>
           {totalEstimatedTime > 0 && (
-            <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1">
               <Clock size={10} /> {formatMinutes(totalEstimatedTime)}
             </span>
           )}
@@ -117,15 +117,15 @@ export const Quadrant: React.FC<QuadrantProps> = ({
         style={{ maxHeight: `${visibleLimit * 54 + 16}px` }}
       >
         {quadrantTasks.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center opacity-20 text-center px-4">
+          <div className="h-full flex flex-col items-center justify-center opacity-20 dark:opacity-40 text-center px-4">
             <div
-              className={`p-4 rounded-full border-2 border-dashed ${qConfig.borderColor} mb-3`}
+              className={`p-4 rounded-full border-2 border-dashed ${qConfig.borderColor} dark:border-slate-700 mb-3`}
             >
               <div className="flex items-center justify-center">
-                <Move className="w-8 h-8" />
+                <Move className="w-8 h-8 text-slate-800 dark:text-slate-200" />
               </div>
             </div>
-            <p className="text-sm font-bold uppercase tracking-widest">
+            <p className="text-sm font-bold uppercase tracking-widest text-slate-800 dark:text-slate-300">
               Empty Space
             </p>
           </div>
@@ -147,8 +147,8 @@ export const Quadrant: React.FC<QuadrantProps> = ({
         )}
       </div>
 
-      <div className="px-5 py-3 bg-white/40 border-t border-white/50">
-        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter flex items-center gap-1.5">
+      <div className="px-5 py-3 bg-white/40 dark:bg-slate-800/40 border-t border-white/50 dark:border-slate-800">
+        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter flex items-center gap-1.5">
           <Info className="w-3.5 h-3.5" /> {qConfig.description}
         </p>
       </div>

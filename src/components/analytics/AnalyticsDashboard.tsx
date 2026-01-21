@@ -13,17 +13,32 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
-import { ArrowLeft, Activity, CheckCircle2, Zap, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  Activity,
+  CheckCircle2,
+  Zap,
+  Users,
+  Moon,
+  Sun,
+} from "lucide-react";
 import Link from "next/link";
 import { getAnalyticsData, AnalyticsData } from "@/actions/analytics";
+import { useTheme } from "@/hooks/useTheme";
 
 interface AnalyticsDashboardProps {
   workspaceId: number;
 }
 
 export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
+  const { theme, toggleTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     async function fetchData() {
@@ -39,10 +54,10 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] dark:bg-slate-950 transition-colors">
         <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-            <Activity className="text-indigo-600 animate-spin" />
+          <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center">
+            <Activity className="text-indigo-600 dark:text-indigo-400 animate-spin" />
           </div>
           <p className="text-xs font-black uppercase tracking-widest text-slate-400">
             Analyzing Performance...
@@ -55,21 +70,42 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
   if (!data) return null;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-6 lg:p-12 font-sans text-slate-900">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 p-6 lg:p-12 font-sans text-slate-900 dark:text-slate-100 transition-colors">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-2">
           <Link
             href="/eisenhower-matrix"
-            className="p-2 -ml-2 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-full transition-all"
+            className="p-2 -ml-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all"
           >
             <ArrowLeft size={24} />
           </Link>
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900">
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
               The Wisdom Lab
             </h1>
-            <p className="text-slate-500 font-medium">Analytics & Insights</p>
+            <p className="text-slate-500 dark:text-slate-400 font-medium">
+              Analytics & Insights
+            </p>
+          </div>
+          <div className="ml-auto">
+            <button
+              onClick={toggleTheme}
+              className="p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-white dark:border-slate-800 shadow-sm text-slate-500 dark:text-amber-400 hover:scale-110 active:scale-95 transition-all group"
+              title="Toggle Theme"
+            >
+              {mounted && theme === "dark" ? (
+                <Sun
+                  size={20}
+                  className="group-hover:rotate-45 transition-transform"
+                />
+              ) : (
+                <Moon
+                  size={20}
+                  className="group-hover:-rotate-12 transition-transform"
+                />
+              )}
+            </button>
           </div>
         </div>
 
@@ -112,8 +148,8 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Distribution */}
-          <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-6">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
+            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-6">
               Focus Distribution
             </h3>
             <div className="h-[300px] w-full relative">
@@ -141,10 +177,10 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
               </ResponsiveContainer>
               {/* Legend Overlay */}
               <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
-                <span className="block text-3xl font-black text-slate-800">
+                <span className="block text-3xl font-black text-slate-800 dark:text-white">
                   {data.summary.totalActive}
                 </span>
-                <span className="text-[10px] uppercase font-bold text-slate-400">
+                <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500">
                   Tasks
                 </span>
               </div>
@@ -156,8 +192,11 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
                     className="w-2 h-2 rounded-full"
                     style={{ backgroundColor: d.color }}
                   />
-                  <span className="text-xs font-bold text-slate-600">
-                    {d.name} <span className="text-slate-400">({d.value})</span>
+                  <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                    {d.name}{" "}
+                    <span className="text-slate-400 dark:text-slate-600">
+                      ({d.value})
+                    </span>
                   </span>
                 </div>
               ))}
@@ -165,8 +204,8 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
           </div>
 
           {/* Velocity */}
-          <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-6">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
+            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-6">
               Completion Velocity (14 Days)
             </h3>
             <div className="h-[300px] w-full">
@@ -175,26 +214,39 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}
-                    stroke="#f1f5f9"
+                    stroke={mounted && theme === "dark" ? "#1e293b" : "#f1f5f9"}
                   />
                   <XAxis
                     dataKey="date"
-                    tick={{ fontSize: 10, fill: "#94a3b8" }}
+                    tick={{
+                      fontSize: 10,
+                      fill: mounted && theme === "dark" ? "#64748b" : "#94a3b8",
+                    }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 10, fill: "#94a3b8" }}
+                    tick={{
+                      fontSize: 10,
+                      fill: mounted && theme === "dark" ? "#64748b" : "#94a3b8",
+                    }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <Tooltip
                     contentStyle={{
+                      backgroundColor:
+                        mounted && theme === "dark" ? "#0f172a" : "#ffffff",
                       borderRadius: "12px",
-                      border: "none",
+                      border:
+                        mounted && theme === "dark"
+                          ? "1px solid #1e293b"
+                          : "none",
                       boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                     }}
-                    cursor={{ fill: "#f8fafc" }}
+                    cursor={{
+                      fill: mounted && theme === "dark" ? "#1e293b" : "#f8fafc",
+                    }}
                   />
                   <Bar
                     dataKey="count"
@@ -209,10 +261,10 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
         </div>
 
         {/* Delegation Row */}
-        <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
           <div className="flex items-center gap-2 mb-6">
             <Users className="text-amber-500" size={20} />
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">
+            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
               Delegation Report
             </h3>
           </div>
@@ -228,15 +280,17 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
               {data.delegation.map((d, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100"
+                  className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 font-bold text-xs">
+                    <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 font-bold text-xs">
                       {d.name.charAt(0)}
                     </div>
-                    <span className="font-bold text-slate-700">{d.name}</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-300">
+                      {d.name}
+                    </span>
                   </div>
-                  <span className="bg-white px-2 py-1 rounded-lg text-xs font-black text-slate-500 border border-slate-100 shadow-sm">
+                  <span className="bg-white dark:bg-slate-900 px-2 py-1 rounded-lg text-xs font-black text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-slate-800 shadow-sm">
                     {d.value} tasks
                   </span>
                 </div>
@@ -262,18 +316,22 @@ interface KpiCardProps {
 
 function KpiCard({ label, value, icon, trend, bg, color }: KpiCardProps) {
   return (
-    <div className="bg-white p-5 rounded-[1.5rem] shadow-sm border border-slate-100 flex flex-col gap-3 hover:shadow-md transition-shadow">
+    <div className="bg-white dark:bg-slate-900 p-5 rounded-[1.5rem] shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col gap-3 hover:shadow-md transition-all">
       <div className="flex justify-between items-start">
-        <div className={`p-2 rounded-xl ${bg} ${color}`}>{icon}</div>
-        <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">
+        <div className={`p-2 rounded-xl ${bg} dark:bg-slate-800 ${color}`}>
+          {icon}
+        </div>
+        <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 dark:text-slate-600">
           {trend}
         </span>
       </div>
       <div>
-        <span className="text-2xl font-black text-slate-900 block">
+        <span className="text-2xl font-black text-slate-900 dark:text-white block">
           {value}
         </span>
-        <span className="text-xs font-medium text-slate-500">{label}</span>
+        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+          {label}
+        </span>
       </div>
     </div>
   );
@@ -289,9 +347,13 @@ const CustomTooltip = ({
 }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white p-3 rounded-xl shadow-lg border border-slate-100 text-xs">
-        <p className="font-bold text-slate-800 mb-1">{payload[0].name}</p>
-        <p className="text-indigo-600 font-black">{payload[0].value} Tasks</p>
+      <div className="bg-white dark:bg-slate-900 p-3 rounded-xl shadow-lg border border-slate-100 dark:border-slate-800 text-xs">
+        <p className="font-bold text-slate-800 dark:text-slate-200 mb-1">
+          {payload[0].name}
+        </p>
+        <p className="text-indigo-600 dark:text-indigo-400 font-black">
+          {payload[0].value} Tasks
+        </p>
       </div>
     );
   }

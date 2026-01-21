@@ -25,6 +25,7 @@ The application will be live at: **[http://localhost:3000](http://localhost:3000
 - Navigate to the home page.
 - You should see the **Mental Models** title with "The Wisdom Lab" header.
 - Verify the **Eisenhower Matrix** card has an educational description and a **"Launch App"** button.
+- **Theme Test**: Click the **Sun/Moon icon** in the top right. Verify the whole app transitions between light and dark modes instantly.
 
 ### Step 2: Integrated Navigation
 
@@ -77,6 +78,7 @@ npm start
 ## ✅ Final Checklist
 
 - [ ] No database "Table not found" errors
-- [ ] Minimalist Black & White theme applied
+- [ ] Premium Dark/Light mode functional on all pages
 - [ ] Home button navigation functional
 - [ ] Real-time category updates working
+- [ ] Cross-page theme synchronization (Home-Matrix-Analytics)

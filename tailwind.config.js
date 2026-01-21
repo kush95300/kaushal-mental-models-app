@@ -4,6 +4,7 @@ module.exports = {
     "./src/app/**/*.{js,ts,jsx,tsx}",
     "./src/components/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: "class", // Enable manual dark mode toggle
   theme: {
     extend: {
       animation: {
