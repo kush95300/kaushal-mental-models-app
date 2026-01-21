@@ -65,6 +65,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       onMouseDown={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
       className="flex-shrink-0 relative z-20 transition-transform duration-200 hover:scale-125 rounded-full"
+      aria-label={task.status === "DONE" ? "Mark as not done" : "Mark as done"}
     >
       {task.status === "DONE" ? (
         <CheckCircle2 className="w-5 h-5 text-emerald-500 fill-emerald-50" />
@@ -111,6 +112,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               }}
               onMouseDown={(e) => e.stopPropagation()}
               className="ml-2 px-1.5 py-0.5 bg-rose-100 hover:bg-rose-200 text-rose-600 rounded-md border border-rose-200 shadow-sm transition-colors"
+              aria-label="Reschedule task"
             >
               Reschedule
             </button>
@@ -146,6 +148,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         onPointerDown={(e) => e.stopPropagation()}
         className="p-1.5 relative z-20 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors duration-200"
         title="Edit Content"
+        aria-label="Edit task content"
       >
         <Pencil className="w-4 h-4" />
       </button>
@@ -163,6 +166,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           onPointerDown={(e) => e.stopPropagation()}
           className="p-1.5 relative z-20 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors duration-200"
           title="Change Due Date"
+          aria-label="Change due date"
         >
           <Calendar className="w-4 h-4" />
         </button>
@@ -181,6 +185,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           onPointerDown={(e) => e.stopPropagation()}
           className="p-1.5 relative z-20 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-colors duration-200"
           title="Reassign Delegate"
+          aria-label="Reassign delegate"
         >
           <UserCog className="w-4 h-4" />
         </button>
@@ -198,6 +203,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         onPointerDown={(e) => e.stopPropagation()}
         className="p-1.5 relative z-20 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors duration-200"
         title="Delete Task"
+        aria-label="Delete task"
       >
         <Trash2 className="w-4 h-4" />
       </button>
