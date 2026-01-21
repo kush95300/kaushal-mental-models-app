@@ -13,6 +13,7 @@ import {
   Settings,
   LayoutGrid,
   Calendar as CalendarIcon,
+  BarChart3,
 } from "lucide-react";
 import { Task, Workspace } from "@/types/eisenhower";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
@@ -151,6 +152,15 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
             className={isOverburdened ? "animate-pulse" : ""}
           />
         </button>
+        {!isTestMode && (
+          <Link
+            href="/analytics"
+            className="p-2.5 text-slate-400 hover:text-indigo-600 bg-white/80 rounded-2xl border border-white shadow-sm transition-all hover:shadow-md ml-1"
+            title="Analytics & Insights"
+          >
+            <BarChart3 size={18} />
+          </Link>
+        )}
         <button
           onClick={() => setShowDelegateModal(true)}
           className="flex items-center gap-2 text-amber-500 hover:text-amber-600 font-black text-[10px] uppercase tracking-widest transition-all bg-white/80 p-2.5 px-4 rounded-2xl border border-white shadow-sm hover:shadow-md"

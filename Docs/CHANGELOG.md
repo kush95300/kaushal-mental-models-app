@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.5.0] - 2026-01-21
+
+### Added
+
+- **Analytics Dashboard**: New "Wisdom Lab" page providing deep insights into productivity.
+- **Visual Charts**: Integrated Recharts to display Quadrant Distribution (Pie) and Completion Velocity (Bar).
+- **KPI Metrics**: Cards for Completion Rate, Avg Velocity, and Active Tasks.
+- **Delegation Reports**: Breakdown of tasks assigned to others.
+
 ## [v1.4.0] - 2026-01-21
 
 ### Added

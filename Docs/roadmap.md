@@ -61,9 +61,9 @@ We follow a modified semantic versioning tailored to the "Mental Models" product
 
 **Goal**: "The Wisdom Lab" Insights.
 
-- [ ] **Dashboard**: Dedicated `/analytics` page.
-- [ ] **Charts**: Quadrant Distribution (Pie), Completion Velocity (Bar).
-- [ ] **Privacy**: Analytics disabled in Test Mode.
+- [x] **Dashboard**: Dedicated `/analytics` page.
+- [x] **Charts**: Quadrant Distribution (Pie), Completion Velocity (Bar).
+- [x] **Privacy**: Analytics disabled in Test Mode (Link hidden).
 
 ### v1.6.0 - Premium Polish
 
