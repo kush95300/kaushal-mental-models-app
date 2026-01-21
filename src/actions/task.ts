@@ -3,6 +3,7 @@
 import prisma from "@/lib/prisma";
 import { Task, Delegate } from "@/types/eisenhower";
 import { revalidatePath } from "next/cache";
+import { validateTaskInput } from "@/lib/validation";
 
 export async function getTasks(includeDeleted = false) {
   try {
@@ -29,6 +30,16 @@ export async function createTask(data: {
   status?: string;
 }) {
   try {
+    const validation = validateTaskInput({
+      content: data.content,
+      quadrant: data.quadrant,
+      status: data.status,
+      estimatedMinutes: data.estimatedMinutes,
+    });
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
+    }
+
     let finalDelegateId = data.delegateId;
     if (!finalDelegateId) {
       const selfDelegate = (await prisma.delegate.findFirst({
@@ -61,6 +72,16 @@ export async function createTask(data: {
 
 export async function updateTask(id: number, updates: Partial<Task>) {
   try {
+    const validation = validateTaskInput({
+      content: updates.content,
+      quadrant: updates.quadrant,
+      status: updates.status,
+      estimatedMinutes: updates.estimatedMinutes,
+    });
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
+    }
+
     const data: any = { ...updates };
 
     if (data.dueDate) data.dueDate = new Date(data.dueDate);
