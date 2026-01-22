@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { validateTaskInput, validateTaskUpdate } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,11 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const validation = validateTaskInput(body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+
     const {
       content,
       isImportant,
@@ -79,6 +85,11 @@ export async function PATCH(request: Request) {
   try {
     const body = await request.json();
     const { id, ...updates } = body;
+
+    const validation = validateTaskUpdate(updates);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
 
     // Sanitize updates
     if (updates.dueDate) updates.dueDate = new Date(updates.dueDate);
