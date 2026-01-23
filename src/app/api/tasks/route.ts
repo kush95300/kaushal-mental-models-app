@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { validateTaskContent } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,11 @@ export async function POST(request: Request) {
       estimatedMinutes,
       status,
     } = body;
+
+    const validationError = validateTaskContent(content);
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
+    }
 
     // Ensure we have a delegateId, default to "Self" (usually ID 1)
     let finalDelegateId = incomingDelegateId
@@ -79,6 +85,13 @@ export async function PATCH(request: Request) {
   try {
     const body = await request.json();
     const { id, ...updates } = body;
+
+    if (updates.content) {
+      const validationError = validateTaskContent(updates.content);
+      if (validationError) {
+        return NextResponse.json({ error: validationError }, { status: 400 });
+      }
+    }
 
     // Sanitize updates
     if (updates.dueDate) updates.dueDate = new Date(updates.dueDate);
@@ -137,25 +150,6 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     const mode = searchParams.get("mode"); // 'revert' or 'hard'
-    const reset = searchParams.get("reset"); // 'today' or 'all'
-
-    if (reset === "all") {
-      await (prisma as any).task.deleteMany({});
-      return NextResponse.json({ success: true });
-    }
-
-    if (reset === "today") {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      await (prisma as any).task.deleteMany({
-        where: {
-          createdAt: {
-            gte: today,
-          },
-        },
-      });
-      return NextResponse.json({ success: true });
-    }
 
     if (!id)
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
