@@ -30,6 +30,7 @@ model Task {
   @@index([quadrant])
   @@index([status])
   @@index([dueDate])
+  @@index([createdAt])
 }
 
 model Delegate {
