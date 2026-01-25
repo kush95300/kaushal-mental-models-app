@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { validateDelegateInput } from "@/lib/validation";
 import { Delegate } from "@/types/eisenhower";
 import { revalidatePath } from "next/cache";
 
@@ -29,6 +30,11 @@ export async function getDelegates() {
 
 export async function createDelegate(data: { name: string; email?: string }) {
   try {
+    const validation = validateDelegateInput(data);
+    if (!validation.success) {
+      return { success: false, error: validation.error };
+    }
+
     const delegate = (await prisma.delegate.create({
       data: {
         name: data.name,
