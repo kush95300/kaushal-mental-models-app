@@ -1,0 +1,28 @@
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3000)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE', GET / 200 in 647ms (compile: 392ms, render: 255ms)
+ GET / 200 in 116ms (compile: 5ms, render: 111ms)
+ GET /eisenhower-matrix 200 in 206ms (compile: 61ms, render: 145ms)
+ GET /eisenhower-matrix 200 in 76ms (compile: 4ms, render: 72ms)
+ GET /api/config 200 in 235ms (compile: 172ms, render: 64ms)
+ POST /eisenhower-matrix 200 in 247ms (compile: 7ms, render: 240ms)
+ POST /eisenhower-matrix 200 in 14ms (compile: 3ms, render: 11ms)
+ GET /eisenhower-matrix 200 in 73ms (compile: 5ms, render: 68ms)
+ GET /api/config 200 in 12ms (compile: 4ms, render: 8ms)
+ POST /eisenhower-matrix 200 in 13ms (compile: 4ms, render: 9ms)
+ POST /eisenhower-matrix 200 in 23ms (compile: 6ms, render: 17ms)
+ GET /eisenhower-matrix 200 in 89ms (compile: 4ms, render: 85ms)
+ GET /api/config 200 in 16ms (compile: 3ms, render: 14ms)
+ POST /eisenhower-matrix 200 in 15ms (compile: 3ms, render: 13ms)
+ POST /eisenhower-matrix 200 in 15ms (compile: 3ms, render: 13ms)
+ GET /eisenhower-matrix 200 in 85ms (compile: 6ms, render: 79ms)
+ GET /api/config 200 in 14ms (compile: 3ms, render: 11ms)
+ POST /eisenhower-matrix 200 in 15ms (compile: 4ms, render: 11ms)
+ POST /eisenhower-matrix 200 in 29ms (compile: 7ms, render: 22ms)
+ GET /eisenhower-matrix 200 in 71ms (compile: 3ms, render: 68ms)
+ GET /api/config 200 in 17ms (compile: 5ms, render: 12ms)
+ POST /eisenhower-matrix 200 in 19ms (compile: 3ms, render: 16ms)
+ POST /eisenhower-matrix 200 in 21ms (compile: 4ms, render: 17ms)
+[?25h
