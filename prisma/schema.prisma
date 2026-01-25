@@ -30,6 +30,8 @@ model Task {
   @@index([quadrant])
   @@index([status])
   @@index([dueDate])
+  // Index for sorting by creation time, optimized for getTasks query
+  @@index([createdAt])
 }
 
 model Delegate {
