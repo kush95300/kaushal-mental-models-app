@@ -65,6 +65,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       onMouseDown={(e) => e.stopPropagation()}
       onPointerDown={(e) => e.stopPropagation()}
       className="flex-shrink-0 relative z-20 transition-transform duration-200 hover:scale-125 rounded-full"
+      aria-label={
+        task.status === "DONE" ? "Mark as incomplete" : "Mark as complete"
+      }
     >
       {task.status === "DONE" ? (
         <CheckCircle2 className="w-5 h-5 text-emerald-500 fill-emerald-50" />
@@ -130,7 +133,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       )}
     </div>
 
-    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -146,6 +149,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         onPointerDown={(e) => e.stopPropagation()}
         className="p-1.5 relative z-20 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors duration-200"
         title="Edit Content"
+        aria-label="Edit Content"
       >
         <Pencil className="w-4 h-4" />
       </button>
@@ -163,6 +167,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           onPointerDown={(e) => e.stopPropagation()}
           className="p-1.5 relative z-20 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors duration-200"
           title="Change Due Date"
+          aria-label="Change Due Date"
         >
           <Calendar className="w-4 h-4" />
         </button>
@@ -181,6 +186,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           onPointerDown={(e) => e.stopPropagation()}
           className="p-1.5 relative z-20 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-colors duration-200"
           title="Reassign Delegate"
+          aria-label="Reassign Delegate"
         >
           <UserCog className="w-4 h-4" />
         </button>
@@ -198,6 +204,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         onPointerDown={(e) => e.stopPropagation()}
         className="p-1.5 relative z-20 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors duration-200"
         title="Delete Task"
+        aria-label="Delete Task"
       >
         <Trash2 className="w-4 h-4" />
       </button>
