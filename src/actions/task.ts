@@ -3,6 +3,11 @@
 import prisma from "@/lib/prisma";
 import { Task, Delegate } from "@/types/eisenhower";
 import { revalidatePath } from "next/cache";
+import {
+  validateTaskContent,
+  validateQuadrant,
+  validateStatus,
+} from "@/lib/validation";
 
 export async function getTasks(includeDeleted = false) {
   try {
@@ -29,6 +34,20 @@ export async function createTask(data: {
   status?: string;
 }) {
   try {
+    // Input validation
+    const contentError = validateTaskContent(data.content);
+    if (contentError) return { success: false, error: contentError };
+
+    if (data.quadrant) {
+      const quadrantError = validateQuadrant(data.quadrant);
+      if (quadrantError) return { success: false, error: quadrantError };
+    }
+
+    if (data.status) {
+      const statusError = validateStatus(data.status);
+      if (statusError) return { success: false, error: statusError };
+    }
+
     let finalDelegateId = data.delegateId;
     if (!finalDelegateId) {
       const selfDelegate = (await prisma.delegate.findFirst({
@@ -61,6 +80,22 @@ export async function createTask(data: {
 
 export async function updateTask(id: number, updates: Partial<Task>) {
   try {
+    // Input validation
+    if (updates.content !== undefined) {
+      const contentError = validateTaskContent(updates.content);
+      if (contentError) return { success: false, error: contentError };
+    }
+
+    if (updates.quadrant !== undefined) {
+      const quadrantError = validateQuadrant(updates.quadrant);
+      if (quadrantError) return { success: false, error: quadrantError };
+    }
+
+    if (updates.status !== undefined) {
+      const statusError = validateStatus(updates.status);
+      if (statusError) return { success: false, error: statusError };
+    }
+
     const data: any = { ...updates };
 
     if (data.dueDate) data.dueDate = new Date(data.dueDate);
