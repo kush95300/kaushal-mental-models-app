@@ -151,6 +151,12 @@ function EisenhowerMatrixContent() {
     resetDataOp,
   } = useTaskOperations({ isTestMode });
 
+  // Keep a ref to tasks to access them in callbacks without dependency
+  const tasksRef = React.useRef(tasks);
+  useEffect(() => {
+    tasksRef.current = tasks;
+  }, [tasks]);
+
   // Helper functions defined before effects to avoid usage before declaration
   const fetchConfig = useCallback(async () => {
     try {
@@ -245,24 +251,27 @@ function EisenhowerMatrixContent() {
     setNewEstimatedMinutes("");
   };
 
-  const toggleComplete = async (id: number) => {
-    const task = tasks.find((t: Task) => t.id === id);
-    if (!task) return;
+  const toggleComplete = useCallback(
+    async (id: number) => {
+      const task = tasksRef.current.find((t: Task) => t.id === id);
+      if (!task) return;
 
-    if (task.status !== "DONE" && task.quadrant === "INBOX") {
-      // Simple alert replacement or modal
-      alert("First assign it or move to matrix then do it.");
-      return;
-    }
+      if (task.status !== "DONE" && task.quadrant === "INBOX") {
+        // Simple alert replacement or modal
+        alert("First assign it or move to matrix then do it.");
+        return;
+      }
 
-    if (task.status === "TODO") {
-      setCompletingTaskId(id);
-      setShowCompletionModal(true);
-    } else {
-      // Reopening task
-      updateTaskStatus(id, "TODO", null);
-    }
-  };
+      if (task.status === "TODO") {
+        setCompletingTaskId(id);
+        setShowCompletionModal(true);
+      } else {
+        // Reopening task
+        updateTaskStatus(id, "TODO", null);
+      }
+    },
+    [updateTaskStatus],
+  );
 
   const handleCompletionConfirm = (actualMinutes: number) => {
     if (completingTaskId === null) return;
@@ -271,9 +280,9 @@ function EisenhowerMatrixContent() {
     setCompletingTaskId(null);
   };
 
-  const onDragStart = (id: number) => {
+  const onDragStart = useCallback((id: number) => {
     setDraggedTaskId(id);
-  };
+  }, []);
 
   const onDragOver = (e: React.DragEvent, quadrantId: string) => {
     e.preventDefault();
