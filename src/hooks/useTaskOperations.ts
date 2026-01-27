@@ -90,181 +90,211 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
 
   // Initial Load
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTasks();
     fetchDelegates();
   }, [fetchTasks, fetchDelegates]);
 
   // Actions
-  const addTask = async (
-    content: string,
-    estimatedMinutes: number | null,
-    delegateId: number | null,
-  ) => {
-    if (!content.trim()) return;
+  const addTask = useCallback(
+    async (
+      content: string,
+      estimatedMinutes: number | null,
+      delegateId: number | null,
+    ) => {
+      if (!content.trim()) return;
 
-    if (isTestMode) {
-      const tempTask: Task = {
-        id: Math.random(),
-        content,
-        estimatedMinutes,
-        isImportant: false,
-        isUrgent: false,
-        quadrant: "INBOX",
-        status: "TODO",
-        createdAt: new Date().toISOString(),
-        completedAt: null,
-        delegate: delegateId
-          ? delegates.find((d) => d.id === delegateId) || null
-          : delegates[0] || null,
-        isDeleted: false,
-        dueDate: null,
-        actualMinutes: null,
-        delegateId: delegateId,
-      };
-      setTasks((prev) => [tempTask, ...prev]);
-      return;
-    }
-
-    const res = await createTask({ content, estimatedMinutes, delegateId });
-    if (res.success && res.data) {
-      setTasks((prev) => [res.data!, ...prev]);
-    }
-  };
-
-  const updateTaskStatus = async (
-    id: number,
-    status: string,
-    actualMinutes: number | null,
-  ) => {
-    // Optimistic Update
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-              ...t,
-              status,
-              actualMinutes: status === "TODO" ? null : actualMinutes,
-            }
-          : t,
-      ),
-    );
-
-    if (isTestMode) return;
-    await updateTaskAction(id, { status, actualMinutes });
-  };
-
-  const updateTaskQuadrant = async (
-    taskId: number,
-    quadrant: string,
-    additionalData: Partial<Task> = {},
-  ) => {
-    // Smart Scheduling Logic
-    if (quadrant !== "DELEGATE") {
-      const selfDelegate = delegates.find(
-        (d) => d.name.toLowerCase() === "self",
-      );
-      if (selfDelegate) additionalData.delegateId = selfDelegate.id;
-    }
-
-    // Auto-schedule logic
-    if (additionalData.dueDate && !isTestMode) {
-      const task = tasks.find((t) => t.id === taskId);
-      const isSelf =
-        !task?.delegate || task.delegate.name.toLowerCase() === "self";
-      if (isSelf && shouldAutoPromote(additionalData.dueDate)) {
-        quadrant = "DO";
+      if (isTestMode) {
+        const tempTask: Task = {
+          id: Math.random(),
+          content,
+          estimatedMinutes,
+          isImportant: false,
+          isUrgent: false,
+          quadrant: "INBOX",
+          status: "TODO",
+          createdAt: new Date().toISOString(),
+          completedAt: null,
+          delegate: delegateId
+            ? delegates.find((d) => d.id === delegateId) || null
+            : delegates[0] || null,
+          isDeleted: false,
+          dueDate: null,
+          actualMinutes: null,
+          delegateId: delegateId,
+        };
+        setTasks((prev) => [tempTask, ...prev]);
+        return;
       }
-    }
 
-    // Optimistic Update
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === taskId ? { ...t, quadrant, ...additionalData } : t,
-      ),
-    );
+      const res = await createTask({ content, estimatedMinutes, delegateId });
+      if (res.success && res.data) {
+        setTasks((prev) => [res.data!, ...prev]);
+      }
+    },
+    [isTestMode, delegates],
+  );
 
-    if (isTestMode) return;
-    const res = await updateTaskAction(taskId, { quadrant, ...additionalData });
-    if (!res.success) {
+  const updateTaskStatus = useCallback(
+    async (id: number, status: string, actualMinutes: number | null) => {
+      // Optimistic Update
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                status,
+                actualMinutes: status === "TODO" ? null : actualMinutes,
+              }
+            : t,
+        ),
+      );
+
+      if (isTestMode) return;
+      await updateTaskAction(id, { status, actualMinutes });
+    },
+    [isTestMode],
+  );
+
+  const updateTaskQuadrant = useCallback(
+    async (
+      taskId: number,
+      quadrant: string,
+      additionalData: Partial<Task> = {},
+    ) => {
+      // Smart Scheduling Logic
+      if (quadrant !== "DELEGATE") {
+        const selfDelegate = delegates.find(
+          (d) => d.name.toLowerCase() === "self",
+        );
+        if (selfDelegate) additionalData.delegateId = selfDelegate.id;
+      }
+
+      // Auto-schedule logic
+      if (additionalData.dueDate && !isTestMode) {
+        const task = tasks.find((t) => t.id === taskId);
+        const isSelf =
+          !task?.delegate || task.delegate.name.toLowerCase() === "self";
+        if (isSelf && shouldAutoPromote(additionalData.dueDate)) {
+          quadrant = "DO";
+        }
+      }
+
+      // Optimistic Update
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId ? { ...t, quadrant, ...additionalData } : t,
+        ),
+      );
+
+      if (isTestMode) return;
+      const res = await updateTaskAction(taskId, {
+        quadrant,
+        ...additionalData,
+      });
+      if (!res.success) {
+        fetchTasks();
+      }
+    },
+    [isTestMode, delegates, tasks, fetchTasks],
+  );
+
+  const updateTaskContent = useCallback(
+    async (
+      id: number,
+      content: string,
+      estimatedMinutes: number | null,
+    ) => {
+      // Optimistic Update
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === id ? { ...t, content, estimatedMinutes } : t,
+        ),
+      );
+
+      if (isTestMode) return;
+      await updateTaskAction(id, { content, estimatedMinutes });
+    },
+    [isTestMode],
+  );
+
+  const deleteTask = useCallback(
+    async (id: number) => {
+      setTasks((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, isDeleted: true } : t)),
+      );
+      if (isTestMode) return;
+      await deleteTaskAction(id, "soft");
+    },
+    [isTestMode],
+  );
+
+  const hardDeleteTask = useCallback(
+    async (id: number) => {
+      if (!confirm("Permanently delete this item?")) return;
+      if (isTestMode) {
+        setTasks((prev) => prev.filter((t) => t.id !== id));
+        return;
+      }
+      await deleteTaskAction(id, "hard");
       fetchTasks();
-    }
-  };
+    },
+    [isTestMode, fetchTasks],
+  );
 
-  const updateTaskContent = async (
-    id: number,
-    content: string,
-    estimatedMinutes: number | null,
-  ) => {
-    // Optimistic Update
-    setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, content, estimatedMinutes } : t)),
-    );
+  const revertDeletion = useCallback(
+    async (id: number) => {
+      setTasks((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, isDeleted: false } : t)),
+      );
+      if (isTestMode) return;
+      await deleteTaskAction(id, "revert");
+      fetchTasks();
+    },
+    [isTestMode, fetchTasks],
+  );
 
-    if (isTestMode) return;
-    await updateTaskAction(id, { content, estimatedMinutes });
-  };
+  const addDelegateOp = useCallback(
+    async (name: string, email?: string) => {
+      if (isTestMode) {
+        const tempDelegate: Delegate = {
+          id: Math.random(),
+          name,
+          email: email || null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        setDelegates((prev) => [...prev, tempDelegate]);
+        return;
+      }
+      const res = await createDelegate({ name, email });
+      if (res.success && res.data) {
+        setDelegates((prev) => [...prev, res.data!]);
+      }
+    },
+    [isTestMode],
+  );
 
-  const deleteTask = async (id: number) => {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, isDeleted: true } : t)),
-    );
-    if (isTestMode) return;
-    await deleteTaskAction(id, "soft");
-  };
+  const removeDelegateOp = useCallback(
+    async (id: number) => {
+      setDelegates((prev) => prev.filter((d) => d.id !== id));
+      if (isTestMode) return;
+      const res = await deleteDelegateAction(id);
+      if (!res.success) fetchDelegates();
+    },
+    [isTestMode, fetchDelegates],
+  );
 
-  const hardDeleteTask = async (id: number) => {
-    if (!confirm("Permanently delete this item?")) return;
-    if (isTestMode) {
-      setTasks((prev) => prev.filter((t) => t.id !== id));
-      return;
-    }
-    await deleteTaskAction(id, "hard");
-    fetchTasks();
-  };
-
-  const revertDeletion = async (id: number) => {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, isDeleted: false } : t)),
-    );
-    if (isTestMode) return;
-    await deleteTaskAction(id, "revert");
-    fetchTasks();
-  };
-
-  const addDelegateOp = async (name: string, email?: string) => {
-    if (isTestMode) {
-      const tempDelegate: Delegate = {
-        id: Math.random(),
-        name,
-        email: email || null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setDelegates((prev) => [...prev, tempDelegate]);
-      return;
-    }
-    const res = await createDelegate({ name, email });
-    if (res.success && res.data) {
-      setDelegates((prev) => [...prev, res.data!]);
-    }
-  };
-
-  const removeDelegateOp = async (id: number) => {
-    setDelegates((prev) => prev.filter((d) => d.id !== id));
-    if (isTestMode) return;
-    const res = await deleteDelegateAction(id);
-    if (!res.success) fetchDelegates();
-  };
-
-  const resetDataOp = async (type: "today" | "all") => {
-    if (isTestMode) {
-      setTasks([]);
-      return;
-    }
-    const res = await resetTasksAction(type);
-    if (res.success) fetchTasks();
-  };
+  const resetDataOp = useCallback(
+    async (type: "today" | "all") => {
+      if (isTestMode) {
+        setTasks([]);
+        return;
+      }
+      const res = await resetTasksAction(type);
+      if (res.success) fetchTasks();
+    },
+    [isTestMode, fetchTasks],
+  );
 
   return {
     tasks,

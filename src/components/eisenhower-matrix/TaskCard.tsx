@@ -29,7 +29,7 @@ interface TaskCardProps {
   ) => void;
 }
 
-export const TaskCard: React.FC<TaskCardProps> = ({
+export const TaskCard: React.FC<TaskCardProps> = React.memo(({
   task,
   onDragStart,
   toggleComplete,
@@ -203,4 +203,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       </button>
     </div>
   </div>
-);
+));
+
+TaskCard.displayName = "TaskCard";
