@@ -14,10 +14,10 @@ interface StatsViewProps {
   };
 }
 
-export const StatsView: React.FC<StatsViewProps> = ({
+export const StatsView = React.memo(({
   currentDateDisplay,
   stats,
-}) => {
+}: StatsViewProps) => {
   const statItems = [
     { label: "Todo", value: stats.pending, color: "text-indigo-600" },
     { label: "Done", value: stats.completed, color: "text-emerald-500" },
@@ -64,4 +64,6 @@ export const StatsView: React.FC<StatsViewProps> = ({
       </div>
     </div>
   );
-};
+});
+
+StatsView.displayName = "StatsView";

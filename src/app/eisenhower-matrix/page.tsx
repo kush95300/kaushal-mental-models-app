@@ -1,10 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from "react";
-import Link from "next/link";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  Suspense,
+  useMemo,
+} from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  PlusCircle,
   Linkedin,
   Github,
   ExternalLink,
@@ -353,18 +357,23 @@ function EisenhowerMatrixContent() {
     await resetDataOp(type);
   };
 
-  const stats = {
-    total: tasks.filter((t: Task) => !t.isDeleted).length,
-    completed: tasks.filter((t: Task) => t.status === "DONE" && !t.isDeleted)
-      .length,
-    pending: tasks.filter((t: Task) => t.status === "TODO" && !t.isDeleted)
-      .length,
-    eliminated: tasks.filter((t: Task) => t.isDeleted).length,
-    delegated: tasks.filter(
-      (t: Task) =>
-        !t.isDeleted && t.delegate && t.delegate.name.toLowerCase() !== "self",
-    ).length,
-  };
+  const stats = useMemo(
+    () => ({
+      total: tasks.filter((t: Task) => !t.isDeleted).length,
+      completed: tasks.filter((t: Task) => t.status === "DONE" && !t.isDeleted)
+        .length,
+      pending: tasks.filter((t: Task) => t.status === "TODO" && !t.isDeleted)
+        .length,
+      eliminated: tasks.filter((t: Task) => t.isDeleted).length,
+      delegated: tasks.filter(
+        (t: Task) =>
+          !t.isDeleted &&
+          t.delegate &&
+          t.delegate.name.toLowerCase() !== "self",
+      ).length,
+    }),
+    [tasks],
+  );
 
   return (
     <div className="min-h-screen bg-[#f8fafc] relative overflow-hidden text-slate-900 font-sans p-4 md:p-8 flex flex-col">

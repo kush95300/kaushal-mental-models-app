@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { PlusCircle, Wind } from "lucide-react";
-import { Quadrant } from "./Quadrant";
+import { Quadrant, QuadrantConfig } from "./Quadrant";
 import { TaskCard } from "./TaskCard";
 import { Task } from "@/types/eisenhower";
 
@@ -24,7 +24,7 @@ interface MatrixGridProps {
   setAssignmentModal: (
     data: { taskId: number; quadrant: string } | null,
   ) => void;
-  QUAD_CONFIG: Record<string, any>;
+  QUAD_CONFIG: Record<string, QuadrantConfig>;
 }
 
 export const MatrixGrid: React.FC<MatrixGridProps> = ({
@@ -45,6 +45,11 @@ export const MatrixGrid: React.FC<MatrixGridProps> = ({
   setAssignmentModal,
   QUAD_CONFIG,
 }) => {
+  const inboxTasks = useMemo(
+    () => tasks.filter((t) => t.quadrant === "INBOX" && !t.isDeleted),
+    [tasks],
+  );
+
   if (loading) {
     return (
       <div className="flex-grow flex flex-col items-center justify-center gap-4 opacity-50 py-20">
@@ -55,10 +60,6 @@ export const MatrixGrid: React.FC<MatrixGridProps> = ({
       </div>
     );
   }
-
-  const inboxTasks = tasks.filter(
-    (t) => t.quadrant === "INBOX" && !t.isDeleted,
-  );
 
   return (
     <div className="flex-grow grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
