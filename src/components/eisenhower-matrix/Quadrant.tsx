@@ -1,12 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Move, Info, Clock } from "lucide-react";
 import { Task } from "@/types/eisenhower";
 import { TaskCard } from "./TaskCard";
 import { formatMinutes } from "@/lib/formatTime";
 
-interface QuadrantConfig {
+export interface QuadrantConfig {
   id: string;
   title: string;
   subtitle: string;
@@ -56,14 +56,18 @@ export const Quadrant: React.FC<QuadrantProps> = ({
   setEditingDateTaskId,
   setAssignmentModal,
 }) => {
-  const quadrantTasks = tasks.filter(
-    (t) => t.quadrant === qConfig.id && !t.isDeleted && t.status !== "DONE",
+  const quadrantTasks = useMemo(
+    () =>
+      tasks.filter(
+        (t) => t.quadrant === qConfig.id && !t.isDeleted && t.status !== "DONE",
+      ),
+    [tasks, qConfig.id],
   );
   const isActive = activeQuadrant === qConfig.id;
 
-  const totalEstimatedTime = quadrantTasks.reduce(
-    (acc, t) => acc + (t.estimatedMinutes || 0),
-    0,
+  const totalEstimatedTime = useMemo(
+    () => quadrantTasks.reduce((acc, t) => acc + (t.estimatedMinutes || 0), 0),
+    [quadrantTasks],
   );
 
   return (
