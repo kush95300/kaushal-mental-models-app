@@ -7,7 +7,7 @@ import { Task } from "@/types/eisenhower";
 interface DoneListModalProps {
   tasks: Task[];
   onClose: () => void;
-  toggleComplete: (taskId: number) => void;
+  toggleComplete: (task: Task) => void;
 }
 
 export const DoneListModal: React.FC<DoneListModalProps> = ({
@@ -43,7 +43,7 @@ export const DoneListModal: React.FC<DoneListModalProps> = ({
                   {task.content}
                 </span>
                 <button
-                  onClick={() => toggleComplete(task.id)}
+                  onClick={() => toggleComplete(task)}
                   className="px-4 py-2 bg-white border border-slate-100 text-indigo-600 font-black text-[10px] uppercase tracking-widest rounded-xl hover:shadow-md transition-all"
                 >
                   Restore to TODO

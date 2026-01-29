@@ -18,7 +18,7 @@ import { formatFriendlyDate, isOverdue } from "@/lib/dateUtils";
 interface TaskCardProps {
   task: Task;
   onDragStart: (taskId: number) => void;
-  toggleComplete: (taskId: number) => void;
+  toggleComplete: (task: Task) => void;
   deleteTask: (taskId: number) => void;
   setEditingContentTaskId: (taskId: number | null) => void;
   setEditingContentValue: (content: string) => void;
@@ -29,7 +29,7 @@ interface TaskCardProps {
   ) => void;
 }
 
-export const TaskCard: React.FC<TaskCardProps> = ({
+export const TaskCard = React.memo<TaskCardProps>(({
   task,
   onDragStart,
   toggleComplete,
@@ -56,7 +56,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        toggleComplete(task.id);
+        toggleComplete(task);
       }}
       onDragStart={(e) => {
         e.preventDefault();
@@ -203,4 +203,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       </button>
     </div>
   </div>
-);
+));
+
+TaskCard.displayName = "TaskCard";

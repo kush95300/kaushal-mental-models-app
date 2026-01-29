@@ -28,7 +28,7 @@ interface QuadrantProps {
   setActiveQuadrant: (quadrant: string | null) => void;
   // Propagated to TaskCard
   onDragStart: (taskId: number) => void;
-  toggleComplete: (taskId: number) => void;
+  toggleComplete: (task: Task) => void;
   deleteTask: (taskId: number) => void;
   setEditingContentTaskId: (taskId: number | null) => void;
   setEditingContentValue: (content: string) => void;
@@ -39,7 +39,7 @@ interface QuadrantProps {
   ) => void;
 }
 
-export const Quadrant: React.FC<QuadrantProps> = ({
+export const Quadrant = React.memo<QuadrantProps>(({
   qConfig,
   tasks,
   activeQuadrant,
@@ -154,4 +154,6 @@ export const Quadrant: React.FC<QuadrantProps> = ({
       </div>
     </div>
   );
-};
+});
+
+Quadrant.displayName = "Quadrant";

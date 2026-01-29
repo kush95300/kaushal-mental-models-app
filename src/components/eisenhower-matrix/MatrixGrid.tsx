@@ -15,7 +15,7 @@ interface MatrixGridProps {
   onDrop: (e: React.DragEvent, quadrant: string) => void;
   onDragStart: (taskId: number) => void;
   setActiveQuadrant: (quadrant: string | null) => void;
-  toggleComplete: (taskId: number) => void;
+  toggleComplete: (task: Task) => void;
   deleteTask: (taskId: number) => void;
   setEditingContentTaskId: (taskId: number | null) => void;
   setEditingContentValue: (content: string) => void;
@@ -27,7 +27,7 @@ interface MatrixGridProps {
   QUAD_CONFIG: Record<string, any>;
 }
 
-export const MatrixGrid: React.FC<MatrixGridProps> = ({
+export const MatrixGrid = React.memo<MatrixGridProps>(({
   loading,
   tasks,
   visibleLimit,
@@ -138,4 +138,6 @@ export const MatrixGrid: React.FC<MatrixGridProps> = ({
       </div>
     </div>
   );
-};
+});
+
+MatrixGrid.displayName = "MatrixGrid";

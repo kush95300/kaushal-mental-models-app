@@ -1,0 +1,3 @@
+## 2024-05-23 - [List Rendering Performance Anti-Pattern]
+**Learning:** In `EisenhowerMatrixPage`, handler functions like `toggleComplete` closed over the entire `tasks` array. This meant the function reference changed every time `tasks` updated. Passing these unstable handlers to `TaskCard` (even if memoized) caused O(N) re-renders for every single update.
+**Action:** When passing handlers to memoized list items, ensure the handler is stable. Refactor handlers to accept the item object (e.g., `(task: Task)`) instead of an ID if looking up the item requires a dependency on the volatile list state. Alternatively, use functional state updates to avoid closing over the state.
