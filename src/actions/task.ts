@@ -3,6 +3,12 @@
 import prisma from "@/lib/prisma";
 import { Task, Delegate } from "@/types/eisenhower";
 import { revalidatePath } from "next/cache";
+import {
+  validateTaskContent,
+  validateQuadrant,
+  validateStatus,
+  validateEstimatedMinutes,
+} from "@/lib/validation";
 
 export async function getTasks(includeDeleted = false) {
   try {
@@ -29,6 +35,27 @@ export async function createTask(data: {
   status?: string;
 }) {
   try {
+    // Input validation
+    const contentError = validateTaskContent(data.content);
+    if (contentError) return { success: false, error: contentError };
+
+    if (data.quadrant) {
+      const quadrantError = validateQuadrant(data.quadrant);
+      if (quadrantError) return { success: false, error: quadrantError };
+    }
+
+    if (data.status) {
+      const statusError = validateStatus(data.status);
+      if (statusError) return { success: false, error: statusError };
+    }
+
+    if (data.estimatedMinutes !== undefined) {
+      const minutesError = validateEstimatedMinutes(
+        data.estimatedMinutes || null,
+      );
+      if (minutesError) return { success: false, error: minutesError };
+    }
+
     let finalDelegateId = data.delegateId;
     if (!finalDelegateId) {
       const selfDelegate = (await prisma.delegate.findFirst({
@@ -62,6 +89,29 @@ export async function createTask(data: {
 export async function updateTask(id: number, updates: Partial<Task>) {
   try {
     const data: any = { ...updates };
+
+    // Input validation
+    if (data.content !== undefined) {
+      const contentError = validateTaskContent(data.content);
+      if (contentError) return { success: false, error: contentError };
+    }
+
+    if (data.quadrant !== undefined) {
+      const quadrantError = validateQuadrant(data.quadrant);
+      if (quadrantError) return { success: false, error: quadrantError };
+    }
+
+    if (data.status !== undefined) {
+      const statusError = validateStatus(data.status);
+      if (statusError) return { success: false, error: statusError };
+    }
+
+    if (data.estimatedMinutes !== undefined) {
+      const minutesError = validateEstimatedMinutes(
+        data.estimatedMinutes || null,
+      );
+      if (minutesError) return { success: false, error: minutesError };
+    }
 
     if (data.dueDate) data.dueDate = new Date(data.dueDate);
     if (data.delegateId) data.delegateId = parseInt(data.delegateId as any);
