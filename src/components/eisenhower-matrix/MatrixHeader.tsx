@@ -63,6 +63,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
             onClick={() => setShowDoneList(true)}
             className="p-2 px-3 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-2xl transition-all flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest"
             title="View Completed Tasks"
+            aria-label="View Completed Tasks"
           >
             <CheckCircle2 size={16} /> Done
             <span className="bg-emerald-500/10 text-emerald-600 px-1.5 py-0.5 rounded-lg text-[8px]">
@@ -73,6 +74,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
             onClick={() => setShowDeletedList(true)}
             className="p-2 px-3 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-2xl transition-all flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest"
             title="View Eliminated (Deleted) Tasks"
+            aria-label="View Eliminated Tasks"
           >
             <Trash2 size={16} /> Eliminated
             <span className="bg-emerald-500/10 text-emerald-600 px-1.5 py-0.5 rounded-md text-[8px]">
@@ -85,6 +87,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
           onClick={() => setShowHelpModal(true)}
           className="p-2.5 text-slate-400 hover:text-indigo-600 bg-white/80 rounded-2xl border border-white shadow-sm transition-all hover:shadow-md"
           title="How to use the Matrix"
+          aria-label="Help"
         >
           <HelpCircle size={18} />
         </button>
@@ -99,6 +102,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
             onClick={() => fetchTasks()}
             className="p-2 px-3 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-2xl transition-all flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest group"
             title="Force Refresh"
+            aria-label="Refresh tasks"
           >
             <RefreshCcw
               size={14}
@@ -111,6 +115,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
             onChange={(e) => setRefreshInterval(Number(e.target.value))}
             className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-400 outline-none cursor-pointer hover:text-indigo-600"
             title="Auto-refresh Interval"
+            aria-label="Refresh interval"
           >
             <option value={0}>Off</option>
             <option value={30}>30s</option>
@@ -134,6 +139,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
             value={visibleLimit}
             onChange={(e) => setVisibleLimit(parseInt(e.target.value))}
             className="w-24 accent-indigo-600 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer hover:accent-indigo-500 transition-all"
+            aria-label="Focus depth (visible items)"
           />
         </div>
         <div className="h-8 w-px bg-slate-200 mx-1" />
