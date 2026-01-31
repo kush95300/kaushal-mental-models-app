@@ -27,6 +27,7 @@ model Task {
   completedAt      DateTime?
   isDeleted        Boolean   @default(false)
 
+  @@index([createdAt])
   @@index([quadrant])
   @@index([status])
   @@index([dueDate])
