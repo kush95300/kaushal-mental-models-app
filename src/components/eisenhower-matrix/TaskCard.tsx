@@ -53,6 +53,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         `}
   >
     <button
+      aria-label={
+        task.status === "DONE" ? "Mark as incomplete" : "Mark as complete"
+      }
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -130,8 +133,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       )}
     </div>
 
-    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-300">
       <button
+        aria-label="Edit Content"
         onClick={(e) => {
           e.stopPropagation();
           setEditingContentTaskId(task.id);
@@ -151,6 +155,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       </button>
       {task.quadrant !== "INBOX" && task.quadrant !== "DO" && (
         <button
+          aria-label="Change Due Date"
           onClick={(e) => {
             e.stopPropagation();
             setEditingDateTaskId(task.id);
@@ -169,6 +174,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       )}
       {task.quadrant === "DELEGATE" && (
         <button
+          aria-label="Reassign Delegate"
           onClick={(e) => {
             e.stopPropagation();
             setAssignmentModal({ taskId: task.id, quadrant: "DELEGATE" });
@@ -186,6 +192,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         </button>
       )}
       <button
+        aria-label="Delete Task"
         onClick={(e) => {
           e.stopPropagation();
           deleteTask(task.id);
