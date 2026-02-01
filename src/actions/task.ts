@@ -3,6 +3,11 @@
 import prisma from "@/lib/prisma";
 import { Task, Delegate } from "@/types/eisenhower";
 import { revalidatePath } from "next/cache";
+import {
+  isValidTaskContent,
+  isValidQuadrant,
+  isValidStatus,
+} from "@/lib/validation";
 
 export async function getTasks(includeDeleted = false) {
   try {
@@ -29,6 +34,16 @@ export async function createTask(data: {
   status?: string;
 }) {
   try {
+    if (!isValidTaskContent(data.content)) {
+      return { success: false, error: "Invalid task content" };
+    }
+    if (data.quadrant && !isValidQuadrant(data.quadrant)) {
+      return { success: false, error: "Invalid quadrant" };
+    }
+    if (data.status && !isValidStatus(data.status)) {
+      return { success: false, error: "Invalid status" };
+    }
+
     let finalDelegateId = data.delegateId;
     if (!finalDelegateId) {
       const selfDelegate = (await prisma.delegate.findFirst({
@@ -62,6 +77,16 @@ export async function createTask(data: {
 export async function updateTask(id: number, updates: Partial<Task>) {
   try {
     const data: any = { ...updates };
+
+    if (data.content !== undefined && !isValidTaskContent(data.content)) {
+      return { success: false, error: "Invalid task content" };
+    }
+    if (data.quadrant && !isValidQuadrant(data.quadrant)) {
+      return { success: false, error: "Invalid quadrant" };
+    }
+    if (data.status && !isValidStatus(data.status)) {
+      return { success: false, error: "Invalid status" };
+    }
 
     if (data.dueDate) data.dueDate = new Date(data.dueDate);
     if (data.delegateId) data.delegateId = parseInt(data.delegateId as any);
