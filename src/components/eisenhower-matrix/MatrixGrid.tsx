@@ -15,7 +15,7 @@ interface MatrixGridProps {
   onDrop: (e: React.DragEvent, quadrant: string) => void;
   onDragStart: (taskId: number) => void;
   setActiveQuadrant: (quadrant: string | null) => void;
-  toggleComplete: (taskId: number) => void;
+  toggleComplete: (task: Task) => void;
   deleteTask: (taskId: number) => void;
   setEditingContentTaskId: (taskId: number | null) => void;
   setEditingContentValue: (content: string) => void;

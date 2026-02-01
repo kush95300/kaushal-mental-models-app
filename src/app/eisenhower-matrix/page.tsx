@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, Suspense } from "react";
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
@@ -245,24 +245,26 @@ function EisenhowerMatrixContent() {
     setNewEstimatedMinutes("");
   };
 
-  const toggleComplete = async (id: number) => {
-    const task = tasks.find((t: Task) => t.id === id);
-    if (!task) return;
+  // Optimization: Accepts full task object to avoid dependency on 'tasks' array.
+  // This allows the function to be stable and prevents TaskCard re-renders.
+  const toggleComplete = useCallback(
+    async (task: Task) => {
+      if (task.status !== "DONE" && task.quadrant === "INBOX") {
+        // Simple alert replacement or modal
+        alert("First assign it or move to matrix then do it.");
+        return;
+      }
 
-    if (task.status !== "DONE" && task.quadrant === "INBOX") {
-      // Simple alert replacement or modal
-      alert("First assign it or move to matrix then do it.");
-      return;
-    }
-
-    if (task.status === "TODO") {
-      setCompletingTaskId(id);
-      setShowCompletionModal(true);
-    } else {
-      // Reopening task
-      updateTaskStatus(id, "TODO", null);
-    }
-  };
+      if (task.status === "TODO") {
+        setCompletingTaskId(task.id);
+        setShowCompletionModal(true);
+      } else {
+        // Reopening task
+        updateTaskStatus(task.id, "TODO", null);
+      }
+    },
+    [updateTaskStatus],
+  );
 
   const handleCompletionConfirm = (actualMinutes: number) => {
     if (completingTaskId === null) return;
@@ -271,50 +273,53 @@ function EisenhowerMatrixContent() {
     setCompletingTaskId(null);
   };
 
-  const onDragStart = (id: number) => {
+  const onDragStart = useCallback((id: number) => {
     setDraggedTaskId(id);
-  };
+  }, []);
 
   const onDragOver = (e: React.DragEvent, quadrantId: string) => {
     e.preventDefault();
     setActiveQuadrant(quadrantId);
   };
 
-  const onDrop = async (e: React.DragEvent, quadrantId: string) => {
-    e.preventDefault();
-    if (draggedTaskId === null) return;
+  const onDrop = useCallback(
+    async (e: React.DragEvent, quadrantId: string) => {
+      e.preventDefault();
+      if (draggedTaskId === null) return;
 
-    const task = tasks.find((t: Task) => t.id === draggedTaskId);
-    if (
-      task?.quadrant === "INBOX" &&
-      quadrantId !== "INBOX" &&
-      !task.estimatedMinutes
-    ) {
-      setEditingContentTaskId(task.id);
-      setEditingContentValue(task.content);
-      setEditingEstimatedMinutes("");
-      setModalWarning(
-        "Please set a time estimate before moving this task to the matrix.",
-      );
+      const task = tasks.find((t: Task) => t.id === draggedTaskId);
+      if (
+        task?.quadrant === "INBOX" &&
+        quadrantId !== "INBOX" &&
+        !task.estimatedMinutes
+      ) {
+        setEditingContentTaskId(task.id);
+        setEditingContentValue(task.content);
+        setEditingEstimatedMinutes("");
+        setModalWarning(
+          "Please set a time estimate before moving this task to the matrix.",
+        );
+
+        setDraggedTaskId(null);
+        setActiveQuadrant(null);
+        return;
+      }
+
+      if (
+        quadrantId === "DO" ||
+        quadrantId === "SCHEDULE" ||
+        quadrantId === "DELEGATE"
+      ) {
+        setAssignmentModal({ taskId: draggedTaskId, quadrant: quadrantId });
+      } else {
+        updateTaskQuadrant(draggedTaskId, quadrantId);
+      }
 
       setDraggedTaskId(null);
       setActiveQuadrant(null);
-      return;
-    }
-
-    if (
-      quadrantId === "DO" ||
-      quadrantId === "SCHEDULE" ||
-      quadrantId === "DELEGATE"
-    ) {
-      setAssignmentModal({ taskId: draggedTaskId, quadrant: quadrantId });
-    } else {
-      updateTaskQuadrant(draggedTaskId, quadrantId);
-    }
-
-    setDraggedTaskId(null);
-    setActiveQuadrant(null);
-  };
+    },
+    [draggedTaskId, tasks, updateTaskQuadrant],
+  );
 
   const saveTaskContent = async () => {
     if (!editingContentTaskId) return;
@@ -353,18 +358,23 @@ function EisenhowerMatrixContent() {
     await resetDataOp(type);
   };
 
-  const stats = {
-    total: tasks.filter((t: Task) => !t.isDeleted).length,
-    completed: tasks.filter((t: Task) => t.status === "DONE" && !t.isDeleted)
-      .length,
-    pending: tasks.filter((t: Task) => t.status === "TODO" && !t.isDeleted)
-      .length,
-    eliminated: tasks.filter((t: Task) => t.isDeleted).length,
-    delegated: tasks.filter(
-      (t: Task) =>
-        !t.isDeleted && t.delegate && t.delegate.name.toLowerCase() !== "self",
-    ).length,
-  };
+  const stats = useMemo(
+    () => ({
+      total: tasks.filter((t: Task) => !t.isDeleted).length,
+      completed: tasks.filter((t: Task) => t.status === "DONE" && !t.isDeleted)
+        .length,
+      pending: tasks.filter((t: Task) => t.status === "TODO" && !t.isDeleted)
+        .length,
+      eliminated: tasks.filter((t: Task) => t.isDeleted).length,
+      delegated: tasks.filter(
+        (t: Task) =>
+          !t.isDeleted &&
+          t.delegate &&
+          t.delegate.name.toLowerCase() !== "self",
+      ).length,
+    }),
+    [tasks],
+  );
 
   return (
     <div className="min-h-screen bg-[#f8fafc] relative overflow-hidden text-slate-900 font-sans p-4 md:p-8 flex flex-col">
