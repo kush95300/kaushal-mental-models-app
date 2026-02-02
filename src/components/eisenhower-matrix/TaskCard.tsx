@@ -18,7 +18,7 @@ import { formatFriendlyDate, isOverdue } from "@/lib/dateUtils";
 interface TaskCardProps {
   task: Task;
   onDragStart: (taskId: number) => void;
-  toggleComplete: (taskId: number) => void;
+  toggleComplete: (task: Task) => void;
   deleteTask: (taskId: number) => void;
   setEditingContentTaskId: (taskId: number | null) => void;
   setEditingContentValue: (content: string) => void;
@@ -29,7 +29,7 @@ interface TaskCardProps {
   ) => void;
 }
 
-export const TaskCard: React.FC<TaskCardProps> = ({
+export const TaskCard = React.memo(function TaskCard({
   task,
   onDragStart,
   toggleComplete,
@@ -39,9 +39,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   setEditingEstimatedMinutes,
   setEditingDateTaskId,
   setAssignmentModal,
-}) => (
-  <div
-    draggable
+}: TaskCardProps) {
+  return (
+    <div
+      draggable
     onDragStart={() => onDragStart(task.id)}
     className={`group relative flex items-center gap-3 p-3 mb-2 bg-white/90 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm transition-all duration-300 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-indigo-200 hover:scale-[1.01] active:scale-[0.98] hover:z-50
         ${task.status === "DONE" ? "opacity-60" : ""}
@@ -56,7 +57,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        toggleComplete(task.id);
+        toggleComplete(task);
       }}
       onDragStart={(e) => {
         e.preventDefault();
@@ -202,5 +203,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         <Trash2 className="w-4 h-4" />
       </button>
     </div>
-  </div>
-);
+    </div>
+  );
+});

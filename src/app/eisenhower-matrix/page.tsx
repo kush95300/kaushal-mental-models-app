@@ -1,10 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, Suspense } from "react";
-import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  PlusCircle,
   Linkedin,
   Github,
   ExternalLink,
@@ -224,99 +222,108 @@ function EisenhowerMatrixContent() {
     }
   };
 
-  const handleAddTask = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTask.trim()) return;
+  const handleAddTask = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!newTask.trim()) return;
 
-    // Resolve self delegate if needed or pass logic to hook?
-    // Hook expects delegateId.
-    // Logic in hook for test mode uses "Self", logic in API uses "Self".
-    // We should pass the ID.
-    const selfDelegate = delegates.find(
-      (d: Delegate) => d.name.toLowerCase() === "self",
-    );
-    await addTask(
-      newTask,
-      parseInt(newEstimatedMinutes) || null,
-      selfDelegate?.id || null,
-    );
+      // Resolve self delegate if needed or pass logic to hook?
+      // Hook expects delegateId.
+      // Logic in hook for test mode uses "Self", logic in API uses "Self".
+      // We should pass the ID.
+      const selfDelegate = delegates.find(
+        (d: Delegate) => d.name.toLowerCase() === "self",
+      );
+      await addTask(
+        newTask,
+        parseInt(newEstimatedMinutes) || null,
+        selfDelegate?.id || null,
+      );
 
-    setNewTask("");
-    setNewEstimatedMinutes("");
-  };
+      setNewTask("");
+      setNewEstimatedMinutes("");
+    },
+    [newTask, newEstimatedMinutes, delegates, addTask],
+  );
 
-  const toggleComplete = async (id: number) => {
-    const task = tasks.find((t: Task) => t.id === id);
-    if (!task) return;
+  const toggleComplete = useCallback(
+    async (task: Task) => {
+      if (task.status !== "DONE" && task.quadrant === "INBOX") {
+        // Simple alert replacement or modal
+        alert("First assign it or move to matrix then do it.");
+        return;
+      }
 
-    if (task.status !== "DONE" && task.quadrant === "INBOX") {
-      // Simple alert replacement or modal
-      alert("First assign it or move to matrix then do it.");
-      return;
-    }
+      if (task.status === "TODO") {
+        setCompletingTaskId(task.id);
+        setShowCompletionModal(true);
+      } else {
+        // Reopening task
+        updateTaskStatus(task.id, "TODO", null);
+      }
+    },
+    [updateTaskStatus],
+  );
 
-    if (task.status === "TODO") {
-      setCompletingTaskId(id);
-      setShowCompletionModal(true);
-    } else {
-      // Reopening task
-      updateTaskStatus(id, "TODO", null);
-    }
-  };
+  const handleCompletionConfirm = useCallback(
+    (actualMinutes: number) => {
+      if (completingTaskId === null) return;
+      updateTaskStatus(completingTaskId, "DONE", actualMinutes);
+      setShowCompletionModal(false);
+      setCompletingTaskId(null);
+    },
+    [completingTaskId, updateTaskStatus],
+  );
 
-  const handleCompletionConfirm = (actualMinutes: number) => {
-    if (completingTaskId === null) return;
-    updateTaskStatus(completingTaskId, "DONE", actualMinutes);
-    setShowCompletionModal(false);
-    setCompletingTaskId(null);
-  };
-
-  const onDragStart = (id: number) => {
+  const onDragStart = useCallback((id: number) => {
     setDraggedTaskId(id);
-  };
+  }, []);
 
-  const onDragOver = (e: React.DragEvent, quadrantId: string) => {
+  const onDragOver = useCallback((e: React.DragEvent, quadrantId: string) => {
     e.preventDefault();
     setActiveQuadrant(quadrantId);
-  };
+  }, []);
 
-  const onDrop = async (e: React.DragEvent, quadrantId: string) => {
-    e.preventDefault();
-    if (draggedTaskId === null) return;
+  const onDrop = useCallback(
+    async (e: React.DragEvent, quadrantId: string) => {
+      e.preventDefault();
+      if (draggedTaskId === null) return;
 
-    const task = tasks.find((t: Task) => t.id === draggedTaskId);
-    if (
-      task?.quadrant === "INBOX" &&
-      quadrantId !== "INBOX" &&
-      !task.estimatedMinutes
-    ) {
-      setEditingContentTaskId(task.id);
-      setEditingContentValue(task.content);
-      setEditingEstimatedMinutes("");
-      setModalWarning(
-        "Please set a time estimate before moving this task to the matrix.",
-      );
+      const task = tasks.find((t: Task) => t.id === draggedTaskId);
+      if (
+        task?.quadrant === "INBOX" &&
+        quadrantId !== "INBOX" &&
+        !task.estimatedMinutes
+      ) {
+        setEditingContentTaskId(task.id);
+        setEditingContentValue(task.content);
+        setEditingEstimatedMinutes("");
+        setModalWarning(
+          "Please set a time estimate before moving this task to the matrix.",
+        );
+
+        setDraggedTaskId(null);
+        setActiveQuadrant(null);
+        return;
+      }
+
+      if (
+        quadrantId === "DO" ||
+        quadrantId === "SCHEDULE" ||
+        quadrantId === "DELEGATE"
+      ) {
+        setAssignmentModal({ taskId: draggedTaskId, quadrant: quadrantId });
+      } else {
+        updateTaskQuadrant(draggedTaskId, quadrantId);
+      }
 
       setDraggedTaskId(null);
       setActiveQuadrant(null);
-      return;
-    }
+    },
+    [draggedTaskId, tasks, updateTaskQuadrant],
+  );
 
-    if (
-      quadrantId === "DO" ||
-      quadrantId === "SCHEDULE" ||
-      quadrantId === "DELEGATE"
-    ) {
-      setAssignmentModal({ taskId: draggedTaskId, quadrant: quadrantId });
-    } else {
-      updateTaskQuadrant(draggedTaskId, quadrantId);
-    }
-
-    setDraggedTaskId(null);
-    setActiveQuadrant(null);
-  };
-
-  const saveTaskContent = async () => {
+  const saveTaskContent = useCallback(async () => {
     if (!editingContentTaskId) return;
 
     const contentToSave = editingContentValue.trim();
@@ -328,30 +335,41 @@ function EisenhowerMatrixContent() {
     setEditingContentTaskId(null);
     setEditingContentValue("");
     setEditingEstimatedMinutes("");
-  };
+  }, [
+    editingContentTaskId,
+    editingContentValue,
+    editingEstimatedMinutes,
+    updateTaskContent,
+  ]);
 
-  const addDelegate = async () => {
+  const addDelegate = useCallback(async () => {
     if (!newDelegateName.trim()) return;
     await addDelegateOp(newDelegateName);
     setNewDelegateName("");
-  };
+  }, [newDelegateName, addDelegateOp]);
 
-  const removeDelegate = async (id: number) => {
-    await removeDelegateOp(id);
-  };
+  const removeDelegate = useCallback(
+    async (id: number) => {
+      await removeDelegateOp(id);
+    },
+    [removeDelegateOp],
+  );
 
-  const resetData = async (type: "today" | "all") => {
-    if (
-      !confirm(
-        `Are you sure you want to reset ${
-          type === "today" ? "today's" : "all"
-        } data?`,
+  const resetData = useCallback(
+    async (type: "today" | "all") => {
+      if (
+        !confirm(
+          `Are you sure you want to reset ${
+            type === "today" ? "today's" : "all"
+          } data?`,
+        )
       )
-    )
-      return;
+        return;
 
-    await resetDataOp(type);
-  };
+      await resetDataOp(type);
+    },
+    [resetDataOp],
+  );
 
   const stats = {
     total: tasks.filter((t: Task) => !t.isDeleted).length,

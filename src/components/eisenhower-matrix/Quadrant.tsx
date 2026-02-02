@@ -28,7 +28,7 @@ interface QuadrantProps {
   setActiveQuadrant: (quadrant: string | null) => void;
   // Propagated to TaskCard
   onDragStart: (taskId: number) => void;
-  toggleComplete: (taskId: number) => void;
+  toggleComplete: (task: Task) => void;
   deleteTask: (taskId: number) => void;
   setEditingContentTaskId: (taskId: number | null) => void;
   setEditingContentValue: (content: string) => void;
