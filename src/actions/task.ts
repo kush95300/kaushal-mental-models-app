@@ -71,7 +71,7 @@ export async function createTask(data: {
 
 export async function updateTask(id: number, updates: Partial<Task>) {
   try {
-    const data: Prisma.TaskUpdateInput = { ...updates };
+    const data: Prisma.TaskUpdateInput = { ...updates } as any;
 
     if (updates.dueDate)
       data.dueDate = new Date(updates.dueDate as string | Date);
@@ -89,7 +89,7 @@ export async function updateTask(id: number, updates: Partial<Task>) {
       const selfDelegate = (await prisma.delegate.findFirst({
         where: { name: { in: ["Self", "self", "SELF"] } },
       })) as Delegate | null;
-      if (selfDelegate) data.delegateId = selfDelegate.id;
+      if (selfDelegate) data.delegate = { connect: { id: selfDelegate.id } };
     }
 
     // Handle analytics tracking

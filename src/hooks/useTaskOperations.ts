@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Task, Delegate } from "@/types/eisenhower";
 import { shouldAutoPromote } from "@/lib/dateUtils";
 import {
@@ -26,10 +26,12 @@ import { Workspace, UserConfig } from "@/types/eisenhower";
 
 interface UseTaskOperationsProps {
   isTestMode: boolean;
+  initialWorkspaceId?: number | null;
 }
 
 export function useTaskOperations({
   isTestMode: initialIsTestMode,
+  initialWorkspaceId,
 }: UseTaskOperationsProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [delegates, setDelegates] = useState<Delegate[]>([]);
@@ -49,6 +51,8 @@ export function useTaskOperations({
   }, [tasks]);
 
   const isOverburdened = dailyWorkload > maxDailyMinutes;
+
+  const initializedRef = useRef(false);
 
   // Fetch Workspaces & Config
   const fetchWorkspaces = useCallback(async () => {
@@ -79,42 +83,55 @@ export function useTaskOperations({
       if (res.success && res.data) {
         setWorkspaces(res.data);
       }
-      const configRes = await getUserConfig();
-      if (configRes.success && configRes.data) {
-        if (!isTestMode) {
+      if (initialWorkspaceId && !initializedRef.current) {
+        initializedRef.current = true;
+        setActiveWorkspaceId(initialWorkspaceId);
+        await updateActiveWorkspace(initialWorkspaceId);
+        const configRes = await getUserConfig();
+        if (configRes.success && configRes.data) {
           const config = configRes.data as unknown as UserConfig;
-          setActiveWorkspaceId(config.activeWorkspaceId);
           setMaxDailyMinutes(config.maxDailyMinutes);
+        }
+      } else {
+        const configRes = await getUserConfig();
+        if (configRes.success && configRes.data) {
+          if (!isTestMode) {
+            const config = configRes.data as unknown as UserConfig;
+            setActiveWorkspaceId(config.activeWorkspaceId);
+            setMaxDailyMinutes(config.maxDailyMinutes);
+          }
         }
       }
     } catch (error) {
       console.error("Fetch workspaces error:", error);
     }
-  }, [isTestMode]);
+  }, [isTestMode, initialWorkspaceId]);
 
   // Fetch Delegates
   const fetchDelegates = useCallback(async () => {
     try {
-      if (isTestMode) {
-        setDelegates([
-          {
-            id: 1,
-            name: "Self",
-            email: null,
-            createdAt: "",
-            updatedAt: "",
-          },
-        ]);
+      if (isTestMode || !activeWorkspaceId) {
+        if (isTestMode) {
+          setDelegates([
+            {
+              id: 1,
+              name: "Self",
+              email: null,
+              createdAt: "",
+              updatedAt: "",
+            },
+          ]);
+        }
         return;
       }
-      const res = await getDelegates();
+      const res = await getDelegates(activeWorkspaceId);
       if (res.success && res.data) {
         setDelegates(res.data);
       }
     } catch (error) {
       console.error("Fetch delegates error:", error);
     }
-  }, [isTestMode]);
+  }, [isTestMode, activeWorkspaceId]);
 
   // Fetch Tasks & Smart Scheduling
   const fetchTasks = useCallback(async () => {
@@ -164,8 +181,11 @@ export function useTaskOperations({
 
   useEffect(() => {
     fetchWorkspaces();
+  }, [fetchWorkspaces]);
+
+  useEffect(() => {
     fetchDelegates();
-  }, [fetchWorkspaces, fetchDelegates]);
+  }, [fetchDelegates]);
 
   useEffect(() => {
     fetchTasks();
@@ -317,18 +337,20 @@ export function useTaskOperations({
   };
 
   const addDelegateOp = async (name: string, email?: string) => {
-    if (isTestMode) {
-      const tempDelegate: Delegate = {
-        id: Math.random(),
-        name,
-        email: email || null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setDelegates((prev) => [...prev, tempDelegate]);
+    if (isTestMode || !activeWorkspaceId) {
+      if (isTestMode) {
+        const tempDelegate: Delegate = {
+          id: Math.random(),
+          name,
+          email: email || null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        setDelegates((prev) => [...prev, tempDelegate]);
+      }
       return;
     }
-    const res = await createDelegate({ name, email });
+    const res = await createDelegate({ name, email, workspaceId: activeWorkspaceId });
     if (res.success && res.data) {
       setDelegates((prev) => [...prev, res.data!]);
     }
@@ -364,8 +386,8 @@ export function useTaskOperations({
     }
   };
 
-  const addWorkspaceOp = async (name: string, description: string) => {
-    const res = await createWorkspace({ name, description });
+  const addWorkspaceOp = async (name: string, description: string, icon?: string) => {
+    const res = await createWorkspace({ name, description, icon });
     if (res.success && res.data) {
       setWorkspaces((prev) => [...prev, res.data as Workspace]);
     }
@@ -375,8 +397,9 @@ export function useTaskOperations({
     id: number,
     name: string,
     description: string,
+    icon?: string,
   ) => {
-    const res = await updateWorkspaceAction(id, { name, description });
+    const res = await updateWorkspaceAction(id, { name, description, icon });
     if (res.success && res.data) {
       setWorkspaces((prev) =>
         prev.map((w) => (w.id === id ? (res.data as Workspace) : w)),

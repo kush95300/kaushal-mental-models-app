@@ -75,7 +75,7 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
         {/* Header */}
         <div className="flex items-center gap-4 mb-2">
           <Link
-            href="/eisenhower-matrix"
+            href={`/eisenhower-matrix?workspaceId=${workspaceId}`}
             className="p-2 -ml-2 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-slate-800 rounded-full transition-all"
           >
             <ArrowLeft size={24} />

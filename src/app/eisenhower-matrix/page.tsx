@@ -30,6 +30,7 @@ import { DatePickerModal } from "@/components/eisenhower-matrix/modals/DatePicke
 import { EditContentModal } from "@/components/eisenhower-matrix/modals/EditContentModal";
 import { CompletionModal } from "@/components/eisenhower-matrix/modals/CompletionModal";
 import { SettingsModal } from "@/components/eisenhower-matrix/modals/SettingsModal";
+import { ResetConfirmModal } from "@/components/eisenhower-matrix/modals/ResetConfirmModal";
 import { Task, Delegate } from "@/types/eisenhower";
 
 const QUADRANTS = {
@@ -98,14 +99,17 @@ export default function EisenhowerMatrixPage() {
 }
 
 function EisenhowerMatrixContent() {
+  const searchParams = useSearchParams();
+  const paramWorkspaceId = searchParams.get("workspaceId") ? parseInt(searchParams.get("workspaceId")!) : null;
   const [newTask, setNewTask] = useState("");
   const [newEstimatedMinutes, setNewEstimatedMinutes] = useState<string>("");
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
   const [activeQuadrant, setActiveQuadrant] = useState<string | null>(null);
   const [visibleLimit, setVisibleLimit] = useState(5);
   const [showDelegateModal, setShowDelegateModal] = useState(false);
-  const [showWorkspaceModal, setShowWorkspaceModal] = useState(true);
-  const [selectionMade, setSelectionMade] = useState(false);
+  const [showWorkspaceModal, setShowWorkspaceModal] = useState(!paramWorkspaceId);
+  const [workspaceModalView, setWorkspaceModalView] = useState<"initial" | "list" | "create" | "edit">("initial");
+  const [selectionMade, setSelectionMade] = useState(!!paramWorkspaceId);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [assignmentModal, setAssignmentModal] = useState<{
     taskId: number;
@@ -125,6 +129,7 @@ function EisenhowerMatrixContent() {
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completingTaskId, setCompletingTaskId] = useState<number | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState<"today" | "all" | null>(null);
   const [viewMode, setViewMode] = useState<"matrix" | "calendar">("matrix");
 
   const [newDelegateName, setNewDelegateName] = useState("");
@@ -135,7 +140,6 @@ function EisenhowerMatrixContent() {
   const [refreshInterval, setRefreshInterval] = useState(60); // seconds
   const [currentDateDisplay, setCurrentDateDisplay] = useState("");
   const [modalWarning, setModalWarning] = useState<string | null>(null);
-  const searchParams = useSearchParams();
   const router = useRouter();
 
   // Keyboard Shortcuts
@@ -193,9 +197,15 @@ function EisenhowerMatrixContent() {
     updateMaxMinutesOp,
     dailyWorkload,
     isOverburdened,
-  } = useTaskOperations({ isTestMode: false });
+  } = useTaskOperations({ isTestMode: false, initialWorkspaceId: paramWorkspaceId });
 
   const handleSwitchWorkspace = () => {
+    setWorkspaceModalView("initial");
+    setShowWorkspaceModal(true);
+  };
+
+  const handleManageWorkspaces = () => {
+    setWorkspaceModalView("list");
     setShowWorkspaceModal(true);
   };
 
@@ -396,16 +406,13 @@ function EisenhowerMatrixContent() {
   };
 
   const resetData = async (type: "today" | "all") => {
-    if (
-      !confirm(
-        `Are you sure you want to reset ${
-          type === "today" ? "today's" : "all"
-        } data?`,
-      )
-    )
-      return;
+    setShowResetModal(type);
+  };
 
-    await resetDataOp(type);
+  const handleConfirmReset = async () => {
+    if (!showResetModal) return;
+    await resetDataOp(showResetModal);
+    setShowResetModal(null);
   };
 
   const stats = {
@@ -459,12 +466,13 @@ function EisenhowerMatrixContent() {
           resetData={resetData}
           workspaces={workspaces}
           activeWorkspaceId={activeWorkspaceId || 0}
-          updateWorkspaceOp={handleSwitchWorkspace}
-          addWorkspaceOp={() => {}} // Not used in header anymore
+          updateWorkspaceOp={(id) => selectWorkspaceOp(id)}
+          addWorkspaceOp={addWorkspaceOp}
           onSettingsClick={() => setShowSettingsModal(true)}
           isOverburdened={isOverburdened}
           viewMode={viewMode}
           setViewMode={setViewMode}
+          onManageWorkspaces={handleManageWorkspaces}
         />
 
         <StatsView
@@ -490,6 +498,7 @@ function EisenhowerMatrixContent() {
         onCreate={addWorkspaceOp}
         onUpdate={updateWorkspaceOp}
         onDelete={deleteWorkspaceOp}
+        initialView={workspaceModalView}
       />
 
       {viewMode === "matrix" ? (
@@ -685,6 +694,12 @@ function EisenhowerMatrixContent() {
         onClose={() => setShowSettingsModal(false)}
         maxDailyMinutes={maxDailyMinutes}
         onUpdateMaxMinutes={updateMaxMinutesOp}
+      />
+      <ResetConfirmModal
+        isOpen={!!showResetModal}
+        resetType={showResetModal}
+        onClose={() => setShowResetModal(null)}
+        onConfirm={handleConfirmReset}
       />
 
       {/* Estimated Minutes Input in Edit Modal - Since I can't easily edit the EditContentModal again without another write, I'll add a temporary overlay or just update it now */}

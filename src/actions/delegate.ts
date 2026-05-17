@@ -4,20 +4,26 @@ import prisma from "@/lib/prisma";
 import { Delegate } from "@/types/eisenhower";
 import { revalidatePath } from "next/cache";
 
-export async function getDelegates() {
+export async function getDelegates(workspaceId: number) {
   try {
     // Ensure "Self" exists
     await prisma.delegate.upsert({
-      where: { name: "Self" },
+      where: {
+        name_workspaceId: {
+          name: "Self",
+          workspaceId,
+        },
+      },
       update: {},
       create: {
-        id: 1,
         name: "Self",
         email: "me@example.com",
+        workspaceId,
       },
     });
 
     const delegates = (await prisma.delegate.findMany({
+      where: { workspaceId },
       orderBy: { createdAt: "desc" },
     })) as unknown as Delegate[];
     return { success: true, data: delegates };
@@ -27,12 +33,13 @@ export async function getDelegates() {
   }
 }
 
-export async function createDelegate(data: { name: string; email?: string }) {
+export async function createDelegate(data: { name: string; email?: string; workspaceId: number }) {
   try {
     const delegate = (await prisma.delegate.create({
       data: {
         name: data.name,
         email: data.email || null,
+        workspaceId: data.workspaceId,
       },
     })) as unknown as Delegate;
     revalidatePath("/eisenhower-matrix");

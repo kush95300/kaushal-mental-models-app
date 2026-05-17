@@ -21,9 +21,9 @@ model Task {
   actualMinutes    Int?
   dueDate          DateTime?
   delegateId       Int?
-  delegate         Delegate? @relation(fields: [delegateId], references: [id])
+  delegate         Delegate? @relation(fields: [delegateId], references: [id], onDelete: SetNull)
   workspaceId      Int       @default(1)
-  workspace        Workspace @relation(fields: [workspaceId], references: [id])
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   tags             String? // Comma-separated tags
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
@@ -37,22 +37,29 @@ model Task {
 }
 
 model Delegate {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  email     String?
-  tasks     Task[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int       @id @default(autoincrement())
+  name        String
+  email       String?
+  tasks       Task[]
+  workspaceId Int       @default(1)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([name, workspaceId])
+  @@index([workspaceId])
 }
 
 model Workspace {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
+  id          Int        @id @default(autoincrement())
+  name        String     @unique
   description String?
-  color       String   @default("indigo")
+  color       String     @default("indigo")
+  icon        String?    @default("Briefcase")
   tasks       Task[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  delegates   Delegate[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
 model UserConfig {

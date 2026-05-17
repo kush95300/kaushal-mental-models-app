@@ -1,12 +1,54 @@
 import React, { useState } from "react";
-import { Briefcase, ChevronDown, Plus, User, Check } from "lucide-react";
+import {
+  Briefcase,
+  ChevronDown,
+  Plus,
+  User,
+  Check,
+  Code,
+  BookOpen,
+  Heart,
+  Smile,
+  Compass,
+  Flame,
+  Globe,
+  Laptop,
+  Lightbulb,
+  Music,
+  Palette,
+  Rocket,
+  Target,
+  Trophy,
+  Zap,
+} from "lucide-react";
 import { Workspace } from "@/types/eisenhower";
+import { Tooltip } from "../ui/Tooltip";
+
+export const ICON_MAP: Record<string, React.ElementType> = {
+  Briefcase,
+  Code,
+  BookOpen,
+  Heart,
+  Smile,
+  Compass,
+  Flame,
+  Globe,
+  Laptop,
+  Lightbulb,
+  Music,
+  Palette,
+  Rocket,
+  Target,
+  Trophy,
+  Zap,
+};
 
 interface WorkspaceSwitcherProps {
   workspaces: Workspace[];
   activeWorkspaceId: number;
   onSwitch: (id: number) => void;
   onAdd: (name: string, color: string) => void;
+  onManage: () => void;
 }
 
 export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
@@ -14,6 +56,7 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
   activeWorkspaceId,
   onSwitch,
   onAdd,
+  onManage,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -29,34 +72,35 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
   };
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-3 px-4 py-2 bg-slate-900/10 dark:bg-white/10 hover:bg-slate-900/20 dark:hover:bg-white/20 backdrop-blur-md border border-slate-900/10 dark:border-white/20 rounded-2xl transition-all group"
-      >
-        <div
-          className={`p-1.5 rounded-lg ${
-            activeWorkspace?.id === 2
-              ? "bg-rose-500/20 text-rose-500"
-              : "bg-indigo-500/20 text-indigo-500"
-          }`}
+    <div className="relative z-10 hover:z-[9999]">
+      <Tooltip content="Workspace Switcher: Click to switch between Work, Personal, or custom workspaces." align="left">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center gap-3 px-4 py-2 bg-slate-900/10 dark:bg-white/10 hover:bg-slate-900/20 dark:hover:bg-white/20 backdrop-blur-md border border-slate-900/10 dark:border-white/20 rounded-2xl transition-all group"
         >
-          {activeWorkspace?.name === "Personal" ? (
-            <User size={18} />
-          ) : (
-            <Briefcase size={18} />
-          )}
-        </div>
-        <span className="text-sm font-black text-slate-700 dark:text-white tracking-wide font-sans">
-          {activeWorkspace?.name || "Select Workspace"}
-        </span>
-        <ChevronDown
-          size={16}
-          className={`text-slate-400 dark:text-white/50 transition-transform duration-300 ${
-            isOpen ? "rotate-180" : ""
-          }`}
-        />
-      </button>
+          <div
+            className={`p-1.5 rounded-lg ${
+              activeWorkspace?.id === 2
+                ? "bg-rose-500/20 text-rose-500"
+                : "bg-indigo-500/20 text-indigo-500"
+            }`}
+          >
+            {(() => {
+              const IconComponent = ICON_MAP[activeWorkspace?.icon || "Briefcase"] || (activeWorkspace?.name === "Personal" ? User : Briefcase);
+              return <IconComponent size={18} />;
+            })()}
+          </div>
+          <span className="text-sm font-black text-slate-700 dark:text-white tracking-wide font-sans">
+            {activeWorkspace?.name || "Select Workspace"}
+          </span>
+          <ChevronDown
+            size={16}
+            className={`text-slate-400 dark:text-white/50 transition-transform duration-300 ${
+              isOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+      </Tooltip>
 
       {isOpen && (
         <>
@@ -78,6 +122,7 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
                       ? "bg-indigo-50 dark:bg-white/10 text-indigo-600 dark:text-white"
                       : "text-slate-500 dark:text-white/60 hover:bg-slate-50 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white"
                   }`}
+                  title={`Switch to ${ws.name} workspace`}
                 >
                   <div className="flex items-center gap-3">
                     <div
@@ -87,11 +132,10 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
                           : "bg-indigo-500/20 text-indigo-500"
                       }`}
                     >
-                      {ws.name === "Personal" ? (
-                        <User size={16} />
-                      ) : (
-                        <Briefcase size={16} />
-                      )}
+                      {(() => {
+                        const IconComponent = ICON_MAP[ws.icon || "Briefcase"] || (ws.name === "Personal" ? User : Briefcase);
+                        return <IconComponent size={16} />;
+                      })()}
                     </div>
                     <span className="text-sm font-bold uppercase tracking-widest text-[10px]">
                       {ws.name}
@@ -106,15 +150,31 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
               <div className="h-px bg-slate-100 dark:bg-white/5 my-2" />
 
               {!showAdd ? (
-                <button
-                  onClick={() => setShowAdd(true)}
-                  className="w-full flex items-center gap-3 p-3 text-slate-400 dark:text-white/40 hover:text-slate-700 dark:hover:text-white/80 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all"
-                >
-                  <Plus size={16} />
-                  <span className="text-sm font-bold uppercase tracking-widest text-[10px]">
-                    New Workspace
-                  </span>
-                </button>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => setShowAdd(true)}
+                    className="w-full flex items-center gap-3 p-3 text-slate-400 dark:text-white/40 hover:text-slate-700 dark:hover:text-white/80 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all"
+                    title="Create a new workspace"
+                  >
+                    <Plus size={16} />
+                    <span className="text-sm font-bold uppercase tracking-widest text-[10px]">
+                      New Workspace
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsOpen(false);
+                      onManage();
+                    }}
+                    className="w-full flex items-center gap-3 p-3 text-slate-400 dark:text-white/40 hover:text-slate-700 dark:hover:text-white/80 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all"
+                    title="Manage workspaces"
+                  >
+                    <Briefcase size={16} />
+                    <span className="text-sm font-bold uppercase tracking-widest text-[10px]">
+                      Manage Workspaces
+                    </span>
+                  </button>
+                </div>
               ) : (
                 <div className="p-2 space-y-2">
                   <input

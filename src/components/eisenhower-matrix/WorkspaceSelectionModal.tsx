@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Zap,
   Briefcase,
@@ -12,17 +12,53 @@ import {
   Calendar,
   Check,
   Loader2,
+  Code,
+  BookOpen,
+  Heart,
+  Smile,
+  Compass,
+  Flame,
+  Globe,
+  Laptop,
+  Lightbulb,
+  Music,
+  Palette,
+  Rocket,
+  Target,
+  Trophy,
 } from "lucide-react";
 import { Workspace } from "@/types/eisenhower";
+
+export const ICON_MAP: Record<string, React.ElementType> = {
+  Briefcase,
+  Code,
+  BookOpen,
+  Heart,
+  Smile,
+  Compass,
+  Flame,
+  Globe,
+  Laptop,
+  Lightbulb,
+  Music,
+  Palette,
+  Rocket,
+  Target,
+  Trophy,
+  Zap,
+};
+
+const AVAILABLE_ICONS = Object.keys(ICON_MAP);
 
 interface WorkspaceSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
   workspaces: Workspace[];
   onSelect: (id: number | null) => void; // null for Test Mode
-  onCreate: (name: string, description: string) => Promise<void>;
-  onUpdate: (id: number, name: string, description: string) => Promise<void>;
+  onCreate: (name: string, description: string, icon?: string) => Promise<void>;
+  onUpdate: (id: number, name: string, description: string, icon?: string) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
+  initialView?: "initial" | "list" | "create" | "edit";
 }
 
 export const WorkspaceSelectionModal: React.FC<
@@ -35,41 +71,46 @@ export const WorkspaceSelectionModal: React.FC<
   onCreate,
   onUpdate,
   onDelete,
+  initialView,
 }) => {
   const [view, setView] = useState<"initial" | "list" | "create" | "edit">(
-    "initial",
+    initialView || "initial",
   );
   const [loading, setLoading] = useState(false);
   const [editingWs, setEditingWs] = useState<Workspace | null>(null);
-  const [formData, setFormData] = useState({ name: "", description: "" });
+  const [formData, setFormData] = useState({ name: "", description: "", icon: "Briefcase" });
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setView(initialView || "initial");
+      setDeleteConfirmId(null);
+    }
+  }, [isOpen, initialView]);
 
   if (!isOpen) return null;
 
   const handleCreate = async () => {
     if (!formData.name.trim()) return;
     setLoading(true);
-    await onCreate(formData.name, formData.description);
+    await onCreate(formData.name, formData.description, formData.icon);
     setLoading(false);
     setView("list");
-    setFormData({ name: "", description: "" });
+    setFormData({ name: "", description: "", icon: "Briefcase" });
   };
 
   const handleUpdate = async () => {
     if (!editingWs || !formData.name.trim()) return;
     setLoading(true);
-    await onUpdate(editingWs.id, formData.name, formData.description);
+    await onUpdate(editingWs.id, formData.name, formData.description, formData.icon);
     setLoading(false);
     setView("list");
     setEditingWs(null);
-    setFormData({ name: "", description: "" });
+    setFormData({ name: "", description: "", icon: "Briefcase" });
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure? All tasks in this workspace will be deleted."))
-      return;
-    setLoading(true);
-    await onDelete(id);
-    setLoading(false);
+  const handleDelete = (id: number) => {
+    setDeleteConfirmId(id);
   };
 
   return (
@@ -188,7 +229,10 @@ export const WorkspaceSelectionModal: React.FC<
                         className="flex-grow flex items-center gap-4 text-left py-2"
                       >
                         <div className="p-3 bg-indigo-50 text-indigo-500 rounded-xl">
-                          <Briefcase size={20} />
+                          {(() => {
+                            const IconComponent = ICON_MAP[ws.icon || "Briefcase"] || Briefcase;
+                            return <IconComponent size={20} />;
+                          })()}
                         </div>
                         <div>
                           <h4 className="text-base font-bold text-slate-900 tracking-tight">
@@ -215,6 +259,7 @@ export const WorkspaceSelectionModal: React.FC<
                             setFormData({
                               name: ws.name,
                               description: ws.description || "",
+                              icon: ws.icon || "Briefcase",
                             });
                             setView("edit");
                           }}
@@ -232,7 +277,10 @@ export const WorkspaceSelectionModal: React.FC<
                     </div>
                   ))}
                   <button
-                    onClick={() => setView("create")}
+                    onClick={() => {
+                      setFormData({ name: "", description: "", icon: "Briefcase" });
+                      setView("create");
+                    }}
                     className="w-full flex items-center justify-center gap-3 p-4 bg-slate-50 hover:bg-white border border-dashed border-slate-200 hover:border-indigo-200 rounded-[1.5rem] text-slate-400 hover:text-indigo-600 transition-all font-bold group mt-2"
                   >
                     <Plus
@@ -281,6 +329,32 @@ export const WorkspaceSelectionModal: React.FC<
                 />
               </div>
 
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-indigo-500 uppercase tracking-widest ml-1">
+                  Workspace Icon
+                </label>
+                <div className="grid grid-cols-8 gap-2 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                  {AVAILABLE_ICONS.map((iconKey) => {
+                    const IconComponent = ICON_MAP[iconKey];
+                    const isSelected = formData.icon === iconKey;
+                    return (
+                      <button
+                        key={iconKey}
+                        type="button"
+                        onClick={() => setFormData((prev) => ({ ...prev, icon: iconKey }))}
+                        className={`p-3 rounded-xl flex items-center justify-center transition-all ${
+                          isSelected
+                            ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200 scale-110"
+                            : "text-slate-500 hover:bg-slate-200/60 hover:text-slate-900"
+                        }`}
+                      >
+                        <IconComponent size={20} />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() =>
@@ -302,7 +376,7 @@ export const WorkspaceSelectionModal: React.FC<
                   onClick={() => {
                     setView("list");
                     setEditingWs(null);
-                    setFormData({ name: "", description: "" });
+                    setFormData({ name: "", description: "", icon: "Briefcase" });
                   }}
                   className="px-8 bg-slate-100 hover:bg-slate-200 text-slate-600 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all"
                 >
@@ -325,6 +399,41 @@ export const WorkspaceSelectionModal: React.FC<
           </div>
         )}
       </div>
+
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-white dark:border-slate-800 animate-in zoom-in-95 duration-200 text-slate-900 dark:text-white">
+            <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-2xl flex items-center justify-center text-rose-500 mb-6">
+              <Trash2 size={24} />
+            </div>
+            <h3 className="text-xl font-black mb-2 font-display uppercase tracking-tight">
+              Delete Workspace?
+            </h3>
+            <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-8 leading-relaxed font-sans">
+              Are you sure you want to permanently delete this workspace? All tasks, notes, and history within this workspace will be permanently erased. This action cannot be undone.
+            </p>
+            <div className="flex gap-2 font-sans">
+              <button
+                onClick={() => setDeleteConfirmId(null)}
+                className="flex-1 py-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-black text-xs uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setLoading(true);
+                  await onDelete(deleteConfirmId);
+                  setLoading(false);
+                  setDeleteConfirmId(null);
+                }}
+                className="flex-1 py-4 rounded-2xl bg-rose-500 dark:bg-rose-600 text-white font-black text-xs uppercase tracking-widest hover:bg-rose-600 dark:hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 dark:shadow-none"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -79,6 +79,7 @@ export const AssignmentModal: React.FC<AssignmentModalProps> = ({
                       updateTaskQuadrant(assignmentModal.taskId, "DO", {
                         dueDate: today.toISOString(),
                       });
+                      onClose();
                     }}
                     className="w-full py-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-100 dark:border-amber-900/30 text-amber-600 dark:text-amber-400 font-black text-xs uppercase tracking-widest hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all font-sans"
                   >
@@ -92,13 +93,14 @@ export const AssignmentModal: React.FC<AssignmentModalProps> = ({
                     .map((d) => (
                       <button
                         key={d.id}
-                        onClick={() =>
+                        onClick={() => {
                           updateTaskQuadrant(
                             assignmentModal.taskId,
                             "DELEGATE",
                             { delegateId: d.id },
-                          )
-                        }
+                          );
+                          onClose();
+                        }}
                         className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-50 dark:border-slate-800 hover:border-amber-400 dark:hover:border-amber-600 hover:bg-white dark:hover:bg-slate-800 transition-all text-left group font-sans"
                       >
                         <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:bg-amber-500 group-hover:text-white dark:group-hover:bg-amber-600 transition-all">
@@ -127,6 +129,7 @@ export const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   updateTaskQuadrant(assignmentModal.taskId, "DO", {
                     dueDate: today.toISOString(),
                   });
+                  onClose();
                 }}
                 className="p-6 rounded-3xl bg-indigo-50 dark:bg-indigo-900/20 border-2 border-indigo-100 dark:border-indigo-900/30 hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-600 dark:hover:bg-indigo-600 hover:text-white transition-all group text-left"
               >
@@ -144,6 +147,7 @@ export const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   updateTaskQuadrant(assignmentModal.taskId, "DO", {
                     dueDate: tomorrow.toISOString(),
                   });
+                  onClose();
                 }}
                 className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-white dark:hover:bg-slate-800 transition-all text-left font-sans"
               >
@@ -171,6 +175,7 @@ export const AssignmentModal: React.FC<AssignmentModalProps> = ({
                     updateTaskQuadrant(assignmentModal.taskId, "SCHEDULE", {
                       dueDate: new Date(e.target.value).toISOString(),
                     });
+                    onClose();
                   }
                 }}
               />
@@ -181,13 +186,14 @@ export const AssignmentModal: React.FC<AssignmentModalProps> = ({
             assignmentModal.quadrant === "INBOX") && (
             <div className="grid grid-cols-1 gap-3 font-sans">
               <button
-                onClick={() =>
+                onClick={() => {
                   updateTaskQuadrant(
                     assignmentModal.taskId,
                     assignmentModal.quadrant,
                     { delegateId: null },
-                  )
-                }
+                  );
+                  onClose();
+                }}
                 className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-50 dark:border-slate-800 hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-white dark:hover:bg-slate-800 transition-all text-left group"
               >
                 <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white dark:group-hover:bg-indigo-600 transition-all">

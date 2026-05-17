@@ -7,12 +7,18 @@ export const metadata: Metadata = {
   description: "Productivity analytics and quadrant distribution.",
 };
 
-export default async function AnalyticsPage() {
+interface AnalyticsPageProps {
+  searchParams: Promise<{ workspaceId?: string }>;
+}
+
+export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps) {
+  const params = await searchParams;
+  const paramWorkspaceId = params?.workspaceId ? parseInt(params.workspaceId) : null;
   const config = await prisma.userConfig.findUnique({
     where: { id: 1 },
   });
 
-  const workspaceId = config?.activeWorkspaceId || 1;
+  const workspaceId = paramWorkspaceId || config?.activeWorkspaceId || 1;
 
   return <AnalyticsDashboard workspaceId={workspaceId} />;
 }

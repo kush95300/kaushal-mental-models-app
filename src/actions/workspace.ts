@@ -45,6 +45,7 @@ export async function createWorkspace(data: {
   name: string;
   description?: string;
   color?: string;
+  icon?: string;
 }) {
   try {
     const workspace = await prisma.workspace.create({
@@ -52,6 +53,7 @@ export async function createWorkspace(data: {
         name: data.name,
         description: data.description,
         color: data.color || "indigo",
+        icon: data.icon || "Briefcase",
       },
     });
     revalidatePath("/eisenhower-matrix");
@@ -64,7 +66,7 @@ export async function createWorkspace(data: {
 
 export async function updateWorkspace(
   id: number,
-  data: { name?: string; description?: string; color?: string },
+  data: { name?: string; description?: string; color?: string; icon?: string },
 ) {
   try {
     const workspace = await prisma.workspace.update({
