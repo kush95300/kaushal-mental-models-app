@@ -281,14 +281,26 @@ export function useTaskOperations({
 
     // Optimistic Update
     setTasks((prev) =>
-      prev.map((t) =>
-        t.id === taskId ? ({ ...t, quadrant, ...additionalData } as Task) : t,
-      ),
+      prev.map((t) => {
+        if (t.id === taskId) {
+          const updated = { ...t, quadrant, ...additionalData } as Task;
+          if (additionalData.delegateId) {
+            const del = delegates.find((d) => d.id === additionalData.delegateId);
+            if (del) updated.delegate = del;
+          }
+          return updated;
+        }
+        return t;
+      }),
     );
 
     if (isTestMode) return;
     const res = await updateTaskAction(taskId, { quadrant, ...additionalData });
-    if (!res.success) {
+    if (res.success && res.data) {
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? (res.data as Task) : t)),
+      );
+    } else {
       fetchTasks();
     }
   };
