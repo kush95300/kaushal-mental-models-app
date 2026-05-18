@@ -29,6 +29,8 @@ model Task {
   updatedAt        DateTime  @updatedAt
   completedAt      DateTime?
   isDeleted        Boolean   @default(false)
+  reminderMinutesBefore Int?
+  isNotified       Boolean   @default(false)
 
   @@index([quadrant])
   @@index([status])
@@ -56,6 +58,7 @@ model Workspace {
   description String?
   color       String     @default("indigo")
   icon        String?    @default("Briefcase")
+  dailyNotificationTime String? @default("09:00")
   tasks       Task[]
   delegates   Delegate[]
   createdAt   DateTime   @default(now())

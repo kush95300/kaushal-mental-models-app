@@ -8,6 +8,8 @@ interface EditContentModalProps {
   setEditingContentValue: (value: string) => void;
   editingEstimatedMinutes: string;
   setEditingEstimatedMinutes: (value: string) => void;
+  editingReminderMinutes: string;
+  setEditingReminderMinutes: (value: string) => void;
   onClose: () => void;
   saveTaskContent: () => void;
   warningMessage?: string | null;
@@ -19,6 +21,8 @@ export const EditContentModal: React.FC<EditContentModalProps> = ({
   setEditingContentValue,
   editingEstimatedMinutes,
   setEditingEstimatedMinutes,
+  editingReminderMinutes,
+  setEditingReminderMinutes,
   onClose,
   saveTaskContent,
   warningMessage,
@@ -98,6 +102,25 @@ export const EditContentModal: React.FC<EditContentModalProps> = ({
                   MIN
                 </span>
               </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">
+              Reminder (Minutes Before)
+            </label>
+            <div className="flex-1 bg-white dark:bg-slate-800 rounded-2xl px-4 py-2 flex flex-col items-center justify-center shadow-sm border border-slate-100 dark:border-slate-700 focus-within:border-indigo-300 dark:focus-within:border-indigo-700 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900/10 transition-all">
+              <input
+                type="number"
+                min="0"
+                value={editingReminderMinutes}
+                onChange={(e) => setEditingReminderMinutes(e.target.value)}
+                className="w-full bg-transparent outline-none font-black text-2xl text-slate-700 dark:text-slate-200 text-center placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                placeholder="0"
+              />
+              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                MIN
+              </span>
             </div>
           </div>
         </div>

@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.8.0] - 2026-05-18
+
+### Added
+
+- **Notifications**: Integrated browser push notifications.
+- **Daily Workspace Reminders**: Option to set daily notification times for specific workspaces.
+- **Task Reminders**: Option to set reminder alerts before task due dates.
+
 ## [v1.5.0] - 2026-01-21
 
 ### Added

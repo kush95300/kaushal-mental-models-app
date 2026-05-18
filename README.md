@@ -32,6 +32,10 @@ Transform your to-do list into a strategic map by separating the urgent from the
   - **Tailwind v4 Integration**: Optimized for the latest CSS-first engine with custom `@variant dark` support.
   - **Cross-Component Persistence**: Theme state is shared instantly between the Matrix, Home page, and Analytics without redundant triggers.
   - **Adaptive Workspace**: Live **Today's Date** display, **Workload Balance** metrics, real-time **Task Analytics**, fully responsive header controls, rich custom hover tooltip dialog boxes with advanced CSS stacking context resolution, premium custom glassmorphic confirmation modal dialogs for data reset and workspace deletion operations, direct 1-click workspace switching with inline workspace creation, 16 custom workspace icon options, dedicated workspace management, workspace-scoped delegate management ensuring team members are isolated per context, and seamless contextual analytics navigation preserving active workspace state.
+- **Notifications & Reminders (v1.8.0)**:
+  - **Browser Notifications**: Integrated browser push notifications.
+  - **Workspace Alerts**: Option to set daily notification times for specific workspaces.
+  - **Task Reminders**: Ability to set reminder alerts minutes before task due dates.
 
 ### 🍱 The Models Library
 

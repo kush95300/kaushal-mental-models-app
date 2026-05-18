@@ -69,3 +69,11 @@
 | **Global Theme Sync**   | ✅ Working | Centralized `ThemeProvider` ensures all pages stay in sync. |
 | **Tailwind v4 Support** | ✅ Working | Custom `@variant dark` defined in CSS for latest engine.    |
 | **Visual Transitions**  | ✅ Working | Smooth transitions across backgrounds and card elements.    |
+
+## Notifications & Reminders (v1.8.0)
+
+| Feature                 | Status     | Notes                                                       |
+| :---------------------- | :--------- | :---------------------------------------------------------- |
+| **Browser Notifications** | ✅ Working | Prompts for browser notification permissions.              |
+| **Daily Workspace Alert** | ✅ Working | Triggers at specified time per workspace.                  |
+| **Task Reminders**        | ✅ Working | Triggers push notification specified minutes before due.   |

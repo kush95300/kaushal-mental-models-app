@@ -31,6 +31,7 @@ import { EditContentModal } from "@/components/eisenhower-matrix/modals/EditCont
 import { CompletionModal } from "@/components/eisenhower-matrix/modals/CompletionModal";
 import { SettingsModal } from "@/components/eisenhower-matrix/modals/SettingsModal";
 import { ResetConfirmModal } from "@/components/eisenhower-matrix/modals/ResetConfirmModal";
+import { NotificationManager } from "@/components/NotificationManager";
 import { Task, Delegate } from "@/types/eisenhower";
 
 const QUADRANTS = {
@@ -124,6 +125,7 @@ function EisenhowerMatrixContent() {
   const [editingContentValue, setEditingContentValue] = useState("");
   const [editingEstimatedMinutes, setEditingEstimatedMinutes] =
     useState<string>("");
+  const [editingReminderMinutes, setEditingReminderMinutes] = useState<string>("");
   const [showDoneList, setShowDoneList] = useState(false);
   const [showDeletedList, setShowDeletedList] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
@@ -358,6 +360,7 @@ function EisenhowerMatrixContent() {
       setEditingContentTaskId(task.id);
       setEditingContentValue(task.content);
       setEditingEstimatedMinutes("");
+      setEditingReminderMinutes(task.reminderMinutesBefore?.toString() || "");
       setModalWarning(
         "Please set a time estimate before moving this task to the matrix.",
       );
@@ -386,13 +389,15 @@ function EisenhowerMatrixContent() {
 
     const contentToSave = editingContentValue.trim();
     const minutesToSave = parseInt(editingEstimatedMinutes) || null;
+    const reminderToSave = parseInt(editingReminderMinutes) || null;
 
     if (!contentToSave) return;
 
-    await updateTaskContent(editingContentTaskId, contentToSave, minutesToSave);
+    await updateTaskContent(editingContentTaskId, contentToSave, minutesToSave, reminderToSave);
     setEditingContentTaskId(null);
     setEditingContentValue("");
     setEditingEstimatedMinutes("");
+    setEditingReminderMinutes("");
   };
 
   const addDelegate = async () => {
@@ -451,6 +456,12 @@ function EisenhowerMatrixContent() {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto w-full flex-grow flex flex-col">
+        <NotificationManager
+          tasks={tasks}
+          workspaces={workspaces}
+          activeWorkspaceId={activeWorkspaceId}
+          updateTaskStatus={updateTaskStatus}
+        />
         <MatrixHeader
           isTestMode={isTestMode}
           tasks={tasks}
@@ -525,6 +536,7 @@ function EisenhowerMatrixContent() {
             setEditingContentTaskId={setEditingContentTaskId}
             setEditingContentValue={setEditingContentValue}
             setEditingEstimatedMinutes={setEditingEstimatedMinutes}
+            setEditingReminderMinutes={setEditingReminderMinutes}
             setEditingDateTaskId={setEditingDateTaskId}
             setAssignmentModal={setAssignmentModal}
             QUAD_CONFIG={QUADRANTS}
@@ -537,6 +549,7 @@ function EisenhowerMatrixContent() {
             setEditingContentTaskId(task.id);
             setEditingContentValue(task.content);
             setEditingEstimatedMinutes(task.estimatedMinutes?.toString() || "");
+            setEditingReminderMinutes(task.reminderMinutesBefore?.toString() || "");
           }}
         />
       )}
@@ -679,11 +692,14 @@ function EisenhowerMatrixContent() {
           setEditingContentValue={setEditingContentValue}
           editingEstimatedMinutes={editingEstimatedMinutes}
           setEditingEstimatedMinutes={setEditingEstimatedMinutes}
+          editingReminderMinutes={editingReminderMinutes}
+          setEditingReminderMinutes={setEditingReminderMinutes}
           warningMessage={modalWarning}
           onClose={() => {
             setEditingContentTaskId(null);
             setEditingContentValue("");
             setEditingEstimatedMinutes("");
+            setEditingReminderMinutes("");
             setModalWarning(null);
           }}
           saveTaskContent={saveTaskContent}

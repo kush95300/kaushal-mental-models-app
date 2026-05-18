@@ -33,6 +33,7 @@ interface QuadrantProps {
   setEditingContentTaskId: (taskId: number | null) => void;
   setEditingContentValue: (content: string) => void;
   setEditingEstimatedMinutes: (minutes: string) => void;
+  setEditingReminderMinutes: (minutes: string) => void;
   setEditingDateTaskId: (taskId: number | null) => void;
   setAssignmentModal: (
     data: { taskId: number; quadrant: string } | null,
@@ -53,6 +54,7 @@ export const Quadrant: React.FC<QuadrantProps> = ({
   setEditingContentTaskId,
   setEditingContentValue,
   setEditingEstimatedMinutes,
+  setEditingReminderMinutes,
   setEditingDateTaskId,
   setAssignmentModal,
 }) => {
@@ -140,6 +142,7 @@ export const Quadrant: React.FC<QuadrantProps> = ({
               setEditingContentTaskId={setEditingContentTaskId}
               setEditingContentValue={setEditingContentValue}
               setEditingEstimatedMinutes={setEditingEstimatedMinutes}
+              setEditingReminderMinutes={setEditingReminderMinutes}
               setEditingDateTaskId={setEditingDateTaskId}
               setAssignmentModal={setAssignmentModal}
             />

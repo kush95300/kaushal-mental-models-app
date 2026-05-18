@@ -55,8 +55,8 @@ interface WorkspaceSelectionModalProps {
   onClose: () => void;
   workspaces: Workspace[];
   onSelect: (id: number | null) => void; // null for Test Mode
-  onCreate: (name: string, description: string, icon?: string) => Promise<void>;
-  onUpdate: (id: number, name: string, description: string, icon?: string) => Promise<void>;
+  onCreate: (name: string, description: string, icon?: string, dailyNotificationTime?: string) => Promise<void>;
+  onUpdate: (id: number, name: string, description: string, icon?: string, dailyNotificationTime?: string) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
   initialView?: "initial" | "list" | "create" | "edit";
 }
@@ -78,7 +78,7 @@ export const WorkspaceSelectionModal: React.FC<
   );
   const [loading, setLoading] = useState(false);
   const [editingWs, setEditingWs] = useState<Workspace | null>(null);
-  const [formData, setFormData] = useState({ name: "", description: "", icon: "Briefcase" });
+  const [formData, setFormData] = useState({ name: "", description: "", icon: "Briefcase", dailyNotificationTime: "09:00" });
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -93,20 +93,20 @@ export const WorkspaceSelectionModal: React.FC<
   const handleCreate = async () => {
     if (!formData.name.trim()) return;
     setLoading(true);
-    await onCreate(formData.name, formData.description, formData.icon);
+    await onCreate(formData.name, formData.description, formData.icon, formData.dailyNotificationTime);
     setLoading(false);
     setView("list");
-    setFormData({ name: "", description: "", icon: "Briefcase" });
+    setFormData({ name: "", description: "", icon: "Briefcase", dailyNotificationTime: "09:00" });
   };
 
   const handleUpdate = async () => {
     if (!editingWs || !formData.name.trim()) return;
     setLoading(true);
-    await onUpdate(editingWs.id, formData.name, formData.description, formData.icon);
+    await onUpdate(editingWs.id, formData.name, formData.description, formData.icon, formData.dailyNotificationTime);
     setLoading(false);
     setView("list");
     setEditingWs(null);
-    setFormData({ name: "", description: "", icon: "Briefcase" });
+    setFormData({ name: "", description: "", icon: "Briefcase", dailyNotificationTime: "09:00" });
   };
 
   const handleDelete = (id: number) => {
@@ -260,6 +260,7 @@ export const WorkspaceSelectionModal: React.FC<
                               name: ws.name,
                               description: ws.description || "",
                               icon: ws.icon || "Briefcase",
+                              dailyNotificationTime: ws.dailyNotificationTime || "09:00",
                             });
                             setView("edit");
                           }}
@@ -278,7 +279,7 @@ export const WorkspaceSelectionModal: React.FC<
                   ))}
                   <button
                     onClick={() => {
-                      setFormData({ name: "", description: "", icon: "Briefcase" });
+                      setFormData({ name: "", description: "", icon: "Briefcase", dailyNotificationTime: "09:00" });
                       setView("create");
                     }}
                     className="w-full flex items-center justify-center gap-3 p-4 bg-slate-50 hover:bg-white border border-dashed border-slate-200 hover:border-indigo-200 rounded-[1.5rem] text-slate-400 hover:text-indigo-600 transition-all font-bold group mt-2"
@@ -355,6 +356,20 @@ export const WorkspaceSelectionModal: React.FC<
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-indigo-500 uppercase tracking-widest ml-1">
+                  Daily Notification Time
+                </label>
+                <input
+                  type="time"
+                  value={formData.dailyNotificationTime}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, dailyNotificationTime: e.target.value }))
+                  }
+                  className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-2xl px-5 py-4 text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold"
+                />
+              </div>
+
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={() =>
@@ -376,7 +391,7 @@ export const WorkspaceSelectionModal: React.FC<
                   onClick={() => {
                     setView("list");
                     setEditingWs(null);
-                    setFormData({ name: "", description: "", icon: "Briefcase" });
+                    setFormData({ name: "", description: "", icon: "Briefcase", dailyNotificationTime: "09:00" });
                   }}
                   className="px-8 bg-slate-100 hover:bg-slate-200 text-slate-600 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all"
                 >

@@ -24,6 +24,7 @@ interface TaskCardProps {
   setEditingContentTaskId: (taskId: number | null) => void;
   setEditingContentValue: (content: string) => void;
   setEditingEstimatedMinutes: (minutes: string) => void;
+  setEditingReminderMinutes: (minutes: string) => void;
   setEditingDateTaskId: (taskId: number | null) => void;
   setAssignmentModal: (
     data: { taskId: number; quadrant: string } | null,
@@ -38,6 +39,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   setEditingContentTaskId,
   setEditingContentValue,
   setEditingEstimatedMinutes,
+  setEditingReminderMinutes,
   setEditingDateTaskId,
   setAssignmentModal,
 }) => (
@@ -143,6 +145,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             setEditingContentTaskId(task.id);
             setEditingContentValue(task.content);
             setEditingEstimatedMinutes(task.estimatedMinutes?.toString() || "");
+            setEditingReminderMinutes(task.reminderMinutesBefore?.toString() || "");
           }}
           onDragStart={(e) => {
             e.preventDefault();

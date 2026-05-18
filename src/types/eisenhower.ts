@@ -4,6 +4,7 @@ export interface Workspace {
   description: string | null;
   color: string;
   icon?: string | null;
+  dailyNotificationTime?: string | null;
   createdAt: string | Date;
   updatedAt: string | Date;
 }
@@ -42,4 +43,6 @@ export interface Task {
   delegate?: Delegate | null;
   delegateId?: number | null;
   updatedAt?: string | Date;
+  reminderMinutesBefore?: number | null;
+  isNotified?: boolean;
 }
