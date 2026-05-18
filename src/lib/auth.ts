@@ -1,5 +1,6 @@
 import { jwtVerify, SignJWT } from "jose";
 import { cookies } from "next/headers";
+import prisma from "@/lib/prisma";
 
 const secretKey = process.env.JWT_SECRET || "super-secret-key-for-development";
 const key = new TextEncoder().encode(secretKey);
@@ -24,7 +25,19 @@ export async function getSession() {
   const session = cookieStore.get("session")?.value;
   if (!session) return null;
   try {
-    return await decrypt(session);
+    const payload = await decrypt(session);
+    if (!payload || !payload.id) return null;
+
+    const user = await prisma.user.findUnique({
+      where: { id: payload.id },
+      select: { id: true, username: true, isAdmin: true, status: true, tokenVersion: true }
+    });
+
+    if (!user || user.status !== "APPROVED" || user.tokenVersion !== payload.tokenVersion) {
+      return null;
+    }
+
+    return payload;
   } catch (err) {
     return null;
   }

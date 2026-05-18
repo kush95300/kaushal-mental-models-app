@@ -77,6 +77,7 @@ model User {
   password  String
   isAdmin   Boolean     @default(false)
   status    String      @default("APPROVED") // PENDING, APPROVED
+  tokenVersion Int      @default(0)
   workspaces Workspace[]
   activeWorkspaceId  Int?
   maxDailyMinutes    Int         @default(480)

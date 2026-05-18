@@ -6,6 +6,27 @@ import { encrypt, decrypt, getSession } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+// In-Memory Rate Limiter for Brute Force Protection
+type RateLimitEntry = { count: number; resetTime: number };
+const rateLimitMap = new Map<string, RateLimitEntry>();
+
+function checkRateLimit(identifier: string, limit = 5, windowMs = 60000) {
+  const now = Date.now();
+  const entry = rateLimitMap.get(identifier);
+
+  if (!entry || now > entry.resetTime) {
+    rateLimitMap.set(identifier, { count: 1, resetTime: now + windowMs });
+    return { success: true };
+  }
+
+  if (entry.count >= limit) {
+    return { success: false };
+  }
+
+  entry.count += 1;
+  return { success: true };
+}
+
 export async function ensureDefaultWorkspaces(userId: number) {
   const count = await prisma.workspace.count({ where: { userId } });
   if (count === 0) {
@@ -20,6 +41,10 @@ export async function ensureDefaultWorkspaces(userId: number) {
 
 export async function login(username: string, password: string) {
   try {
+    if (!checkRateLimit(`login_${username}`).success) {
+      return { success: false, error: "Too many login attempts. Please try again in a minute." };
+    }
+
     const user = await prisma.user.findUnique({
       where: { username },
     });
@@ -40,10 +65,15 @@ export async function login(username: string, password: string) {
     await ensureDefaultWorkspaces(user.id);
 
     const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-    const session = await encrypt({ id: user.id, username: user.username, isAdmin: user.isAdmin, expires });
+    const session = await encrypt({ id: user.id, username: user.username, isAdmin: user.isAdmin, tokenVersion: user.tokenVersion, expires });
 
     const cookieStore = await cookies();
-    cookieStore.set("session", session, { expires, httpOnly: true });
+    cookieStore.set("session", session, { 
+      expires, 
+      httpOnly: true, 
+      sameSite: "strict", 
+      secure: process.env.NODE_ENV === "production" 
+    });
 
     return { success: true };
   } catch (error) {
@@ -69,6 +99,7 @@ export async function createInitialAdmin() {
           password: hashedPassword,
           isAdmin: true,
           status: "APPROVED",
+          tokenVersion: 0,
         },
       });
       await ensureDefaultWorkspaces(admin.id);
@@ -82,6 +113,10 @@ export async function createInitialAdmin() {
 
 export async function requestAccount(username: string, password: string) {
   try {
+    if (!checkRateLimit(`req_${username}`).success) {
+      return { success: false, error: "Too many requests. Please try again later." };
+    }
+
     const existingUser = await prisma.user.findUnique({ where: { username } });
     if (existingUser) {
       return { success: false, error: "Username already exists" };
@@ -94,6 +129,7 @@ export async function requestAccount(username: string, password: string) {
         password: hashedPassword,
         isAdmin: false,
         status: "PENDING",
+        tokenVersion: 0,
       },
     });
 
@@ -127,6 +163,7 @@ export async function createUser(username: string, password: string, isAdmin: bo
         password: hashedPassword,
         isAdmin,
         status: "APPROVED",
+        tokenVersion: 0,
       },
     });
 
@@ -257,7 +294,7 @@ export async function changeUserPassword(oldPassword: string, newPassword: strin
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await prisma.user.update({
       where: { id: payload.id },
-      data: { password: hashedPassword },
+      data: { password: hashedPassword, tokenVersion: { increment: 1 } },
     });
 
     return { success: true };
@@ -290,7 +327,7 @@ export async function getCurrentUser() {
       select: { id: true, username: true, isAdmin: true, status: true }
     });
     
-    if (!user) return { success: false };
+    if (!user || user.status !== "APPROVED") return { success: false };
     return { success: true, user };
   } catch (error) {
     return { success: false };
