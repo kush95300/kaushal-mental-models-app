@@ -9,13 +9,16 @@ export async function getWorkspaces() {
     const session = await getSession();
     if (!session) return { success: false, error: "Unauthorized" };
 
+    // If admin, adopt any legacy unassigned workspaces
+    if (session.isAdmin) {
+      await prisma.workspace.updateMany({
+        where: { userId: null },
+        data: { userId: session.id },
+      });
+    }
+
     const workspaces = await prisma.workspace.findMany({
-      where: {
-        OR: [
-          { userId: session.id },
-          { userId: null },
-        ]
-      },
+      where: { userId: session.id },
       orderBy: { name: "asc" },
     });
     return { success: true, data: workspaces };
@@ -44,6 +47,12 @@ export async function updateActiveWorkspace(workspaceId: number) {
   try {
     const session = await getSession();
     if (!session) return { success: false, error: "Unauthorized" };
+
+    // Verify ownership
+    const ws = await prisma.workspace.findUnique({ where: { id: workspaceId } });
+    if (!ws || (ws.userId !== session.id && !session.isAdmin)) {
+      return { success: false, error: "Unauthorized workspace access" };
+    }
 
     const config = await prisma.user.update({
       where: { id: session.id },
@@ -89,6 +98,14 @@ export async function updateWorkspace(
   data: { name?: string; description?: string; color?: string; icon?: string },
 ) {
   try {
+    const session = await getSession();
+    if (!session) return { success: false, error: "Unauthorized" };
+
+    const ws = await prisma.workspace.findUnique({ where: { id } });
+    if (!ws || (ws.userId !== session.id && !session.isAdmin)) {
+      return { success: false, error: "Unauthorized workspace access" };
+    }
+
     const workspace = await prisma.workspace.update({
       where: { id },
       data,
@@ -103,6 +120,14 @@ export async function updateWorkspace(
 
 export async function deleteWorkspace(id: number) {
   try {
+    const session = await getSession();
+    if (!session) return { success: false, error: "Unauthorized" };
+
+    const ws = await prisma.workspace.findUnique({ where: { id } });
+    if (!ws || (ws.userId !== session.id && !session.isAdmin)) {
+      return { success: false, error: "Unauthorized workspace access" };
+    }
+
     await prisma.task.deleteMany({ where: { workspaceId: id } });
     await prisma.workspace.delete({ where: { id } });
     revalidatePath("/eisenhower-matrix");

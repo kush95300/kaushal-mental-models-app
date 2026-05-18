@@ -16,13 +16,15 @@ import {
   BarChart3,
   Moon,
   Sun,
+  Shield,
+  LogOut,
+  Bell,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { Task, Workspace, User } from "@/types/eisenhower";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 import { Tooltip } from "../ui/Tooltip";
-import { logout } from "@/actions/auth";
-import { Shield, LogOut } from "lucide-react";
+import { logout, getPendingUsers } from "@/actions/auth";
 
 interface MatrixHeaderProps {
   isTestMode: boolean;
@@ -74,9 +76,23 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
   user,
 }) => {
   const { theme, toggleTheme } = useTheme();
-  // Prevent hydration mismatch
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+
+  useEffect(() => {
+    setMounted(true);
+    if (user?.isAdmin) {
+      getPendingUsers().then(res => {
+        if (res.success && res.users) {
+          setPendingRequestsCount(res.users.length);
+        }
+      });
+    }
+  }, [user]);
+
+  const urgentTasks = tasks.filter(t => t.isUrgent && t.status !== "DONE" && !t.isDeleted);
+  const pendingTasks = tasks.filter(t => t.status !== "DONE" && !t.isDeleted);
 
   return (
     <div className="flex flex-wrap justify-between items-center gap-4 mb-6 relative z-20 hover:z-[9999]">
@@ -172,7 +188,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
         <Tooltip content="Eisenhower Matrix Guide: Learn how to effectively use the 4 quadrants to prioritize your workflow.">
           <button
             onClick={() => setShowHelpModal(true)}
-            className="p-2.5 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-white dark:border-slate-800 shadow-sm transition-all hover:shadow-md relative z-10 hover:z-[9999]"
+            className="p-2.5 text-slate-400 dark:text-slate-50 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-white dark:border-slate-800 shadow-sm transition-all hover:shadow-md relative z-10 hover:z-[9999]"
           >
             <HelpCircle size={18} />
           </button>
@@ -202,6 +218,69 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
             </Link>
           </Tooltip>
         )}
+
+        {/* Notifications Popover */}
+        <div className="relative z-30">
+          <Tooltip content="Notifications & Alerts" align="right">
+            <button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="p-2.5 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-white dark:border-slate-800 shadow-sm transition-all hover:shadow-md relative"
+            >
+              <Bell size={18} />
+              {(pendingRequestsCount > 0 || urgentTasks.length > 0) && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
+              )}
+            </button>
+          </Tooltip>
+
+          {showNotifications && (
+            <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-4 z-50 animate-in fade-in-50 slide-in-from-top-2 duration-200">
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <span className="font-black text-sm text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                  <Bell size={16} className="text-indigo-500" /> Notifications
+                </span>
+                <button onClick={() => setShowNotifications(false)} className="text-xs text-slate-400 hover:text-slate-600">Close</button>
+              </div>
+
+              <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                {user?.isAdmin && pendingRequestsCount > 0 && (
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-2xl flex items-start justify-between gap-2">
+                    <div>
+                      <div className="text-xs font-bold text-amber-900 dark:text-amber-200">New Account Requests</div>
+                      <div className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">{pendingRequestsCount} user(s) waiting for admin approval.</div>
+                    </div>
+                    <Link href="/admin" onClick={() => setShowNotifications(false)} className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black rounded-xl uppercase tracking-wider shrink-0 shadow-sm">
+                      Review
+                    </Link>
+                  </div>
+                )}
+
+                {urgentTasks.length > 0 && (
+                  <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-2xl">
+                    <div className="text-xs font-bold text-rose-900 dark:text-rose-200 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" /> Urgent Tasks Pending
+                    </div>
+                    <div className="text-[11px] text-rose-700 dark:text-rose-400 mt-0.5">{urgentTasks.length} urgent task(s) require immediate attention in this workspace.</div>
+                  </div>
+                )}
+
+                {pendingTasks.length > 0 && (
+                  <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/50 rounded-2xl">
+                    <div className="text-xs font-bold text-indigo-900 dark:text-indigo-200">Workspace Status</div>
+                    <div className="text-[11px] text-indigo-700 dark:text-indigo-400 mt-0.5">{pendingTasks.length} active task(s) remaining to be completed.</div>
+                  </div>
+                )}
+
+                {(!user?.isAdmin || pendingRequestsCount === 0) && urgentTasks.length === 0 && pendingTasks.length === 0 && (
+                  <div className="text-center py-6 text-xs text-slate-400 font-medium">
+                    No new notifications. You're all caught up!
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
         <Tooltip content="Manage Delegates: Add, edit, or remove team members and assignees for your tasks.">
           <button
             onClick={() => setShowDelegateModal(true)}
@@ -260,7 +339,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
               max="50"
               value={visibleLimit}
               onChange={(e) => setVisibleLimit(parseInt(e.target.value))}
-              className="w-24 accent-indigo-600 dark:accent-indigo-500 h-1 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer hover:accent-indigo-500 transition-all"
+              className="w-24 accent-indigo-600 dark:accent-indigo-500 h-1 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer hover:accent-indigo-50 transition-all"
             />
           </div>
         </Tooltip>
@@ -285,14 +364,14 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
         </div>
 
         {user && (
-          <div className="flex bg-white/40 dark:bg-slate-900/40 p-1 rounded-2xl border border-white/50 dark:border-slate-800/50 transition-colors relative z-10 hover:z-[9999] ml-2">
+          <div className="flex bg-white/40 dark:bg-slate-900/40 p-1 rounded-2xl border border-white/50 dark:border-slate-800/50 transition-colors relative z-10 hover:z-[9999] ml-2 items-center gap-1">
             {user.isAdmin && (
-              <Tooltip content="Admin Portal: Manage users and system access." align="right">
+              <Tooltip content="User Management: Manage users, review pending account requests, and configure system access." align="right">
                 <Link
                   href="/admin"
-                  className="p-2 px-3 text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:text-indigo-300 dark:hover:bg-indigo-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans flex items-center gap-1"
+                  className="p-2 px-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest font-sans flex items-center gap-1.5 shadow-sm border border-indigo-200/50 dark:border-indigo-800/50"
                 >
-                  <Shield size={12} /> Admin
+                  <UserCog size={14} /> User Management
                 </Link>
               </Tooltip>
             )}
