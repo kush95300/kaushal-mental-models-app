@@ -2,10 +2,20 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { getSession } from "@/lib/auth";
 
 export async function getWorkspaces() {
   try {
+    const session = await getSession();
+    if (!session) return { success: false, error: "Unauthorized" };
+
     const workspaces = await prisma.workspace.findMany({
+      where: {
+        OR: [
+          { userId: session.id },
+          { userId: null },
+        ]
+      },
       orderBy: { name: "asc" },
     });
     return { success: true, data: workspaces };
@@ -17,8 +27,11 @@ export async function getWorkspaces() {
 
 export async function getUserConfig() {
   try {
-    const config = await prisma.userConfig.findUnique({
-      where: { id: 1 },
+    const session = await getSession();
+    if (!session) return { success: false, error: "Unauthorized" };
+    
+    const config = await prisma.user.findUnique({
+      where: { id: session.id },
     });
     return { success: true, data: config };
   } catch (error) {
@@ -29,8 +42,11 @@ export async function getUserConfig() {
 
 export async function updateActiveWorkspace(workspaceId: number) {
   try {
-    const config = await prisma.userConfig.update({
-      where: { id: 1 },
+    const session = await getSession();
+    if (!session) return { success: false, error: "Unauthorized" };
+
+    const config = await prisma.user.update({
+      where: { id: session.id },
       data: { activeWorkspaceId: workspaceId },
     });
     revalidatePath("/eisenhower-matrix");
@@ -48,12 +64,16 @@ export async function createWorkspace(data: {
   icon?: string;
 }) {
   try {
+    const session = await getSession();
+    if (!session) return { success: false, error: "Unauthorized" };
+
     const workspace = await prisma.workspace.create({
       data: {
         name: data.name,
         description: data.description,
         color: data.color || "indigo",
         icon: data.icon || "Briefcase",
+        userId: session.id,
       },
     });
     revalidatePath("/eisenhower-matrix");
@@ -95,8 +115,11 @@ export async function deleteWorkspace(id: number) {
 
 export async function updateMaxDailyMinutes(minutes: number) {
   try {
-    const config = await prisma.userConfig.update({
-      where: { id: 1 },
+    const session = await getSession();
+    if (!session) return { success: false, error: "Unauthorized" };
+
+    const config = await prisma.user.update({
+      where: { id: session.id },
       data: { maxDailyMinutes: minutes },
     });
     revalidatePath("/eisenhower-matrix");

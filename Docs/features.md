@@ -77,3 +77,11 @@
 | **Browser Notifications** | ✅ Working | Prompts for browser notification permissions.              |
 | **Daily Workspace Alert** | ✅ Working | Triggers at specified time per workspace.                  |
 | **Task Reminders**        | ✅ Working | Triggers push notification specified minutes before due.   |
+
+## User Authentication & Admin Portal (v1.9.0)
+
+| Feature                 | Status     | Notes                                                       |
+| :---------------------- | :--------- | :---------------------------------------------------------- |
+| **Secure Login**        | ✅ Working | Bcrypt password hashing and JWT cookies via jose.           |
+| **Admin Portal**        | ✅ Working | Role-based access control (`/admin`) to manage user accounts.|
+| **Multi-Tenant Isolation**| ✅ Working | Workspaces scoped to individual users or globally shared.   |

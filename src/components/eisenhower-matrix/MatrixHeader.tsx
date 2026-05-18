@@ -18,9 +18,11 @@ import {
   Sun,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
-import { Task, Workspace } from "@/types/eisenhower";
+import { Task, Workspace, User } from "@/types/eisenhower";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 import { Tooltip } from "../ui/Tooltip";
+import { logout } from "@/actions/auth";
+import { Shield, LogOut } from "lucide-react";
 
 interface MatrixHeaderProps {
   isTestMode: boolean;
@@ -44,6 +46,7 @@ interface MatrixHeaderProps {
   viewMode: "matrix" | "calendar";
   setViewMode: (mode: "matrix" | "calendar") => void;
   onManageWorkspaces: () => void;
+  user: User | null;
 }
 
 export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
@@ -68,6 +71,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
   viewMode,
   setViewMode,
   onManageWorkspaces,
+  user,
 }) => {
   const { theme, toggleTheme } = useTheme();
   // Prevent hydration mismatch
@@ -279,6 +283,29 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
             </button>
           </Tooltip>
         </div>
+
+        {user && (
+          <div className="flex bg-white/40 dark:bg-slate-900/40 p-1 rounded-2xl border border-white/50 dark:border-slate-800/50 transition-colors relative z-10 hover:z-[9999] ml-2">
+            {user.isAdmin && (
+              <Tooltip content="Admin Portal: Manage users and system access." align="right">
+                <Link
+                  href="/admin"
+                  className="p-2 px-3 text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:text-indigo-300 dark:hover:bg-indigo-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans flex items-center gap-1"
+                >
+                  <Shield size={12} /> Admin
+                </Link>
+              </Tooltip>
+            )}
+            <Tooltip content="Sign Out: Securely log out of your account." align="right">
+              <button
+                onClick={() => logout()}
+                className="p-2 px-3 text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:text-slate-400 dark:hover:text-rose-400 dark:hover:bg-rose-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans flex items-center gap-1"
+              >
+                <LogOut size={12} /> Logout
+              </button>
+            </Tooltip>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { createInitialAdmin } from "@/actions/auth";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -13,11 +14,12 @@ export const metadata: Metadata = {
   description: "A professional repository of cognitive mental models",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  await createInitialAdmin();
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.variable} suppressHydrationWarning>

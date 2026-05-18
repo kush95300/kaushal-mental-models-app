@@ -11,14 +11,23 @@ interface AnalyticsPageProps {
   searchParams: Promise<{ workspaceId?: string }>;
 }
 
+import { getSession } from "@/lib/auth";
+
 export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps) {
   const params = await searchParams;
   const paramWorkspaceId = params?.workspaceId ? parseInt(params.workspaceId) : null;
-  const config = await prisma.userConfig.findUnique({
-    where: { id: 1 },
-  });
+  const session = await getSession();
+  let activeWorkspaceId = 1;
+  if (session) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.id },
+    });
+    if (user?.activeWorkspaceId) {
+      activeWorkspaceId = user.activeWorkspaceId;
+    }
+  }
 
-  const workspaceId = paramWorkspaceId || config?.activeWorkspaceId || 1;
+  const workspaceId = paramWorkspaceId || activeWorkspaceId;
 
   return <AnalyticsDashboard workspaceId={workspaceId} />;
 }

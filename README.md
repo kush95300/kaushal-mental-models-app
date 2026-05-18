@@ -36,6 +36,10 @@ Transform your to-do list into a strategic map by separating the urgent from the
   - **Browser Notifications**: Integrated browser push notifications.
   - **Workspace Alerts**: Option to set daily notification times for specific workspaces.
   - **Task Reminders**: Ability to set reminder alerts minutes before task due dates.
+- **User Authentication & Admin Portal (v1.9.0)**:
+  - **Secure Login System**: Password hashing via `bcryptjs` and secure JWT cookie sessions via `jose`.
+  - **Admin Management Portal**: Dedicated portal (`/admin`) for administrators to manage user accounts, create new credentials, and revoke access.
+  - **Multi-Tenant Isolation**: Workspaces are securely scoped to individual users or globally accessible for team collaboration.
 
 ### 🍱 The Models Library
 

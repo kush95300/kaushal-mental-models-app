@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.9.0] - 2026-05-18
+
+### Added
+
+- **User Authentication**: Secure login system with password hashing (bcryptjs) and JWT session management (jose).
+- **Admin Portal**: Dedicated portal (`/admin`) for administrators to manage system access, create new users, and revoke access.
+- **Multi-Tenant Scoping**: Workspaces are now scoped to individual users or globally accessible.
+
 ## [v1.8.0] - 2026-05-18
 
 ### Added

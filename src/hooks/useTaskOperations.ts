@@ -22,7 +22,7 @@ import {
   deleteWorkspace as deleteWorkspaceAction,
   updateMaxDailyMinutes,
 } from "@/actions/workspace";
-import { Workspace, UserConfig } from "@/types/eisenhower";
+import { Workspace, User } from "@/types/eisenhower";
 
 interface UseTaskOperationsProps {
   isTestMode: boolean;
@@ -89,14 +89,14 @@ export function useTaskOperations({
         await updateActiveWorkspace(initialWorkspaceId);
         const configRes = await getUserConfig();
         if (configRes.success && configRes.data) {
-          const config = configRes.data as unknown as UserConfig;
+          const config = configRes.data as unknown as User;
           setMaxDailyMinutes(config.maxDailyMinutes);
         }
       } else {
         const configRes = await getUserConfig();
         if (configRes.success && configRes.data) {
           if (!isTestMode) {
-            const config = configRes.data as unknown as UserConfig;
+            const config = configRes.data as unknown as User;
             setActiveWorkspaceId(config.activeWorkspaceId);
             setMaxDailyMinutes(config.maxDailyMinutes);
           }
@@ -309,16 +309,17 @@ export function useTaskOperations({
     id: number,
     content: string,
     estimatedMinutes: number | null,
+    reminderMinutesBefore: number | null = null,
   ) => {
     // Optimistic Update
     setTasks((prev) =>
       prev.map((t) =>
-        t.id === id ? ({ ...t, content, estimatedMinutes } as Task) : t,
+        t.id === id ? ({ ...t, content, estimatedMinutes, reminderMinutesBefore } as Task) : t,
       ),
     );
 
     if (isTestMode) return;
-    await updateTaskAction(id, { content, estimatedMinutes });
+    await updateTaskAction(id, { content, estimatedMinutes, reminderMinutesBefore });
   };
 
   const deleteTask = async (id: number) => {

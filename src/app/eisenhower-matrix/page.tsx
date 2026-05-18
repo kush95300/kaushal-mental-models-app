@@ -34,6 +34,9 @@ import { ResetConfirmModal } from "@/components/eisenhower-matrix/modals/ResetCo
 import { NotificationManager } from "@/components/NotificationManager";
 import { Task, Delegate } from "@/types/eisenhower";
 
+import { getCurrentUser } from "@/actions/auth";
+import { User } from "@/types/eisenhower";
+
 const QUADRANTS = {
   DO: {
     id: "DO",
@@ -142,7 +145,18 @@ function EisenhowerMatrixContent() {
   const [refreshInterval, setRefreshInterval] = useState(60); // seconds
   const [currentDateDisplay, setCurrentDateDisplay] = useState("");
   const [modalWarning, setModalWarning] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const res = await getCurrentUser();
+      if (res.success && res.user) {
+        setUser(res.user as User);
+      }
+    };
+    loadUser();
+  }, []);
 
   // Keyboard Shortcuts
   useEffect(() => {
@@ -484,6 +498,7 @@ function EisenhowerMatrixContent() {
           viewMode={viewMode}
           setViewMode={setViewMode}
           onManageWorkspaces={handleManageWorkspaces}
+          user={user}
         />
 
         <StatsView

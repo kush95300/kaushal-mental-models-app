@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
 
 export async function GET() {
   try {
-    let config = await (prisma as any).userConfig.findFirst();
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    if (!config) {
-      config = await (prisma as any).userConfig.create({
-        data: {},
-      });
-    }
+    const user = await prisma.user.findUnique({
+      where: { id: session.id },
+    });
 
-    return NextResponse.json(config);
+    return NextResponse.json(user);
   } catch (error) {
     console.error("Fetch config error:", error);
     return NextResponse.json(
@@ -23,22 +23,19 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const body = await request.json();
-    const config = await (prisma as any).userConfig.upsert({
-      where: { id: 1 },
-      update: {
-        analyticsStartDate: body.analyticsStartDate
-          ? new Date(body.analyticsStartDate)
-          : null,
-      },
-      create: {
-        id: 1,
+    const user = await prisma.user.update({
+      where: { id: session.id },
+      data: {
         analyticsStartDate: body.analyticsStartDate
           ? new Date(body.analyticsStartDate)
           : null,
       },
     });
-    return NextResponse.json(config);
+    return NextResponse.json(user);
   } catch (error) {
     console.error("Update config error:", error);
     return NextResponse.json(

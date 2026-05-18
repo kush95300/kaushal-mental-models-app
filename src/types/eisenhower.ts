@@ -9,11 +9,14 @@ export interface Workspace {
   updatedAt: string | Date;
 }
 
-export interface UserConfig {
+export interface User {
   id: number;
-  activeWorkspaceId: number;
+  username: string;
+  isAdmin: boolean;
+  activeWorkspaceId: number | null;
   maxDailyMinutes: number;
   analyticsStartDate: string | Date | null;
+  createdAt: string | Date;
   updatedAt: string | Date;
 }
 
