@@ -365,16 +365,6 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
 
         {user && (
           <div className="flex bg-white/40 dark:bg-slate-900/40 p-1 rounded-2xl border border-white/50 dark:border-slate-800/50 transition-colors relative z-10 hover:z-[9999] ml-2 items-center gap-1">
-            {user.isAdmin && (
-              <Tooltip content="User Management: Manage users, review pending account requests, and configure system access." align="right">
-                <Link
-                  href="/admin"
-                  className="p-2 px-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest font-sans flex items-center gap-1.5 shadow-sm border border-indigo-200/50 dark:border-indigo-800/50"
-                >
-                  <UserCog size={14} /> User Management
-                </Link>
-              </Tooltip>
-            )}
             <Tooltip content="Sign Out: Securely log out of your account." align="right">
               <button
                 onClick={() => logout()}

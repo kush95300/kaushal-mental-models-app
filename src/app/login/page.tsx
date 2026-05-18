@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { login, requestAccount } from "@/actions/auth";
+import { useState, useEffect } from "react";
+import { login, requestAccount, isAdminPasswordDefault } from "@/actions/auth";
 import { useRouter } from "next/navigation";
 import { Sparkles, KeyRound, User as UserIcon, LogIn, UserPlus, Info } from "lucide-react";
 
@@ -12,7 +12,12 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showAdminBanner, setShowAdminBanner] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    isAdminPasswordDefault().then(res => setShowAdminBanner(res));
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,7 +102,7 @@ export default function LoginPage() {
           </button>
         </div>
 
-        {mode === "login" && (
+        {mode === "login" && showAdminBanner && (
           <div className="mb-6 p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/40 rounded-2xl flex items-start gap-2.5 text-indigo-900 dark:text-indigo-200">
             <Info className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
             <div className="text-xs leading-relaxed font-medium">

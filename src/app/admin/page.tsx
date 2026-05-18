@@ -326,13 +326,15 @@ export default function AdminPortal() {
                         </div>
                       </div>
                       
-                      <button
-                        onClick={() => handleDeleteUser(user.id, user.username)}
-                        className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
-                        title="Delete User"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+                      {user.username !== "admin" && (
+                        <button
+                          onClick={() => handleDeleteUser(user.id, user.username)}
+                          className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
+                          title="Delete User"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      )}
                     </div>
                   ))}
                   

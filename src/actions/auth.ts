@@ -223,6 +223,12 @@ export async function deleteUser(id: number) {
       return { success: false, error: "Cannot delete yourself" };
     }
 
+    const userToDelete = await prisma.user.findUnique({ where: { id } });
+    if (!userToDelete) return { success: false, error: "User not found" };
+    if (userToDelete.username === "admin") {
+      return { success: false, error: "Cannot delete the root admin account" };
+    }
+
     await prisma.user.delete({ where: { id } });
     return { success: true };
   } catch (error) {
@@ -231,14 +237,14 @@ export async function deleteUser(id: number) {
   }
 }
 
-export async function changeAdminPassword(oldPassword: string, newPassword: string) {
+export async function changeUserPassword(oldPassword: string, newPassword: string) {
   try {
     const cookieStore = await cookies();
     const session = cookieStore.get("session")?.value;
     if (!session) return { success: false, error: "Unauthorized" };
 
     const payload = await decrypt(session);
-    if (!payload || !payload.isAdmin) {
+    if (!payload) {
       return { success: false, error: "Unauthorized" };
     }
 
@@ -258,6 +264,19 @@ export async function changeAdminPassword(oldPassword: string, newPassword: stri
   } catch (error) {
     console.error("Change password error:", error);
     return { success: false, error: "Failed to change password" };
+  }
+}
+
+export const changeAdminPassword = changeUserPassword;
+
+export async function isAdminPasswordDefault() {
+  try {
+    const admin = await prisma.user.findUnique({ where: { username: "admin" } });
+    if (!admin) return false;
+    const isMatch = await bcrypt.compare("admin", admin.password);
+    return isMatch;
+  } catch (err) {
+    return false;
   }
 }
 
