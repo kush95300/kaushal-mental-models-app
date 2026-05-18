@@ -11,10 +11,14 @@ export async function getWorkspaces() {
 
     // If admin, adopt any legacy unassigned workspaces
     if (session.isAdmin) {
-      await prisma.workspace.updateMany({
-        where: { userId: null },
-        data: { userId: session.id },
-      });
+      try {
+        await prisma.workspace.updateMany({
+          where: { userId: null },
+          data: { userId: session.id },
+        });
+      } catch (err) {
+        // Ignore unique constraint collisions
+      }
     }
 
     const workspaces = await prisma.workspace.findMany({
