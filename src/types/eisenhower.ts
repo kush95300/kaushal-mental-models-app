@@ -13,6 +13,7 @@ export interface User {
   id: number;
   username: string;
   isAdmin: boolean;
+  status: string;
   activeWorkspaceId: number | null;
   maxDailyMinutes: number;
   analyticsStartDate: string | Date | null;

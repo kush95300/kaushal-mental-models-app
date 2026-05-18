@@ -1,30 +1,41 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getUsers, createUser, deleteUser, logout } from "@/actions/auth";
-import { UserPlus, Trash2, Shield, User, LogOut, ArrowLeft } from "lucide-react";
+import { getUsers, getPendingUsers, createUser, deleteUser, approveUser, changeAdminPassword, logout } from "@/actions/auth";
+import { UserPlus, Trash2, Shield, User, LogOut, ArrowLeft, CheckCircle, KeyRound, Clock } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminPortal() {
   const [users, setUsers] = useState<any[]>([]);
+  const [pendingUsers, setPendingUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+
+  const [oldPassword, setOldPassword] = useState("");
+  const [changePassNew, setChangePassNew] = useState("");
+  const [passLoading, setPassLoading] = useState(false);
+
   const [actionError, setActionError] = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
 
-  const fetchUsers = async () => {
-    const res = await getUsers();
-    if (res.success && res.users) {
-      setUsers(res.users);
+  const fetchData = async () => {
+    setLoading(true);
+    const resUsers = await getUsers();
+    if (resUsers.success && resUsers.users) {
+      setUsers(resUsers.users);
+    }
+    const resPending = await getPendingUsers();
+    if (resPending.success && resPending.users) {
+      setPendingUsers(resPending.users);
     }
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchData();
   }, []);
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -43,30 +54,66 @@ export default function AdminPortal() {
       setNewUsername("");
       setNewPassword("");
       setIsAdmin(false);
-      fetchUsers();
+      fetchData();
     } else {
       setActionError(res.error || "Failed to create user.");
     }
   };
 
-  const handleDeleteUser = async (id: number, username: string) => {
-    if (!window.confirm(`Are you sure you want to delete ${username}?`)) return;
+  const handleDeleteUser = async (id: number, username: string, isPending = false) => {
+    if (!window.confirm(`Are you sure you want to ${isPending ? "reject" : "delete"} ${username}?`)) return;
     
     setActionError("");
     setActionSuccess("");
 
     const res = await deleteUser(id);
     if (res.success) {
-      setActionSuccess(`User ${username} deleted successfully.`);
-      fetchUsers();
+      setActionSuccess(`User ${username} ${isPending ? "rejected" : "deleted"} successfully.`);
+      fetchData();
     } else {
-      setActionError(res.error || "Failed to delete user.");
+      setActionError(res.error || `Failed to ${isPending ? "reject" : "delete"} user.`);
     }
+  };
+
+  const handleApproveUser = async (id: number, username: string) => {
+    setActionError("");
+    setActionSuccess("");
+
+    const res = await approveUser(id);
+    if (res.success) {
+      setActionSuccess(`User ${username} approved successfully.`);
+      fetchData();
+    } else {
+      setActionError(res.error || "Failed to approve user.");
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setActionError("");
+    setActionSuccess("");
+    setPassLoading(true);
+
+    if (!oldPassword || !changePassNew) {
+      setActionError("Please provide both current and new password.");
+      setPassLoading(false);
+      return;
+    }
+
+    const res = await changeAdminPassword(oldPassword, changePassNew);
+    if (res.success) {
+      setActionSuccess("Password changed successfully.");
+      setOldPassword("");
+      setChangePassNew("");
+    } else {
+      setActionError(res.error || "Failed to change password.");
+    }
+    setPassLoading(false);
   };
 
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 p-6 font-sans text-slate-900 dark:text-slate-100">
-      <div className="max-w-5xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto space-y-8">
         
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -80,7 +127,7 @@ export default function AdminPortal() {
                 Admin Portal
               </h1>
               <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
-                Manage system access and user accounts.
+                Manage system access, pending account requests, and user credentials.
               </p>
             </div>
           </div>
@@ -108,8 +155,9 @@ export default function AdminPortal() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           
-          {/* Create User Form */}
-          <div className="md:col-span-1">
+          {/* Left Column: Forms */}
+          <div className="md:col-span-1 space-y-8">
+            {/* Create User Form */}
             <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl">
               <h2 className="text-xl font-black mb-6 flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-indigo-500" /> Add New User
@@ -163,13 +211,97 @@ export default function AdminPortal() {
                 </button>
               </form>
             </div>
+
+            {/* Change Password Form */}
+            <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl">
+              <h2 className="text-xl font-black mb-6 flex items-center gap-2">
+                <KeyRound className="w-5 h-5 text-indigo-500" /> Change My Password
+              </h2>
+              
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1.5 ml-1">
+                    Current Password
+                  </label>
+                  <input
+                    type="password"
+                    value={oldPassword}
+                    onChange={(e) => setOldPassword(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
+                    placeholder="••••••••"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1.5 ml-1">
+                    New Password
+                  </label>
+                  <input
+                    type="password"
+                    value={changePassNew}
+                    onChange={(e) => setChangePassNew(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
+                    placeholder="••••••••"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={passLoading}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-xl font-black text-sm uppercase tracking-widest transition-colors mt-4 disabled:opacity-50"
+                >
+                  {passLoading ? "Updating..." : "Update Password"}
+                </button>
+              </form>
+            </div>
           </div>
 
-          {/* User List */}
-          <div className="md:col-span-2">
+          {/* Right Column: User Lists */}
+          <div className="md:col-span-2 space-y-8">
+            
+            {/* Pending Users */}
+            {pendingUsers.length > 0 && (
+              <div className="bg-amber-50/70 dark:bg-amber-950/20 backdrop-blur-xl p-6 rounded-3xl border border-amber-200 dark:border-amber-800/40 shadow-xl">
+                <h2 className="text-xl font-black mb-6 flex items-center gap-2 text-amber-900 dark:text-amber-200">
+                  <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" /> Pending Account Requests ({pendingUsers.length})
+                </h2>
+
+                <div className="space-y-3">
+                  {pendingUsers.map(user => (
+                    <div key={user.id} className="flex items-center justify-between p-4 bg-white dark:bg-slate-800/90 rounded-2xl border border-amber-100 dark:border-amber-800/40 shadow-sm">
+                      <div>
+                        <div className="font-bold text-lg">{user.username}</div>
+                        <div className="text-xs text-slate-500 font-medium mt-1">
+                          Requested {new Date(user.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleApproveUser(user.id, user.username)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-xs transition-colors"
+                          title="Approve User"
+                        >
+                          <CheckCircle className="w-4 h-4" /> Approve
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(user.id, user.username, true)}
+                          className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-colors"
+                          title="Reject Request"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Managed Users */}
             <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl min-h-[400px]">
               <h2 className="text-xl font-black mb-6 flex items-center gap-2">
-                <User className="w-5 h-5 text-indigo-500" /> Managed Users
+                <User className="w-5 h-5 text-indigo-500" /> Managed Users ({users.length})
               </h2>
 
               {loading ? (

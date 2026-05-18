@@ -54,7 +54,7 @@ model Delegate {
 
 model Workspace {
   id          Int        @id @default(autoincrement())
-  name        String     @unique
+  name        String
   description String?
   color       String     @default("indigo")
   icon        String?    @default("Briefcase")
@@ -65,6 +65,8 @@ model Workspace {
   user        User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+
+  @@unique([name, userId])
 }
 
 
@@ -74,6 +76,7 @@ model User {
   username  String      @unique
   password  String
   isAdmin   Boolean     @default(false)
+  status    String      @default("APPROVED") // PENDING, APPROVED
   workspaces Workspace[]
   activeWorkspaceId  Int?
   maxDailyMinutes    Int         @default(480)
