@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
 
 export interface AnalyticsData {
   distribution: { name: string; value: number; color: string }[];
@@ -14,10 +15,23 @@ export interface AnalyticsData {
   };
 }
 
+async function verifyWorkspaceAccess(workspaceId: number) {
+  const session = await getSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+  const ws = await prisma.workspace.findUnique({ where: { id: workspaceId } });
+  if (!ws || (ws.userId !== session.id && !session.isAdmin)) {
+    return { success: false, error: "Unauthorized workspace access" };
+  }
+  return { success: true, session };
+}
+
 export async function getAnalyticsData(
   workspaceId: number,
 ): Promise<{ success: boolean; data?: AnalyticsData; error?: string }> {
   try {
+    const access = await verifyWorkspaceAccess(workspaceId);
+    if (!access.success) return { success: false, error: access.error };
+
     // 1. Quadrant Distribution (Active Tasks)
     const activeTasks = await prisma.task.findMany({
       where: {
@@ -131,8 +145,6 @@ export async function getAnalyticsData(
     });
 
     // Calc Avg Completion Speed (if data exists)
-    // We can use the fetched 'completedTasks' (last 14 days) as a sample, or fetch a larger sample if needed.
-    // Let's rely on the 14-day sample for "Recent Performance"
     let totalMinutes = 0;
     let countWithTime = 0;
     completedTasks.forEach((t) => {

@@ -3,9 +3,23 @@
 import prisma from "@/lib/prisma";
 import { Delegate } from "@/types/eisenhower";
 import { revalidatePath } from "next/cache";
+import { getSession } from "@/lib/auth";
+
+async function verifyWorkspaceAccess(workspaceId: number) {
+  const session = await getSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+  const ws = await prisma.workspace.findUnique({ where: { id: workspaceId } });
+  if (!ws || (ws.userId !== session.id && !session.isAdmin)) {
+    return { success: false, error: "Unauthorized workspace access" };
+  }
+  return { success: true, session };
+}
 
 export async function getDelegates(workspaceId: number) {
   try {
+    const access = await verifyWorkspaceAccess(workspaceId);
+    if (!access.success) return { success: false, error: access.error };
+
     // Ensure "Self" exists
     await prisma.delegate.upsert({
       where: {
@@ -35,6 +49,9 @@ export async function getDelegates(workspaceId: number) {
 
 export async function createDelegate(data: { name: string; email?: string; workspaceId: number }) {
   try {
+    const access = await verifyWorkspaceAccess(data.workspaceId);
+    if (!access.success) return { success: false, error: access.error };
+
     const delegate = (await prisma.delegate.create({
       data: {
         name: data.name,
@@ -56,6 +73,10 @@ export async function deleteDelegateAction(id: number) {
       where: { id },
     })) as any;
     if (!delegate) return { success: false, error: "Delegate not found" };
+
+    const access = await verifyWorkspaceAccess(delegate.workspaceId);
+    if (!access.success) return { success: false, error: access.error };
+
     if (delegate.name === "Self")
       return { success: false, error: "Cannot delete Self" };
 

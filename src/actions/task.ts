@@ -4,14 +4,36 @@ import prisma from "@/lib/prisma";
 import { Task, Delegate } from "@/types/eisenhower";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
+import { getSession } from "@/lib/auth";
+
+async function verifyWorkspaceAccess(workspaceId: number) {
+  const session = await getSession();
+  if (!session) return { success: false, error: "Unauthorized" };
+  const ws = await prisma.workspace.findUnique({ where: { id: workspaceId } });
+  if (!ws || (ws.userId !== session.id && !session.isAdmin)) {
+    return { success: false, error: "Unauthorized workspace access" };
+  }
+  return { success: true, session };
+}
 
 export async function getTasks(workspaceId?: number, includeDeleted = false) {
   try {
+    const session = await getSession();
+    if (!session) return { success: false, error: "Unauthorized" };
+
+    if (workspaceId) {
+      const access = await verifyWorkspaceAccess(workspaceId);
+      if (!access.success) return { success: false, error: access.error };
+    }
+
     const where: Prisma.TaskWhereInput = includeDeleted
       ? {}
       : { isDeleted: false };
+
     if (workspaceId) {
       where.workspaceId = workspaceId;
+    } else if (!session.isAdmin) {
+      where.workspace = { userId: session.id };
     }
 
     const tasks = (await prisma.task.findMany({
@@ -38,10 +60,14 @@ export async function createTask(data: {
   workspaceId?: number;
 }) {
   try {
+    const workspaceId = data.workspaceId || 1;
+    const access = await verifyWorkspaceAccess(workspaceId);
+    if (!access.success) return { success: false, error: access.error };
+
     let finalDelegateId = data.delegateId;
     if (!finalDelegateId) {
       const selfDelegate = (await prisma.delegate.findFirst({
-        where: { name: { in: ["Self", "self", "SELF"] } },
+        where: { name: { in: ["Self", "self", "SELF"] }, workspaceId },
       })) as Delegate | null;
       if (selfDelegate) finalDelegateId = selfDelegate.id;
     }
@@ -56,7 +82,7 @@ export async function createTask(data: {
         dueDate: data.dueDate ? new Date(data.dueDate) : null,
         delegateId: finalDelegateId,
         estimatedMinutes: data.estimatedMinutes || null,
-        workspaceId: data.workspaceId || 1,
+        workspaceId,
       },
       include: { delegate: true },
     });
@@ -71,6 +97,12 @@ export async function createTask(data: {
 
 export async function updateTask(id: number, updates: Partial<Task>) {
   try {
+    const existing = await prisma.task.findUnique({ where: { id } });
+    if (!existing) return { success: false, error: "Task not found" };
+
+    const access = await verifyWorkspaceAccess(existing.workspaceId);
+    if (!access.success) return { success: false, error: access.error };
+
     const data: Prisma.TaskUpdateInput = { ...updates } as any;
 
     if (updates.dueDate)
@@ -87,7 +119,7 @@ export async function updateTask(id: number, updates: Partial<Task>) {
     // Business Rule: If moving out of DELEGATE quadrant, auto-assign to Self
     if (data.quadrant && data.quadrant !== "DELEGATE") {
       const selfDelegate = (await prisma.delegate.findFirst({
-        where: { name: { in: ["Self", "self", "SELF"] } },
+        where: { name: { in: ["Self", "self", "SELF"] }, workspaceId: existing.workspaceId },
       })) as Delegate | null;
       if (selfDelegate) data.delegate = { connect: { id: selfDelegate.id } };
     }
@@ -118,6 +150,12 @@ export async function deleteTaskAction(
   mode: "soft" | "hard" | "revert" = "soft",
 ) {
   try {
+    const existing = await prisma.task.findUnique({ where: { id } });
+    if (!existing) return { success: false, error: "Task not found" };
+
+    const access = await verifyWorkspaceAccess(existing.workspaceId);
+    if (!access.success) return { success: false, error: access.error };
+
     if (mode === "revert") {
       await prisma.task.update({
         where: { id },
@@ -144,14 +182,31 @@ export async function deleteTaskAction(
 
 export async function resetTasksAction(type: "today" | "all") {
   try {
-    if (type === "all") {
-      await prisma.task.deleteMany({});
+    const session = await getSession();
+    if (!session) return { success: false, error: "Unauthorized" };
+
+    if (!session.isAdmin) {
+      const userWorkspaces = await prisma.workspace.findMany({ where: { userId: session.id }, select: { id: true } });
+      const wsIds = userWorkspaces.map(w => w.id);
+      if (type === "all") {
+        await prisma.task.deleteMany({ where: { workspaceId: { in: wsIds } } });
+      } else {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        await prisma.task.deleteMany({
+          where: { workspaceId: { in: wsIds }, createdAt: { gte: today } },
+        });
+      }
     } else {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      await prisma.task.deleteMany({
-        where: { createdAt: { gte: today } },
-      });
+      if (type === "all") {
+        await prisma.task.deleteMany({});
+      } else {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        await prisma.task.deleteMany({
+          where: { createdAt: { gte: today } },
+        });
+      }
     }
 
     revalidatePath("/eisenhower-matrix");
