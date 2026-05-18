@@ -92,7 +92,19 @@ npm run dev
 
 ## 🐳 Containerization & Orchestration (4 Deployment Options)
 
-We provide four complete, production-ready methods to deploy the application using the configurations located in the `deployment/` directory:
+We provide four complete, production-ready methods to deploy the application using the configurations located in the `deployment/` directory.
+
+### 🌟 Interactive Deployment Menu (Recommended)
+
+You can launch our interactive deployment helper script to automatically guide you through building, configuring, and deploying to any of the 4 targets (or starting local dev):
+
+```bash
+make deploy
+# or
+npm run deploy
+```
+
+### Manual Deployment Targets
 
 1. **Standalone Docker Container**: Multi-stage, highly optimized Next.js standalone container (`deployment/docker/Dockerfile`).
 2. **Docker Compose**: Automated orchestration with persistent SQLite volume management (`deployment/docker-compose/docker-compose.yml`).

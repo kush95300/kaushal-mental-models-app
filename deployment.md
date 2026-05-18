@@ -59,6 +59,21 @@ The application will be live at: **[http://localhost:3000](http://localhost:3000
 
 We provide four complete, production-ready methods to deploy the application using the configurations located in the `deployment/` directory.
 
+### 🌟 Interactive Deployment Menu (Recommended)
+
+You can launch our interactive deployment helper script to automatically guide you through building, configuring, and deploying to any of the 4 targets (or starting local dev):
+
+```bash
+# Using Make shortcut
+make deploy
+
+# Or using npm script
+npm run deploy
+
+# Or executing directly
+bash scripts/deploy.sh
+```
+
 ### Option 1: Standalone Docker Container
 
 Build and run the multi-stage, optimized Next.js standalone container:
