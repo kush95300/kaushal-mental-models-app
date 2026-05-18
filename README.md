@@ -90,6 +90,17 @@ npx prisma db push
 npm run dev
 ```
 
+## 🐳 Containerization & Orchestration (4 Deployment Options)
+
+We provide four complete, production-ready methods to deploy the application using the configurations located in the `deployment/` directory:
+
+1. **Standalone Docker Container**: Multi-stage, highly optimized Next.js standalone container (`deployment/docker/Dockerfile`).
+2. **Docker Compose**: Automated orchestration with persistent SQLite volume management (`deployment/docker-compose/docker-compose.yml`).
+3. **Vanilla Kubernetes Manifests**: Declarative K8s resources including PVC, Deployment, Service, ConfigMap, and Ingress (`deployment/k8s/`).
+4. **Helm Chart**: Fully templated, dynamic Kubernetes package management (`deployment/helm/kaushal-mental-models`).
+
+For detailed step-by-step instructions on each deployment method, please refer to the **[Deployment Guide](deployment.md)**.
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please ensure that your pull requests pass the **pre-commit** checks to maintain code quality.

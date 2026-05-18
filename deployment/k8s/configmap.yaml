@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kaushal-mental-models-config
+  labels:
+    app: kaushal-mental-models
+data:
+  NODE_ENV: "production"
+  PORT: "3000"
+  DATABASE_URL: "file:/app/prisma/dev.db"

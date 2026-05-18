@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile
+    container_name: kaushal-mental-models-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=file:/app/prisma/dev.db
+    volumes:
+      - sqlite_data:/app/prisma
+
+volumes:
+  sqlite_data:
+    name: kaushal_mental_models_sqlite_data
