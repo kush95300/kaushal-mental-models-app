@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getUsers, getPendingUsers, createUser, deleteUser, approveUser, changeAdminPassword, logout } from "@/actions/auth";
-import { UserPlus, Trash2, Shield, User, LogOut, ArrowLeft, CheckCircle, KeyRound, Clock } from "lucide-react";
+import { UserPlus, Trash2, Shield, User, LogOut, ArrowLeft, CheckCircle, KeyRound, Clock, X, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminPortal() {
@@ -20,6 +20,8 @@ export default function AdminPortal() {
 
   const [actionError, setActionError] = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
+
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; id: number; username: string; isPending: boolean } | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -60,8 +62,14 @@ export default function AdminPortal() {
     }
   };
 
-  const handleDeleteUser = async (id: number, username: string, isPending = false) => {
-    if (!window.confirm(`Are you sure you want to ${isPending ? "reject" : "delete"} ${username}?`)) return;
+  const handleDeleteUser = (id: number, username: string, isPending = false) => {
+    setConfirmModal({ isOpen: true, id, username, isPending });
+  };
+
+  const executeDelete = async () => {
+    if (!confirmModal) return;
+    const { id, username, isPending } = confirmModal;
+    setConfirmModal(null);
     
     setActionError("");
     setActionSuccess("");
@@ -172,7 +180,7 @@ export default function AdminPortal() {
                     type="text"
                     value={newUsername}
                     onChange={(e) => setNewUsername(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
+                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-50 transition-all font-medium"
                     placeholder="e.g. jdoe"
                   />
                 </div>
@@ -185,7 +193,7 @@ export default function AdminPortal() {
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
+                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-50 transition-all font-medium"
                     placeholder="••••••••"
                   />
                 </div>
@@ -271,7 +279,7 @@ export default function AdminPortal() {
                     <div key={user.id} className="flex items-center justify-between p-4 bg-white dark:bg-slate-800/90 rounded-2xl border border-amber-100 dark:border-amber-800/40 shadow-sm">
                       <div>
                         <div className="font-bold text-lg">{user.username}</div>
-                        <div className="text-xs text-slate-500 font-medium mt-1">
+                        <div className="text-xs text-slate-50 font-medium mt-1">
                           Requested {new Date(user.createdAt).toLocaleDateString()}
                         </div>
                       </div>
@@ -349,6 +357,53 @@ export default function AdminPortal() {
           </div>
           
         </div>
+
+        {/* Custom Confirmation Modal */}
+        {confirmModal && confirmModal.isOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="relative w-full max-w-md bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6">
+              <button
+                onClick={() => setConfirmModal(null)}
+                className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 rounded-2xl">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black">Confirm Action</h2>
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                    This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                Are you sure you want to {confirmModal.isPending ? "reject the account request for" : "permanently delete the user"}{" "}
+                <span className="font-bold text-slate-900 dark:text-white">{confirmModal.username}</span>?
+              </p>
+
+              <div className="flex items-center gap-3 pt-4">
+                <button
+                  onClick={() => setConfirmModal(null)}
+                  className="flex-1 py-3.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl font-black text-xs uppercase tracking-widest transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={executeDelete}
+                  className="flex-1 py-3.5 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shadow-rose-500/30"
+                >
+                  {confirmModal.isPending ? "Reject" : "Delete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
