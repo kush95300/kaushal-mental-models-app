@@ -36,10 +36,14 @@ Transform your to-do list into a strategic map by separating the urgent from the
   - **Browser Notifications**: Integrated browser push notifications.
   - **Workspace Alerts**: Option to set daily notification times for specific workspaces.
   - **Task Reminders**: Ability to set reminder alerts minutes before task due dates.
-- **User Authentication & Admin Portal (v1.9.0)**:
+- **User Authentication & Admin Portal (v1.9.0 / v1.9.1)**:
   - **Secure Login System**: Password hashing via `bcryptjs` and secure JWT cookie sessions via `jose`.
-  - **Admin Management Portal**: Dedicated portal (`/admin`) for administrators to manage user accounts, create new credentials, and revoke access.
+  - **Admin Management Portal**: Dedicated portal (`/admin`) for administrators to manage user accounts, review pending account requests, create new credentials, and revoke access.
   - **Multi-Tenant Isolation**: Workspaces are securely scoped to individual users or globally accessible for team collaboration.
+  - **Universal Password Management**: Global "Change Password" modal accessible from the start page for all authenticated users.
+  - **Admin Portal Hardening**: Relocated User Management strictly to the start page for administrators. Protected root `admin` account from deletion.
+  - **Dynamic Credential Banner**: Programmatic check to automatically hide default credentials banner once the default password is changed.
+  - **Custom Confirmation Modal**: Replaced native `window.confirm` dialogs with a premium custom React confirmation modal in the Admin Portal to resolve webview popup dismissal bugs during user deletion and rejection.
 
 ### 🍱 The Models Library
 

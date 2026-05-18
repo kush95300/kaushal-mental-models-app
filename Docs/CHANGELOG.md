@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.9.1] - 2026-05-18
+
+### Added & Fixed
+
+- **Universal Password Management**: Added a global "Change Password" modal accessible from the start page for all authenticated users.
+- **Admin Portal Hardening**: Relocated User Management strictly to the start page for administrators. Protected root `admin` account from deletion.
+- **Dynamic Credential Banner**: Added programmatic check to automatically hide default credentials banner once the default password is changed.
+- **Custom Confirmation Modal**: Replaced native `window.confirm` dialogs with a premium custom React confirmation modal in the Admin Portal to resolve webview popup dismissal bugs during user deletion and rejection.
+
 ## [v1.9.0] - 2026-05-18
 
 ### Added
