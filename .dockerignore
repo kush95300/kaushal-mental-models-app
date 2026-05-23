@@ -1,0 +1,14 @@
+Dockerfile
+.dockerignore
+deployment/docker/Dockerfile
+deployment/docker/.dockerignore
+node_modules
+npm-debug.log
+README.md
+.next
+.git
+.gitignore
+.env
+.env*.local
+dev.db
+prisma/dev.db

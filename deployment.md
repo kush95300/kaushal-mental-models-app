@@ -78,15 +78,67 @@ bash scripts/deploy.sh
 
 ### Option 1: Standalone Docker Container
 
-Build and run the multi-stage, optimized Next.js standalone container. Database migrations are applied automatically at container startup.
+Build and run the multi-stage, optimized Next.js standalone container. This option mounts a persistent Docker volume to store the SQLite database so that tasks, workspaces, and user accounts are preserved across container updates and restarts.
 
-```bash
-# Build the Docker image
-docker build -t kaushal-mental-models:latest -f deployment/docker/Dockerfile .
+#### 🏗️ Architecture & Initialization Flow
 
-# Run the container on port 3000 (Note: JWT_SECRET is required in production)
-docker run -d -p 3000:3000 -e JWT_SECRET=your-strong-production-key-here --name mental-models-app kaushal-mental-models:latest
+```mermaid
+graph TD
+    subgraph Build Phase
+        A[Local Repository] -->|Filters out dev.db/node_modules| B[.dockerignore]
+        B --> C[docker build]
+        C --> D[Multi-Stage Dockerfile]
+        D -->|Builds Next.js Standalone| E(Docker Image: kaushal-mental-models:latest)
+    end
+
+    subgraph Runtime Deployment
+        E -->|Run Container| F(Docker Container: mental-models-app)
+        G[(Docker Volume: kaushal-db-volume)] -->|Mounts to /app/prisma| F
+        H[Env: JWT_SECRET] --> F
+    end
+
+    subgraph Container Startup Lifecycle
+        F -->|1. Run CMD| I[npx prisma@6 migrate deploy]
+        I -->|Applies migrations to dev.db in volume| J[Database Migrated]
+        J -->|2. Run CMD| K[node prisma/seed.js]
+        K -->|Seeds admin user & default workspaces| L[Database Seeded]
+        L -->|3. Run CMD| M[node server.js]
+        M -->|Exposes App| N[Serving on Port 3000]
+    end
 ```
+
+#### 🚀 Deployment Steps
+
+**Step 1: Create a Persistent Docker Volume**
+Create a dedicated named Docker volume to store the SQLite database file:
+```bash
+docker volume create kaushal-db-volume
+```
+
+**Step 2: Build the Docker Image**
+Build the optimized production image using the multi-stage Dockerfile:
+```bash
+docker build -t kaushal-mental-models:latest -f deployment/docker/Dockerfile .
+```
+> [!NOTE]
+> The root-level `.dockerignore` prevents your local database (`prisma/dev.db`) from being copied into the image. This guarantees a clean database initialization inside the container.
+
+**Step 3: Run the Container**
+Start the container by mapping the host port `3000` to the container port `3000`, mounting the persistent volume, and setting the required `JWT_SECRET`:
+```bash
+docker run -d \
+  -p 3000:3000 \
+  --name mental-models-app \
+  -v kaushal-db-volume:/app/prisma \
+  -e JWT_SECRET=super-secret-production-key-change-me \
+  kaushal-mental-models:latest
+```
+
+> [!IMPORTANT]
+> * **Persistence**: The volume mounts to `/app/prisma` in the container where `dev.db` is stored. Deleting or recreating the container will **not** lose your database.
+> * **Seeding**: On startup, the container automatically runs migrations and seeds the default admin credentials:
+>   * **Username:** `admin`
+>   * **Password:** `admin`
 
 ### Option 2: Docker Compose (Recommended for Single-Host Production)
 
