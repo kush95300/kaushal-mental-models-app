@@ -280,7 +280,7 @@ function EisenhowerMatrixContent() {
 
   useEffect(() => {
     // fetchDelegates handled by hook
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    
     fetchConfig();
     setCurrentDateDisplay(
       new Date().toLocaleDateString("en-US", {
@@ -302,7 +302,7 @@ function EisenhowerMatrixContent() {
 
   useEffect(() => {
     if (searchParams.get("showHelp") === "true") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      
       setShowHelpModal(true);
       setShowWorkspaceModal(false);
     }
