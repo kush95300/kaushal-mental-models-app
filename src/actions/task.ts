@@ -5,6 +5,7 @@ import { Task, Delegate } from "@/types/eisenhower";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { verifyWorkspaceAccess } from "@/lib/workspace-access";
+import { getSession } from "@/lib/auth";
 
 export async function getTasks(workspaceId?: number, includeDeleted = false) {
   try {
