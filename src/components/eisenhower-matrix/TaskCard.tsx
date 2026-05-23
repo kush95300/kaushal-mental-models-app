@@ -14,6 +14,7 @@ import {
 import { Task } from "@/types/eisenhower";
 import { formatMinutes } from "@/lib/formatTime";
 import { formatFriendlyDate, isOverdue } from "@/lib/dateUtils";
+import { Tooltip } from "../ui/Tooltip";
 
 interface TaskCardProps {
   task: Task;
@@ -23,6 +24,7 @@ interface TaskCardProps {
   setEditingContentTaskId: (taskId: number | null) => void;
   setEditingContentValue: (content: string) => void;
   setEditingEstimatedMinutes: (minutes: string) => void;
+  setEditingReminderMinutes: (minutes: string) => void;
   setEditingDateTaskId: (taskId: number | null) => void;
   setAssignmentModal: (
     data: { taskId: number; quadrant: string } | null,
@@ -37,48 +39,58 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   setEditingContentTaskId,
   setEditingContentValue,
   setEditingEstimatedMinutes,
+  setEditingReminderMinutes,
   setEditingDateTaskId,
   setAssignmentModal,
 }) => (
   <div
     draggable
     onDragStart={() => onDragStart(task.id)}
-    className={`group relative flex items-center gap-3 p-3 mb-2 bg-white/90 backdrop-blur-sm rounded-xl border border-white/50 shadow-sm transition-all duration-300 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-indigo-200 hover:scale-[1.01] active:scale-[0.98] hover:z-50
+    className={`group relative flex items-center gap-3 p-3 mb-2 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-xl border border-white/50 dark:border-slate-700/50 shadow-sm transition-all duration-300 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-indigo-200 dark:hover:border-slate-600 hover:scale-[1.01] active:scale-[0.98] hover:z-50
         ${task.status === "DONE" ? "opacity-60" : ""}
         ${
           isOverdue(task.dueDate || "") && task.status !== "DONE"
-            ? "!border-rose-300 !bg-rose-50/50"
+            ? "!border-rose-300 !bg-rose-50/50 dark:!bg-rose-900/20 dark:!border-rose-800"
             : ""
         }
         `}
   >
-    <button
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        toggleComplete(task.id);
-      }}
-      onDragStart={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      }}
-      onMouseDown={(e) => e.stopPropagation()}
-      onPointerDown={(e) => e.stopPropagation()}
-      className="flex-shrink-0 relative z-20 transition-transform duration-200 hover:scale-125 rounded-full"
+    <Tooltip
+      content={
+        task.status === "DONE"
+          ? "Mark as Incomplete: Restore this task to active status."
+          : "Mark as Complete: Move this task to your completed archive."
+      }
+      align="left"
     >
-      {task.status === "DONE" ? (
-        <CheckCircle2 className="w-5 h-5 text-emerald-500 fill-emerald-50" />
-      ) : (
-        <Circle className="w-5 h-5 text-slate-300" />
-      )}
-    </button>
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleComplete(task.id);
+        }}
+        onDragStart={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        onMouseDown={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        className="flex-shrink-0 relative z-20 transition-transform duration-200 hover:scale-125 rounded-full"
+      >
+        {task.status === "DONE" ? (
+          <CheckCircle2 className="w-5 h-5 text-emerald-500 fill-emerald-50 dark:fill-emerald-950" />
+        ) : (
+          <Circle className="w-5 h-5 text-slate-300 dark:text-slate-600" />
+        )}
+      </button>
+    </Tooltip>
 
     <div className="flex-grow min-w-0 relative group/text">
       <span
         className={`block text-sm font-medium truncate transition-all duration-300 ${
           task.status === "DONE"
-            ? "line-through text-slate-400"
-            : "text-slate-700"
+            ? "line-through text-slate-400 dark:text-slate-600"
+            : "text-slate-700 dark:text-slate-200"
         }`}
       >
         {task.content}
@@ -93,8 +105,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         <span
           className={`text-[10px] font-bold uppercase flex items-center gap-1 mt-0.5 ${
             isOverdue(task.dueDate) && task.status !== "DONE"
-              ? "text-rose-500"
-              : "text-indigo-400"
+              ? "text-rose-500 dark:text-rose-400"
+              : "text-indigo-400 dark:text-indigo-300"
           }`}
         >
           <Calendar className="w-3 h-3" />
@@ -104,22 +116,27 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             <span>Due {formatFriendlyDate(task.dueDate)}</span>
           )}
           {isOverdue(task.dueDate) && task.status !== "DONE" && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setEditingDateTaskId(task.id);
-              }}
-              onMouseDown={(e) => e.stopPropagation()}
-              className="ml-2 px-1.5 py-0.5 bg-rose-100 hover:bg-rose-200 text-rose-600 rounded-md border border-rose-200 shadow-sm transition-colors"
+            <Tooltip
+              content="Reschedule Overdue Task: Click to pick a new due date."
+              align="center"
             >
-              Reschedule
-            </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingDateTaskId(task.id);
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                className="ml-2 px-1.5 py-0.5 bg-rose-100 dark:bg-rose-900/50 hover:bg-rose-200 dark:hover:bg-rose-800 text-rose-600 dark:text-rose-300 rounded-md border border-rose-200 dark:border-rose-700 shadow-sm transition-colors"
+              >
+                Reschedule
+              </button>
+            </Tooltip>
           )}
         </span>
       )}
       {task.estimatedMinutes && (
-        <span className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1 mt-0.5">
-          <Clock size={12} className="text-indigo-400" />{" "}
+        <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase flex items-center gap-1 mt-0.5">
+          <Clock size={12} className="text-indigo-400 dark:text-indigo-300" />{" "}
           {formatMinutes(task.estimatedMinutes)}
         </span>
       )}
@@ -131,29 +148,20 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     </div>
 
     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setEditingContentTaskId(task.id);
-          setEditingContentValue(task.content);
-          setEditingEstimatedMinutes(task.estimatedMinutes?.toString() || "");
-        }}
-        onDragStart={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-        }}
-        onMouseDown={(e) => e.stopPropagation()}
-        onPointerDown={(e) => e.stopPropagation()}
-        className="p-1.5 relative z-20 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors duration-200"
-        title="Edit Content"
+      <Tooltip
+        content="Edit Task Content: Modify the text description and estimated duration."
+        position="top"
+        align="right"
       >
-        <Pencil className="w-4 h-4" />
-      </button>
-      {task.quadrant !== "INBOX" && task.quadrant !== "DO" && (
         <button
           onClick={(e) => {
             e.stopPropagation();
-            setEditingDateTaskId(task.id);
+            setEditingContentTaskId(task.id);
+            setEditingContentValue(task.content);
+            setEditingEstimatedMinutes(task.estimatedMinutes?.toString() || "");
+            setEditingReminderMinutes(
+              task.reminderMinutesBefore?.toString() || "",
+            );
           }}
           onDragStart={(e) => {
             e.preventDefault();
@@ -161,17 +169,66 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           }}
           onMouseDown={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
-          className="p-1.5 relative z-20 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-colors duration-200"
-          title="Change Due Date"
+          className="p-1.5 relative z-20 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:text-slate-500 dark:hover:text-indigo-400 dark:hover:bg-slate-700/50 rounded-lg transition-colors duration-200"
         >
-          <Calendar className="w-4 h-4" />
+          <Pencil className="w-4 h-4" />
         </button>
+      </Tooltip>
+      {task.quadrant !== "INBOX" && task.quadrant !== "DO" && (
+        <Tooltip
+          content="Change Due Date: Select a new deadline for this task."
+          position="top"
+          align="right"
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditingDateTaskId(task.id);
+            }}
+            onDragStart={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="p-1.5 relative z-20 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:text-slate-500 dark:hover:text-indigo-400 dark:hover:bg-slate-700/50 rounded-lg transition-colors duration-200"
+          >
+            <Calendar className="w-4 h-4" />
+          </button>
+        </Tooltip>
       )}
       {task.quadrant === "DELEGATE" && (
+        <Tooltip
+          content="Reassign Delegate: Choose a different team member for this task."
+          position="top"
+          align="right"
+        >
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setAssignmentModal({ taskId: task.id, quadrant: "DELEGATE" });
+            }}
+            onDragStart={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="p-1.5 relative z-20 text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:text-slate-500 dark:hover:text-amber-400 dark:hover:bg-slate-700/50 rounded-lg transition-colors duration-200"
+          >
+            <UserCog className="w-4 h-4" />
+          </button>
+        </Tooltip>
+      )}
+      <Tooltip
+        content="Delete Task: Permanently remove this task."
+        position="top"
+        align="right"
+      >
         <button
           onClick={(e) => {
             e.stopPropagation();
-            setAssignmentModal({ taskId: task.id, quadrant: "DELEGATE" });
+            deleteTask(task.id);
           }}
           onDragStart={(e) => {
             e.preventDefault();
@@ -179,28 +236,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           }}
           onMouseDown={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
-          className="p-1.5 relative z-20 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-lg transition-colors duration-200"
-          title="Reassign Delegate"
+          className="p-1.5 relative z-20 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:text-slate-500 dark:hover:text-rose-400 dark:hover:bg-slate-700/50 rounded-lg transition-colors duration-200"
         >
-          <UserCog className="w-4 h-4" />
+          <Trash2 className="w-4 h-4" />
         </button>
-      )}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          deleteTask(task.id);
-        }}
-        onDragStart={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-        }}
-        onMouseDown={(e) => e.stopPropagation()}
-        onPointerDown={(e) => e.stopPropagation()}
-        className="p-1.5 relative z-20 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors duration-200"
-        title="Delete Task"
-      >
-        <Trash2 className="w-4 h-4" />
-      </button>
+      </Tooltip>
     </div>
   </div>
 );

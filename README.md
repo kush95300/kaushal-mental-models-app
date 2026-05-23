@@ -27,10 +27,26 @@ Transform your to-do list into a strategic map by separating the urgent from the
   - **Unified Operations**: All task and delegate management moved to high-performance **Server Actions**.
   - **Optimistic UI**: Instant visual feedback for task creation, movement, and deletion before server confirmation.
   - **Modular Component Design**: Page structure refactored into focused components (`MatrixHeader`, `StatsView`, `MainTaskForm`, `MatrixGrid`) for easier maintenance.
-- **Premium User Experience**:
-  - **Hover Tooltips**: Instantly view full task descriptions on hover for longer entries.
-  - **Educational Overlay**: Integrated **Help (?)** portal explaining the Eisenhower philosophy.
-  - **Adaptive Workspace**: Live **Today's Date** display, **Focus Depth** slider, and real-time **Task Metrics**.
+- **Unified Theme Engine (v1.7.0)**:
+  - **Global State Management**: Transitioned from localized state to a centralized `ThemeProvider` context, ensuring perfectly synchronized dark mode across the entire app.
+  - **Tailwind v4 Integration**: Optimized for the latest CSS-first engine with custom `@variant dark` support.
+  - **Cross-Component Persistence**: Theme state is shared instantly between the Matrix, Home page, and Analytics without redundant triggers.
+  - **Adaptive Workspace**: Live **Today's Date** display, **Workload Balance** metrics, real-time **Task Analytics**, fully responsive header controls, rich custom hover tooltip dialog boxes with advanced CSS stacking context resolution, premium custom glassmorphic confirmation modal dialogs for data reset and workspace deletion operations, direct 1-click workspace switching with inline workspace creation, 16 custom workspace icon options, dedicated workspace management, workspace-scoped delegate management ensuring team members are isolated per context, and seamless contextual analytics navigation preserving active workspace state.
+- **Notifications & Reminders (v1.8.0)**:
+  - **Browser Notifications**: Integrated browser push notifications.
+  - **Workspace Alerts**: Option to set daily notification times for specific workspaces.
+  - **Task Reminders**: Ability to set reminder alerts minutes before task due dates.
+- **User Authentication & Admin Portal (v1.9.0 / v1.9.1)**:
+  - **Secure Login System**: Password hashing via `bcryptjs` and secure JWT cookie sessions via `jose`.
+  - **Admin Management Portal**: Dedicated portal (`/admin`) for administrators to manage user accounts, review pending account requests, create new credentials, and revoke access.
+  - **Multi-Tenant Isolation**: Workspaces are securely scoped to individual users or globally accessible for team collaboration.
+  - **Universal Password Management**: Global "Change Password" modal accessible from the start page for all authenticated users.
+  - **Admin Portal Hardening**: Relocated User Management strictly to the start page for administrators. Protected root `admin` account from deletion.
+  - **Dynamic Credential Banner**: Programmatic check to automatically hide default credentials banner once the default password is changed.
+  - **Custom Confirmation Modal**: Replaced native `window.confirm` dialogs with a premium custom React confirmation modal in the Admin Portal to resolve webview popup dismissal bugs during user deletion and rejection.
+  - **CLI Admin Recovery Tool**: Dedicated Node.js command-line script (`npm run admin:recovery -- <new_password>`) for server administrators to securely recover or reset the root admin password directly in the SQLite database without web UI intervention.
+  - **Security Vulnerability Remediation**: Added in-memory rate limiting to auth actions against brute-force attacks, implemented `tokenVersion` session invalidation upon password changes to prevent replay attacks, enforced strict SameSite cookie attributes, and added session authorization checks across all custom API routes (`/api/tasks`, `api/delegates`, `api/config`).
+  - **IDOR & Security Header Hardening**: Configured comprehensive Next.js security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy) and implemented strict multi-tenant Insecure Direct Object Reference (IDOR) workspace ownership verification across all Server Actions (`task.ts`, `delegate.ts`, `analytics.ts`) and REST API routes (`/api/tasks`, `/api/delegates`).
 
 ### 🍱 The Models Library
 
@@ -74,9 +90,38 @@ npx prisma db push
 npm run dev
 ```
 
+## 🐳 Containerization & Orchestration (4 Deployment Options)
+
+We provide four complete, production-ready methods to deploy the application using the configurations located in the `deployment/` directory.
+
+### 🌟 Interactive Deployment Menu (Recommended)
+
+You can launch our interactive deployment helper script to automatically guide you through building, configuring, and deploying to any of the 4 targets (or starting local dev):
+
+```bash
+make deploy
+# or
+npm run deploy
+```
+
+### Manual Deployment Targets
+
+1. **Standalone Docker Container**: Multi-stage, highly optimized Next.js standalone container (`deployment/docker/Dockerfile`). Database migrations are applied automatically at container startup, and a custom `JWT_SECRET` environment variable must be provided in production.
+2. **Docker Compose**: Automated orchestration with persistent SQLite volume management (`deployment/docker-compose/docker-compose.yml`) and automated runtime database migrations. The volume `sqlite_data` stores the SQLite database, preserving data across container rebuilds. Make sure to update the `JWT_SECRET` variable in the Compose file.
+3. **Vanilla Kubernetes Manifests**: Declarative K8s resources including PVC, Deployment, Service, ConfigMap, and Ingress (`deployment/k8s/`).
+4. **Helm Chart**: Fully templated, dynamic Kubernetes package management (`deployment/helm/kaushal-mental-models`).
+
+For detailed step-by-step instructions on each deployment method, please refer to the **[Deployment Guide](deployment.md)**.
+
+## 🧹 Code Quality & Styling
+
+To maintain high code quality and styling consistency across the workspace:
+- **Linting**: Run `npm run lint` to perform static code analysis via ESLint.
+- **Formatting**: Run `npx prettier --write "src/**/*.{ts,tsx,css}"` to automatically format all source files.
+
 ## 🤝 Contributing
 
-Contributions are welcome! Please ensure that your pull requests pass the **pre-commit** checks to maintain code quality.
+Contributions are welcome! Please ensure that your pull requests pass all linting, formatting, and test checks.
 
 ## 📄 License
 

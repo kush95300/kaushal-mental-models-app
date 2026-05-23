@@ -1,15 +1,44 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
+async function verifyWorkspaceAccess(workspaceId: number, session: any) {
+  const ws = await prisma.workspace.findUnique({ where: { id: workspaceId } });
+  if (!ws || (ws.userId !== session.id && !session.isAdmin)) {
+    return false;
+  }
+  return true;
+}
+
 export async function GET(request: Request) {
   try {
+    const session = await getSession();
+    if (!session)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { searchParams } = new URL(request.url);
     const includeDeleted = searchParams.get("includeDeleted") === "true";
+    const workspaceIdParam = searchParams.get("workspaceId");
+
+    const where: any = includeDeleted ? {} : { isDeleted: false };
+
+    if (workspaceIdParam) {
+      const wsId = parseInt(workspaceIdParam);
+      if (!(await verifyWorkspaceAccess(wsId, session))) {
+        return NextResponse.json(
+          { error: "Unauthorized workspace access" },
+          { status: 403 },
+        );
+      }
+      where.workspaceId = wsId;
+    } else if (!session.isAdmin) {
+      where.workspace = { userId: session.id };
+    }
 
     const tasks = await (prisma as any).task.findMany({
-      where: includeDeleted ? {} : { isDeleted: false },
+      where,
       orderBy: { createdAt: "desc" },
       include: { delegate: true },
     });
@@ -25,7 +54,19 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const session = await getSession();
+    if (!session)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const body = await request.json();
+    const workspaceId = body.workspaceId ? parseInt(body.workspaceId) : 1;
+    if (!(await verifyWorkspaceAccess(workspaceId, session))) {
+      return NextResponse.json(
+        { error: "Unauthorized workspace access" },
+        { status: 403 },
+      );
+    }
+
     const {
       content,
       isImportant,
@@ -47,6 +88,7 @@ export async function POST(request: Request) {
           name: {
             in: ["Self", "self", "SELF"],
           },
+          workspaceId,
         },
       });
       if (selfDelegate) finalDelegateId = selfDelegate.id;
@@ -62,6 +104,7 @@ export async function POST(request: Request) {
         dueDate: dueDate ? new Date(dueDate) : null,
         delegateId: finalDelegateId,
         estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes) : null,
+        workspaceId,
       },
       include: { delegate: true },
     });
@@ -77,8 +120,24 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
+    const session = await getSession();
+    if (!session)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const body = await request.json();
     const { id, ...updates } = body;
+
+    const existing = await prisma.task.findUnique({
+      where: { id: parseInt(id) },
+    });
+    if (!existing)
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    if (!(await verifyWorkspaceAccess(existing.workspaceId, session))) {
+      return NextResponse.json(
+        { error: "Unauthorized workspace access" },
+        { status: 403 },
+      );
+    }
 
     // Sanitize updates
     if (updates.dueDate) updates.dueDate = new Date(updates.dueDate);
@@ -101,6 +160,7 @@ export async function PATCH(request: Request) {
           name: {
             in: ["Self", "self", "SELF"],
           },
+          workspaceId: existing.workspaceId,
         },
       });
       if (selfDelegate) {
@@ -134,12 +194,18 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const session = await getSession();
+    if (!session)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     const mode = searchParams.get("mode"); // 'revert' or 'hard'
     const reset = searchParams.get("reset"); // 'today' or 'all'
 
     if (reset === "all") {
+      if (!session.isAdmin)
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
       await (prisma as any).task.deleteMany({});
       return NextResponse.json({ success: true });
     }
@@ -147,13 +213,20 @@ export async function DELETE(request: Request) {
     if (reset === "today") {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      await (prisma as any).task.deleteMany({
-        where: {
-          createdAt: {
-            gte: today,
-          },
-        },
-      });
+      if (!session.isAdmin) {
+        const userWorkspaces = await prisma.workspace.findMany({
+          where: { userId: session.id },
+          select: { id: true },
+        });
+        const wsIds = userWorkspaces.map((w) => w.id);
+        await (prisma as any).task.deleteMany({
+          where: { workspaceId: { in: wsIds }, createdAt: { gte: today } },
+        });
+      } else {
+        await (prisma as any).task.deleteMany({
+          where: { createdAt: { gte: today } },
+        });
+      }
       return NextResponse.json({ success: true });
     }
 
@@ -161,6 +234,15 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "ID is required" }, { status: 400 });
 
     const taskId = parseInt(id);
+    const existing = await prisma.task.findUnique({ where: { id: taskId } });
+    if (!existing)
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    if (!(await verifyWorkspaceAccess(existing.workspaceId, session))) {
+      return NextResponse.json(
+        { error: "Unauthorized workspace access" },
+        { status: 403 },
+      );
+    }
 
     if (mode === "revert") {
       await (prisma as any).task.update({

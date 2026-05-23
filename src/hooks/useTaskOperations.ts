@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Task, Delegate } from "@/types/eisenhower";
 import { shouldAutoPromote } from "@/lib/dateUtils";
 import {
@@ -13,43 +13,170 @@ import {
   createDelegate,
   deleteDelegateAction,
 } from "@/actions/delegate";
+import {
+  getWorkspaces,
+  getUserConfig,
+  updateActiveWorkspace,
+  createWorkspace,
+  updateWorkspace as updateWorkspaceAction,
+  deleteWorkspace as deleteWorkspaceAction,
+  updateMaxDailyMinutes,
+} from "@/actions/workspace";
+import { Workspace, User } from "@/types/eisenhower";
+import { getCurrentUser } from "@/actions/auth";
 
 interface UseTaskOperationsProps {
   isTestMode: boolean;
+  initialWorkspaceId?: number | null;
 }
 
-export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
+export function useTaskOperations({
+  isTestMode: initialIsTestMode,
+  initialWorkspaceId,
+}: UseTaskOperationsProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [delegates, setDelegates] = useState<Delegate[]>([]);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<number | null>(
+    null,
+  );
+  const [isTestMode, setIsTestMode] = useState(initialIsTestMode);
   const [loading, setLoading] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [maxDailyMinutes, setMaxDailyMinutes] = useState(480);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  // Authenticate user on mount to see if they're a guest or logged in
+  useEffect(() => {
+    const checkAuth = async () => {
+      const res = await getCurrentUser();
+      if (res.success && res.user) {
+        setCurrentUser(res.user as User);
+        if (initialIsTestMode) {
+          setIsTestMode(true);
+        } else {
+          setIsTestMode(false);
+        }
+      } else {
+        setCurrentUser(null);
+        setIsTestMode(true);
+      }
+      setAuthChecked(true);
+    };
+    checkAuth();
+  }, [initialIsTestMode]);
+
+  const visibleTasks = useMemo(() => {
+    if (isTestMode) {
+      return tasks.filter((t) => t.workspaceId === activeWorkspaceId);
+    }
+    return tasks;
+  }, [tasks, isTestMode, activeWorkspaceId]);
+
+  const dailyWorkload = useMemo(() => {
+    return visibleTasks
+      .filter((t) => !t.isDeleted && t.quadrant === "DO" && t.status !== "DONE")
+      .reduce((sum, t) => sum + (t.estimatedMinutes || 0), 0);
+  }, [visibleTasks]);
+
+  const isOverburdened = dailyWorkload > maxDailyMinutes;
+
+  const initializedRef = useRef(false);
+
+  // Fetch Workspaces & Config
+  const fetchWorkspaces = useCallback(async () => {
+    try {
+      if (isTestMode) {
+        setWorkspaces([
+          {
+            id: 1,
+            name: "Work",
+            description: "Default work context",
+            color: "indigo",
+            createdAt: "",
+            updatedAt: "",
+          },
+          {
+            id: 2,
+            name: "Personal",
+            description: "Default personal context",
+            color: "rose",
+            createdAt: "",
+            updatedAt: "",
+          },
+        ]);
+        setActiveWorkspaceId((prev) => {
+          if (prev === 1 || prev === 2) return prev;
+          if (initialWorkspaceId === 1 || initialWorkspaceId === 2)
+            return initialWorkspaceId;
+          if (initialWorkspaceId !== null || initialIsTestMode) return 1;
+          return null;
+        });
+        return;
+      }
+      const res = await getWorkspaces();
+      if (res.success && res.data) {
+        setWorkspaces(res.data);
+      }
+      if (initialWorkspaceId && !initializedRef.current) {
+        initializedRef.current = true;
+        setActiveWorkspaceId(initialWorkspaceId);
+        await updateActiveWorkspace(initialWorkspaceId);
+        const configRes = await getUserConfig();
+        if (configRes.success && configRes.data) {
+          const config = configRes.data as unknown as User;
+          setMaxDailyMinutes(config.maxDailyMinutes);
+        }
+      } else {
+        const configRes = await getUserConfig();
+        if (configRes.success && configRes.data) {
+          if (!isTestMode) {
+            const config = configRes.data as unknown as User;
+            setActiveWorkspaceId(config.activeWorkspaceId);
+            setMaxDailyMinutes(config.maxDailyMinutes);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Fetch workspaces error:", error);
+    }
+  }, [isTestMode, initialWorkspaceId, initialIsTestMode]);
 
   // Fetch Delegates
   const fetchDelegates = useCallback(async () => {
     try {
-      if (isTestMode) {
-        setDelegates([
-          { id: 1, name: "Self", email: null, createdAt: "", updatedAt: "" },
-        ]);
+      if (isTestMode || !activeWorkspaceId) {
+        if (isTestMode) {
+          setDelegates([
+            {
+              id: 1,
+              name: "Self",
+              email: null,
+              createdAt: "",
+              updatedAt: "",
+            },
+          ]);
+        }
         return;
       }
-      const res = await getDelegates();
+      const res = await getDelegates(activeWorkspaceId);
       if (res.success && res.data) {
         setDelegates(res.data);
       }
     } catch (error) {
       console.error("Fetch delegates error:", error);
     }
-  }, [isTestMode]);
+  }, [isTestMode, activeWorkspaceId]);
 
   // Fetch Tasks & Smart Scheduling
   const fetchTasks = useCallback(async () => {
     try {
-      if (isTestMode) {
-        setLoading(false);
+      if (isTestMode || !activeWorkspaceId) {
+        if (isTestMode) setLoading(false);
         return;
       }
-      const res = await getTasks();
+      const res = await getTasks(activeWorkspaceId);
       if (res.success) {
         let data = res.data;
 
@@ -86,14 +213,25 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
       setLoading(false);
       setLastRefreshed(new Date());
     }
-  }, [isTestMode]);
+  }, [isTestMode, activeWorkspaceId]);
 
-  // Initial Load
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchTasks();
-    fetchDelegates();
-  }, [fetchTasks, fetchDelegates]);
+    if (authChecked) {
+      fetchWorkspaces();
+    }
+  }, [authChecked, fetchWorkspaces]);
+
+  useEffect(() => {
+    if (authChecked) {
+      fetchDelegates();
+    }
+  }, [authChecked, fetchDelegates]);
+
+  useEffect(() => {
+    if (authChecked) {
+      fetchTasks();
+    }
+  }, [authChecked, fetchTasks]);
 
   // Actions
   const addTask = async (
@@ -118,6 +256,7 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
           ? delegates.find((d) => d.id === delegateId) || null
           : delegates[0] || null,
         isDeleted: false,
+        workspaceId: activeWorkspaceId as number,
         dueDate: null,
         actualMinutes: null,
         delegateId: delegateId,
@@ -126,9 +265,14 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
       return;
     }
 
-    const res = await createTask({ content, estimatedMinutes, delegateId });
+    const res = await createTask({
+      content,
+      estimatedMinutes,
+      delegateId,
+      workspaceId: activeWorkspaceId as number,
+    });
     if (res.success && res.data) {
-      setTasks((prev) => [res.data!, ...prev]);
+      setTasks((prev) => [res.data as unknown as Task, ...prev]);
     }
   };
 
@@ -141,11 +285,11 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
     setTasks((prev) =>
       prev.map((t) =>
         t.id === id
-          ? {
+          ? ({
               ...t,
               status,
               actualMinutes: status === "TODO" ? null : actualMinutes,
-            }
+            } as Task)
           : t,
       ),
     );
@@ -179,14 +323,28 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
 
     // Optimistic Update
     setTasks((prev) =>
-      prev.map((t) =>
-        t.id === taskId ? { ...t, quadrant, ...additionalData } : t,
-      ),
+      prev.map((t) => {
+        if (t.id === taskId) {
+          const updated = { ...t, quadrant, ...additionalData } as Task;
+          if (additionalData.delegateId) {
+            const del = delegates.find(
+              (d) => d.id === additionalData.delegateId,
+            );
+            if (del) updated.delegate = del;
+          }
+          return updated;
+        }
+        return t;
+      }),
     );
 
     if (isTestMode) return;
     const res = await updateTaskAction(taskId, { quadrant, ...additionalData });
-    if (!res.success) {
+    if (res.success && res.data) {
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? (res.data as Task) : t)),
+      );
+    } else {
       fetchTasks();
     }
   };
@@ -195,14 +353,23 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
     id: number,
     content: string,
     estimatedMinutes: number | null,
+    reminderMinutesBefore: number | null = null,
   ) => {
     // Optimistic Update
     setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, content, estimatedMinutes } : t)),
+      prev.map((t) =>
+        t.id === id
+          ? ({ ...t, content, estimatedMinutes, reminderMinutesBefore } as Task)
+          : t,
+      ),
     );
 
     if (isTestMode) return;
-    await updateTaskAction(id, { content, estimatedMinutes });
+    await updateTaskAction(id, {
+      content,
+      estimatedMinutes,
+      reminderMinutesBefore,
+    });
   };
 
   const deleteTask = async (id: number) => {
@@ -233,18 +400,24 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
   };
 
   const addDelegateOp = async (name: string, email?: string) => {
-    if (isTestMode) {
-      const tempDelegate: Delegate = {
-        id: Math.random(),
-        name,
-        email: email || null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setDelegates((prev) => [...prev, tempDelegate]);
+    if (isTestMode || !activeWorkspaceId) {
+      if (isTestMode) {
+        const tempDelegate: Delegate = {
+          id: Math.random(),
+          name,
+          email: email || null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        setDelegates((prev) => [...prev, tempDelegate]);
+      }
       return;
     }
-    const res = await createDelegate({ name, email });
+    const res = await createDelegate({
+      name,
+      email,
+      workspaceId: activeWorkspaceId,
+    });
     if (res.success && res.data) {
       setDelegates((prev) => [...prev, res.data!]);
     }
@@ -259,18 +432,97 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
 
   const resetDataOp = async (type: "today" | "all") => {
     if (isTestMode) {
-      setTasks([]);
+      if (type === "all") {
+        setTasks((prev) =>
+          prev.filter((t) => t.workspaceId !== activeWorkspaceId),
+        );
+      } else {
+        const todayStr = new Date().toDateString();
+        setTasks((prev) =>
+          prev.filter(
+            (t) =>
+              t.workspaceId !== activeWorkspaceId ||
+              new Date(t.createdAt).toDateString() !== todayStr,
+          ),
+        );
+      }
       return;
     }
     const res = await resetTasksAction(type);
     if (res.success) fetchTasks();
   };
 
+  const selectWorkspaceOp = async (id: number | null) => {
+    if (id === null) {
+      setIsTestMode(true);
+      setActiveWorkspaceId(1);
+      setTasks([]);
+    } else {
+      if (currentUser) {
+        setIsTestMode(false);
+        setActiveWorkspaceId(id);
+        await updateActiveWorkspace(id);
+      } else {
+        setIsTestMode(true);
+        setActiveWorkspaceId(id);
+      }
+    }
+  };
+
+  const addWorkspaceOp = async (
+    name: string,
+    description: string,
+    icon?: string,
+  ) => {
+    const res = await createWorkspace({ name, description, icon });
+    if (res.success && res.data) {
+      setWorkspaces((prev) => [...prev, res.data as Workspace]);
+    }
+  };
+
+  const updateWorkspaceOp = async (
+    id: number,
+    name: string,
+    description: string,
+    icon?: string,
+  ) => {
+    const res = await updateWorkspaceAction(id, { name, description, icon });
+    if (res.success && res.data) {
+      setWorkspaces((prev) =>
+        prev.map((w) => (w.id === id ? (res.data as Workspace) : w)),
+      );
+    }
+  };
+
+  const deleteWorkspaceOp = async (id: number) => {
+    const res = await deleteWorkspaceAction(id);
+    if (res.success) {
+      setWorkspaces((prev) => prev.filter((w) => w.id !== id));
+      if (activeWorkspaceId === id) {
+        setActiveWorkspaceId(null);
+      }
+    }
+  };
+
+  const updateMaxMinutesOp = async (minutes: number) => {
+    setMaxDailyMinutes(minutes);
+    if (!isTestMode) {
+      await updateMaxDailyMinutes(minutes);
+    }
+  };
+
   return {
-    tasks,
+    tasks: visibleTasks,
     setTasks,
     delegates,
     setDelegates,
+    workspaces,
+    activeWorkspaceId,
+    isTestMode,
+    selectWorkspaceOp,
+    addWorkspaceOp,
+    updateWorkspaceOp,
+    deleteWorkspaceOp,
     loading,
     lastRefreshed,
     fetchTasks,
@@ -284,5 +536,9 @@ export function useTaskOperations({ isTestMode }: UseTaskOperationsProps) {
     addDelegateOp,
     removeDelegateOp,
     resetDataOp,
+    maxDailyMinutes,
+    updateMaxMinutesOp,
+    dailyWorkload,
+    isOverburdened,
   };
 }

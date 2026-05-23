@@ -43,9 +43,52 @@
 | **Permanent Delete** | ✅ Working | From Eliminated Queue working.                                     |
 | **Manage Delegates** | ✅ Working | Adding/Deleting members working.                                   |
 
+## Workspaces (v1.3.0)
+
+| Feature            | Status     | Notes                                                        |
+| :----------------- | :--------- | :----------------------------------------------------------- |
+| **Startup Modal**  | ✅ Working | Explicit choice between Test Mode & Workspace Mode.          |
+| **Create Space**   | ✅ Working | Can create new named workspaces.                             |
+| **Switch Context** | ✅ Working | Switching workspaces instantly filters tasks.                |
+| **Data Isolation** | ✅ Working | Tasks in "Work" do not appear in "Personal".                 |
+| **Describe Space** | ✅ Working | Can add descriptions to workspaces.                          |
+| **Delete Space**   | ✅ Working | Deleting workspace deletes associated tasks (Cascade logic). |
+
 ## Modes
 
 | Feature            | Status     | Notes                                     |
 | :----------------- | :--------- | :---------------------------------------- |
 | **Test Mode**      | ✅ Working | All features identical to Get Ready mode. |
 | **Get Ready Mode** | ✅ Working | Same parity as Test Mode.                 |
+
+## Theme & Customization (v1.7.0)
+
+| Feature                 | Status     | Notes                                                       |
+| :---------------------- | :--------- | :---------------------------------------------------------- |
+| **Dark/Light Toggle**   | ✅ Working | Correctly applies classes and persists via `localStorage`.  |
+| **Global Theme Sync**   | ✅ Working | Centralized `ThemeProvider` ensures all pages stay in sync. |
+| **Tailwind v4 Support** | ✅ Working | Custom `@variant dark` defined in CSS for latest engine.    |
+| **Visual Transitions**  | ✅ Working | Smooth transitions across backgrounds and card elements.    |
+
+## Notifications & Reminders (v1.8.0)
+
+| Feature                 | Status     | Notes                                                       |
+| :---------------------- | :--------- | :---------------------------------------------------------- |
+| **Browser Notifications** | ✅ Working | Prompts for browser notification permissions.              |
+| **Daily Workspace Alert** | ✅ Working | Triggers at specified time per workspace.                  |
+| **Task Reminders**        | ✅ Working | Triggers push notification specified minutes before due.   |
+
+## User Authentication & Admin Portal (v1.9.0)
+
+| Feature                 | Status     | Notes                                                       |
+| :---------------------- | :--------- | :---------------------------------------------------------- |
+| **Secure Login**        | ✅ Working | Bcrypt password hashing and JWT cookies via jose.           |
+| **Admin Portal**        | ✅ Working | Role-based access control (`/admin`) to manage user accounts.|
+| **Multi-Tenant Isolation**| ✅ Working | Workspaces scoped to individual users or globally shared.   |
+
+## Code Quality & Styling
+
+| Feature | Status | Notes |
+| :--- | :--- | :--- |
+| **ESLint Static Analysis** | ✅ Configured | Customized configuration to ignore specific set-state-in-effect and unescaped entities; verified clean run. |
+| **Code Formatting** | ✅ Prettier | All components formatted. |

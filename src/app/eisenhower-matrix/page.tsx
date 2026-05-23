@@ -1,23 +1,23 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, Suspense } from "react";
-import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
-  PlusCircle,
-  Linkedin,
-  Github,
-  ExternalLink,
   Wind,
   Lightbulb,
   Flame,
   Calendar,
   Users,
+  Linkedin,
+  Github,
+  ExternalLink,
 } from "lucide-react";
 import { MatrixHeader } from "@/components/eisenhower-matrix/MatrixHeader";
 import { StatsView } from "@/components/eisenhower-matrix/StatsView";
 import { MainTaskForm } from "@/components/eisenhower-matrix/MainTaskForm";
 import { MatrixGrid } from "@/components/eisenhower-matrix/MatrixGrid";
+import { CalendarView } from "@/components/eisenhower-matrix/CalendarView";
+import { WorkspaceSelectionModal } from "@/components/eisenhower-matrix/WorkspaceSelectionModal";
 
 import { useTaskOperations } from "@/hooks/useTaskOperations";
 import { HelpModal } from "@/components/eisenhower-matrix/modals/HelpModal";
@@ -29,7 +29,13 @@ import { DeletedListModal } from "@/components/eisenhower-matrix/modals/DeletedL
 import { DatePickerModal } from "@/components/eisenhower-matrix/modals/DatePickerModal";
 import { EditContentModal } from "@/components/eisenhower-matrix/modals/EditContentModal";
 import { CompletionModal } from "@/components/eisenhower-matrix/modals/CompletionModal";
+import { SettingsModal } from "@/components/eisenhower-matrix/modals/SettingsModal";
+import { ResetConfirmModal } from "@/components/eisenhower-matrix/modals/ResetConfirmModal";
+import { NotificationManager } from "@/components/NotificationManager";
 import { Task, Delegate } from "@/types/eisenhower";
+
+import { getCurrentUser } from "@/actions/auth";
+import { User } from "@/types/eisenhower";
 
 const QUADRANTS = {
   DO: {
@@ -97,12 +103,27 @@ export default function EisenhowerMatrixPage() {
 }
 
 function EisenhowerMatrixContent() {
+  const searchParams = useSearchParams();
+  const testModeParam = searchParams.get("testMode");
+  const isTestModeParam = testModeParam === "true";
+  const workspaceIdVal = searchParams.get("workspaceId");
+  const paramWorkspaceId =
+    workspaceIdVal && !isNaN(parseInt(workspaceIdVal))
+      ? parseInt(workspaceIdVal)
+      : null;
   const [newTask, setNewTask] = useState("");
   const [newEstimatedMinutes, setNewEstimatedMinutes] = useState<string>("");
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
   const [activeQuadrant, setActiveQuadrant] = useState<string | null>(null);
   const [visibleLimit, setVisibleLimit] = useState(5);
   const [showDelegateModal, setShowDelegateModal] = useState(false);
+  const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
+  const [workspaceModalView, setWorkspaceModalView] = useState<
+    "initial" | "list" | "create" | "edit"
+  >("initial");
+  const [selectionMade, setSelectionMade] = useState(
+    !!paramWorkspaceId || isTestModeParam,
+  );
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [assignmentModal, setAssignmentModal] = useState<{
     taskId: number;
@@ -117,22 +138,85 @@ function EisenhowerMatrixContent() {
   const [editingContentValue, setEditingContentValue] = useState("");
   const [editingEstimatedMinutes, setEditingEstimatedMinutes] =
     useState<string>("");
+  const [editingReminderMinutes, setEditingReminderMinutes] =
+    useState<string>("");
   const [showDoneList, setShowDoneList] = useState(false);
   const [showDeletedList, setShowDeletedList] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completingTaskId, setCompletingTaskId] = useState<number | null>(null);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState<"today" | "all" | null>(
+    null,
+  );
+  const [viewMode, setViewMode] = useState<"matrix" | "calendar">("matrix");
 
   const [newDelegateName, setNewDelegateName] = useState("");
   const [, setConfig] = useState<{
     analyticsStartDate: string | null;
   } | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [isTestMode, setIsTestMode] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState(60); // seconds
   const [currentDateDisplay, setCurrentDateDisplay] = useState("");
   const [modalWarning, setModalWarning] = useState<string | null>(null);
-  const searchParams = useSearchParams();
+  const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const res = await getCurrentUser();
+      if (res.success && res.user) {
+        setUser(res.user as User);
+      } else {
+        setUser(null);
+      }
+    };
+    loadUser();
+  }, []);
+
+  // Show workspace modal on mount if no selection has been made yet
+  useEffect(() => {
+    const hasSelection =
+      searchParams.has("workspaceId") || searchParams.has("testMode");
+    const isHelp = searchParams.get("showHelp") === "true";
+
+    if (!hasSelection && !isHelp) {
+      setShowWorkspaceModal(true);
+    } else {
+      setShowWorkspaceModal(false);
+      if (hasSelection) {
+        setSelectionMade(true);
+      }
+    }
+  }, [searchParams]);
+
+  // Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input or textarea
+      if (
+        document.activeElement instanceof HTMLInputElement ||
+        document.activeElement instanceof HTMLTextAreaElement ||
+        (document.activeElement as HTMLElement)?.isContentEditable
+      ) {
+        if (e.key === "Escape") {
+          (document.activeElement as HTMLElement).blur();
+        }
+        return;
+      }
+
+      // 'n' for New Task
+      if (e.key === "n" || e.key === "N") {
+        e.preventDefault();
+        const input = document.querySelector(
+          'input[placeholder*="What objective"]',
+        ) as HTMLInputElement;
+        input?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const {
     tasks,
@@ -149,7 +233,64 @@ function EisenhowerMatrixContent() {
     addDelegateOp,
     removeDelegateOp,
     resetDataOp,
-  } = useTaskOperations({ isTestMode });
+    workspaces,
+    activeWorkspaceId,
+    isTestMode,
+    selectWorkspaceOp,
+    addWorkspaceOp,
+    updateWorkspaceOp,
+    deleteWorkspaceOp,
+    maxDailyMinutes,
+    updateMaxMinutesOp,
+    dailyWorkload,
+    isOverburdened,
+  } = useTaskOperations({
+    isTestMode: isTestModeParam,
+    initialWorkspaceId: paramWorkspaceId,
+  });
+
+  // Synchronize activeWorkspaceId and isTestMode with the URL query parameters
+  useEffect(() => {
+    if (activeWorkspaceId !== null && selectionMade) {
+      const isTest = isTestMode || !user;
+      const targetUrl = `/eisenhower-matrix?workspaceId=${activeWorkspaceId}${isTest ? "&testMode=true" : ""}`;
+
+      const currentWorkspaceParam = searchParams.get("workspaceId");
+      const currentTestModeParam = searchParams.get("testMode");
+      const expectedTestMode = isTest ? "true" : null;
+
+      if (
+        currentWorkspaceParam !== String(activeWorkspaceId) ||
+        currentTestModeParam !== expectedTestMode
+      ) {
+        router.replace(targetUrl);
+        setShowWorkspaceModal(false);
+      }
+    }
+  }, [
+    activeWorkspaceId,
+    isTestMode,
+    user,
+    router,
+    searchParams,
+    selectionMade,
+  ]);
+
+  const handleSwitchWorkspace = () => {
+    setWorkspaceModalView("initial");
+    setShowWorkspaceModal(true);
+  };
+
+  const handleManageWorkspaces = () => {
+    setWorkspaceModalView("list");
+    setShowWorkspaceModal(true);
+  };
+
+  const handleWorkspaceSelect = async (id: number | null) => {
+    await selectWorkspaceOp(id);
+    setSelectionMade(true);
+    setShowWorkspaceModal(false);
+  };
 
   // Helper functions defined before effects to avoid usage before declaration
   const fetchConfig = useCallback(async () => {
@@ -189,7 +330,7 @@ function EisenhowerMatrixContent() {
 
   useEffect(() => {
     // fetchDelegates handled by hook
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+
     fetchConfig();
     setCurrentDateDisplay(
       new Date().toLocaleDateString("en-US", {
@@ -211,8 +352,8 @@ function EisenhowerMatrixContent() {
 
   useEffect(() => {
     if (searchParams.get("showHelp") === "true") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowHelpModal(true);
+      setShowWorkspaceModal(false);
     }
   }, [searchParams]);
 
@@ -293,6 +434,7 @@ function EisenhowerMatrixContent() {
       setEditingContentTaskId(task.id);
       setEditingContentValue(task.content);
       setEditingEstimatedMinutes("");
+      setEditingReminderMinutes(task.reminderMinutesBefore?.toString() || "");
       setModalWarning(
         "Please set a time estimate before moving this task to the matrix.",
       );
@@ -321,13 +463,20 @@ function EisenhowerMatrixContent() {
 
     const contentToSave = editingContentValue.trim();
     const minutesToSave = parseInt(editingEstimatedMinutes) || null;
+    const reminderToSave = parseInt(editingReminderMinutes) || null;
 
     if (!contentToSave) return;
 
-    await updateTaskContent(editingContentTaskId, contentToSave, minutesToSave);
+    await updateTaskContent(
+      editingContentTaskId,
+      contentToSave,
+      minutesToSave,
+      reminderToSave,
+    );
     setEditingContentTaskId(null);
     setEditingContentValue("");
     setEditingEstimatedMinutes("");
+    setEditingReminderMinutes("");
   };
 
   const addDelegate = async () => {
@@ -341,16 +490,13 @@ function EisenhowerMatrixContent() {
   };
 
   const resetData = async (type: "today" | "all") => {
-    if (
-      !confirm(
-        `Are you sure you want to reset ${
-          type === "today" ? "today's" : "all"
-        } data?`,
-      )
-    )
-      return;
+    setShowResetModal(type);
+  };
 
-    await resetDataOp(type);
+  const handleConfirmReset = async () => {
+    if (!showResetModal) return;
+    await resetDataOp(showResetModal);
+    setShowResetModal(null);
   };
 
   const stats = {
@@ -367,19 +513,19 @@ function EisenhowerMatrixContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] relative overflow-hidden text-slate-900 font-sans p-4 md:p-8 flex flex-col">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 relative overflow-hidden text-slate-900 dark:text-slate-100 font-sans p-4 md:p-8 flex flex-col transition-colors">
       {/* Decorative Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[5%] right-[-10%] opacity-[0.05] text-amber-500 animate-pulse-slow">
+        <div className="absolute top-[5%] right-[-10%] opacity-[0.05] dark:opacity-[0.03] text-amber-500 animate-pulse-slow">
           <Lightbulb size={600} strokeWidth={0.5} />
         </div>
-        <div className="absolute bottom-[10%] left-[-5%] opacity-[0.03] text-indigo-500">
+        <div className="absolute bottom-[10%] left-[-5%] opacity-[0.03] dark:opacity-[0.02] text-indigo-500">
           <Lightbulb size={400} strokeWidth={0.5} />
         </div>
-        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-indigo-200/30 rounded-full blur-[120px] animate-blob-slow" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[45vw] h-[45vw] bg-amber-100/30 rounded-full blur-[120px] animate-blob-slow animation-delay-2000" />
+        <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-indigo-200/20 dark:bg-indigo-900/10 rounded-full blur-[80px] animate-blob-slow" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[45vw] h-[45vw] bg-amber-100/20 dark:bg-amber-900/10 rounded-full blur-[80px] animate-blob-slow animation-delay-2000" />
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.03] dark:opacity-[0.01]"
           style={{
             backgroundImage:
               "radial-gradient(#4f46e5 0.5px, transparent 0.5px)",
@@ -389,6 +535,12 @@ function EisenhowerMatrixContent() {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto w-full flex-grow flex flex-col">
+        <NotificationManager
+          tasks={tasks}
+          workspaces={workspaces}
+          activeWorkspaceId={activeWorkspaceId}
+          updateTaskStatus={updateTaskStatus}
+        />
         <MatrixHeader
           isTestMode={isTestMode}
           tasks={tasks}
@@ -402,46 +554,96 @@ function EisenhowerMatrixContent() {
           setShowDelegateModal={setShowDelegateModal}
           fetchTasks={fetchTasks}
           resetData={resetData}
+          workspaces={workspaces}
+          activeWorkspaceId={activeWorkspaceId || 0}
+          updateWorkspaceOp={(id) => selectWorkspaceOp(id)}
+          addWorkspaceOp={addWorkspaceOp}
+          onSettingsClick={() => setShowSettingsModal(true)}
+          isOverburdened={isOverburdened}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          onManageWorkspaces={handleManageWorkspaces}
+          user={user}
         />
 
-        <StatsView currentDateDisplay={currentDateDisplay} stats={stats} />
+        <StatsView
+          currentDateDisplay={currentDateDisplay}
+          stats={stats}
+          dailyWorkload={dailyWorkload}
+          maxDailyMinutes={maxDailyMinutes}
+          isOverburdened={isOverburdened}
+        />
       </div>
 
-      <MainTaskForm
-        newTask={newTask}
-        setNewTask={setNewTask}
-        newEstimatedMinutes={newEstimatedMinutes}
-        setNewEstimatedMinutes={setNewEstimatedMinutes}
-        handleAddTask={handleAddTask}
+      <WorkspaceSelectionModal
+        isOpen={showWorkspaceModal}
+        onClose={() => {
+          if (selectionMade) {
+            setShowWorkspaceModal(false);
+          } else {
+            router.push("/");
+          }
+        }}
+        workspaces={workspaces}
+        onSelect={handleWorkspaceSelect}
+        onCreate={addWorkspaceOp}
+        onUpdate={updateWorkspaceOp}
+        onDelete={deleteWorkspaceOp}
+        initialView={workspaceModalView}
       />
 
-      <MatrixGrid
-        loading={loading}
-        tasks={tasks}
-        visibleLimit={visibleLimit}
-        activeQuadrant={activeQuadrant}
-        onDragOver={onDragOver}
-        onDrop={onDrop}
-        onDragStart={onDragStart}
-        setActiveQuadrant={setActiveQuadrant}
-        toggleComplete={toggleComplete}
-        deleteTask={deleteTask}
-        setEditingContentTaskId={setEditingContentTaskId}
-        setEditingContentValue={setEditingContentValue}
-        setEditingEstimatedMinutes={setEditingEstimatedMinutes}
-        setEditingDateTaskId={setEditingDateTaskId}
-        setAssignmentModal={setAssignmentModal}
-        QUAD_CONFIG={QUADRANTS}
-      />
+      {viewMode === "matrix" ? (
+        <>
+          <MainTaskForm
+            newTask={newTask}
+            setNewTask={setNewTask}
+            newEstimatedMinutes={newEstimatedMinutes}
+            setNewEstimatedMinutes={setNewEstimatedMinutes}
+            handleAddTask={handleAddTask}
+          />
+
+          <MatrixGrid
+            loading={loading}
+            tasks={tasks}
+            visibleLimit={visibleLimit}
+            activeQuadrant={activeQuadrant}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+            onDragStart={onDragStart}
+            setActiveQuadrant={setActiveQuadrant}
+            toggleComplete={toggleComplete}
+            deleteTask={deleteTask}
+            setEditingContentTaskId={setEditingContentTaskId}
+            setEditingContentValue={setEditingContentValue}
+            setEditingEstimatedMinutes={setEditingEstimatedMinutes}
+            setEditingReminderMinutes={setEditingReminderMinutes}
+            setEditingDateTaskId={setEditingDateTaskId}
+            setAssignmentModal={setAssignmentModal}
+            QUAD_CONFIG={QUADRANTS}
+          />
+        </>
+      ) : (
+        <CalendarView
+          tasks={tasks}
+          onTaskClick={(task) => {
+            setEditingContentTaskId(task.id);
+            setEditingContentValue(task.content);
+            setEditingEstimatedMinutes(task.estimatedMinutes?.toString() || "");
+            setEditingReminderMinutes(
+              task.reminderMinutesBefore?.toString() || "",
+            );
+          }}
+        />
+      )}
 
       <footer className="mt-16 py-8 text-center relative z-10 group">
-        <div className="w-12 h-1 bg-slate-200 mx-auto rounded-full mb-6 transition-all group-hover:w-24 group-hover:bg-indigo-400" />
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-2">
+        <div className="w-12 h-1 bg-slate-200 dark:bg-slate-800 mx-auto rounded-full mb-6 transition-all group-hover:w-24 group-hover:bg-indigo-400" />
+        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] mb-2 font-sans">
           Turning mental models into action
         </p>
-        <div className="flex items-center justify-center gap-2 mt-4">
-          <span className="h-px w-8 bg-gradient-to-r from-transparent to-slate-200" />
-          <p className="text-lg font-bold text-slate-500 tracking-tight">
+        <div className="flex items-center justify-center gap-2 mt-4 font-sans">
+          <span className="h-px w-8 bg-gradient-to-r from-transparent to-slate-200 dark:to-slate-800" />
+          <p className="text-lg font-bold text-slate-500 dark:text-slate-400 tracking-tight">
             Created with{" "}
             <span className="text-rose-500 animate-pulse inline-block mx-0.5">
               ❤️
@@ -460,19 +662,19 @@ function EisenhowerMatrixContent() {
                   links[Math.floor(Math.random() * links.length)];
                 window.open(randomLink, "_blank", "noopener,noreferrer");
               }}
-              className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 font-extrabold hover:opacity-80 transition-opacity cursor-pointer inline-block"
+              className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 font-extrabold hover:opacity-80 transition-opacity cursor-pointer inline-block"
             >
               Kaushal Soni
             </a>
           </p>
-          <span className="h-px w-8 bg-gradient-to-l from-transparent to-slate-200" />
+          <span className="h-px w-8 bg-gradient-to-l from-transparent to-slate-200 dark:to-slate-800" />
         </div>
         <div className="flex items-center justify-center gap-4 mt-6">
           <a
             href="https://www.linkedin.com/in/sonikaushal/"
             target="_blank"
             rel="noopener noreferrer"
-            className="p-2 rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:shadow-md transition-all"
+            className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 dark:hover:border-indigo-900 hover:shadow-md transition-all shadow-sm"
             title="LinkedIn"
           >
             <Linkedin size={20} />
@@ -481,7 +683,7 @@ function EisenhowerMatrixContent() {
             href="https://github.com/kush95300/"
             target="_blank"
             rel="noopener noreferrer"
-            className="p-2 rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-slate-900 hover:border-slate-300 hover:shadow-md transition-all"
+            className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md transition-all shadow-sm"
             title="GitHub"
           >
             <Github size={20} />
@@ -490,7 +692,7 @@ function EisenhowerMatrixContent() {
             href="https://flowcv.me/kaushal-soni"
             target="_blank"
             rel="noopener noreferrer"
-            className="p-2 rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-emerald-600 hover:border-emerald-200 hover:shadow-md transition-all"
+            className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-900 hover:shadow-md transition-all shadow-sm"
             title="FlowCV Portfolio"
           >
             <ExternalLink size={20} />
@@ -538,7 +740,7 @@ function EisenhowerMatrixContent() {
       {showOnboarding && (
         <OnboardingModal
           setAnalyticsStart={setAnalyticsStart}
-          setIsTestMode={setIsTestMode}
+          setIsTestMode={() => selectWorkspaceOp(null)}
           setShowOnboarding={setShowOnboarding}
         />
       )}
@@ -572,16 +774,31 @@ function EisenhowerMatrixContent() {
           setEditingContentValue={setEditingContentValue}
           editingEstimatedMinutes={editingEstimatedMinutes}
           setEditingEstimatedMinutes={setEditingEstimatedMinutes}
+          editingReminderMinutes={editingReminderMinutes}
+          setEditingReminderMinutes={setEditingReminderMinutes}
           warningMessage={modalWarning}
           onClose={() => {
             setEditingContentTaskId(null);
             setEditingContentValue("");
             setEditingEstimatedMinutes("");
+            setEditingReminderMinutes("");
             setModalWarning(null);
           }}
           saveTaskContent={saveTaskContent}
         />
       )}
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        maxDailyMinutes={maxDailyMinutes}
+        onUpdateMaxMinutes={updateMaxMinutesOp}
+      />
+      <ResetConfirmModal
+        isOpen={!!showResetModal}
+        resetType={showResetModal}
+        onClose={() => setShowResetModal(null)}
+        onConfirm={handleConfirmReset}
+      />
 
       {/* Estimated Minutes Input in Edit Modal - Since I can't easily edit the EditContentModal again without another write, I'll add a temporary overlay or just update it now */}
     </div>

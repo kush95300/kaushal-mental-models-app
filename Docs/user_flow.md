@@ -5,10 +5,12 @@
 ```mermaid
 graph TD
     User[User] -->|Opens App| Home[Homepage]
-    Home -->|Selects Model| ModeCheck{Test Mode?}
+    Home -->|Selects Model| MainModal[Test Mode or Start with Workspace]
+    MainModal -->|Test Mode| TestView[Test Interface]
+    MainModal -->|Start with Workspace| WorkspaceList[Workspace Management Dialog]
 
-    ModeCheck -->|Yes| TestView[Test Interface]
-    ModeCheck -->|No| Matrix[Eisenhower Matrix]
+    WorkspaceList -->|Manage| ManageWS[Create/Update/Delete Workspaces]
+    WorkspaceList -->|Select Workspace| Matrix[Eisenhower Matrix]
 
     subgraph "Test Mode Constraints"
         TestView -->|Features| AllFeatures[All UI Features Available]
@@ -37,7 +39,9 @@ graph TD
 
     subgraph "Execution"
         Do -->|Complete| Done[Done List]
-        Done -->|Log Time| Analytics[Analytics Engine]
+        Done -->|Log Time| ContextCheck{In Workspace?}
+        ContextCheck -->|Yes| Analytics[Analytics Engine]
+        ContextCheck -->|No| NoAnalytics[Analytics Disabled]
     end
 ```
 
