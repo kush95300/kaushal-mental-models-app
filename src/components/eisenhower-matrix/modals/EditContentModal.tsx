@@ -71,7 +71,7 @@ export const EditContentModal: React.FC<EditContentModalProps> = ({
                     const m = (parseInt(editingEstimatedMinutes) || 0) % 60;
                     setEditingEstimatedMinutes((h * 60 + m).toString());
                   }}
-                  className="w-full bg-transparent outline-none font-black text-2xl text-slate-700 dark:text-slate-200 text-center placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                  className="min-w-[4rem] min-w-[3rem] w-full bg-transparent outline-none font-black text-2xl text-slate-700 dark:text-slate-200 text-center placeholder:text-slate-300 dark:placeholder:text-slate-600"
                   placeholder="0"
                 />
                 <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
@@ -95,7 +95,7 @@ export const EditContentModal: React.FC<EditContentModalProps> = ({
                     if (m > 59) m = 59;
                     setEditingEstimatedMinutes((h * 60 + m).toString());
                   }}
-                  className="w-full bg-transparent outline-none font-black text-2xl text-slate-700 dark:text-slate-200 text-center placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                  className="min-w-[3rem] w-full bg-transparent outline-none font-black text-2xl text-slate-700 dark:text-slate-200 text-center placeholder:text-slate-300 dark:placeholder:text-slate-600"
                   placeholder="0"
                 />
                 <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">

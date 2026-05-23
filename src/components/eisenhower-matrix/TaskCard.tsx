@@ -55,7 +55,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         }
         `}
   >
-    <Tooltip content={task.status === "DONE" ? "Mark as Incomplete: Restore this task to active status." : "Mark as Complete: Move this task to your completed archive."} align="left">
+    <Tooltip
+      content={
+        task.status === "DONE"
+          ? "Mark as Incomplete: Restore this task to active status."
+          : "Mark as Complete: Move this task to your completed archive."
+      }
+      align="left"
+    >
       <button
         onClick={(e) => {
           e.preventDefault();
@@ -109,7 +116,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             <span>Due {formatFriendlyDate(task.dueDate)}</span>
           )}
           {isOverdue(task.dueDate) && task.status !== "DONE" && (
-            <Tooltip content="Reschedule Overdue Task: Click to pick a new due date." align="center">
+            <Tooltip
+              content="Reschedule Overdue Task: Click to pick a new due date."
+              align="center"
+            >
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -138,14 +148,20 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     </div>
 
     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-      <Tooltip content="Edit Task Content: Modify the text description and estimated duration." position="top" align="right">
+      <Tooltip
+        content="Edit Task Content: Modify the text description and estimated duration."
+        position="top"
+        align="right"
+      >
         <button
           onClick={(e) => {
             e.stopPropagation();
             setEditingContentTaskId(task.id);
             setEditingContentValue(task.content);
             setEditingEstimatedMinutes(task.estimatedMinutes?.toString() || "");
-            setEditingReminderMinutes(task.reminderMinutesBefore?.toString() || "");
+            setEditingReminderMinutes(
+              task.reminderMinutesBefore?.toString() || "",
+            );
           }}
           onDragStart={(e) => {
             e.preventDefault();
@@ -159,7 +175,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         </button>
       </Tooltip>
       {task.quadrant !== "INBOX" && task.quadrant !== "DO" && (
-        <Tooltip content="Change Due Date: Select a new deadline for this task." position="top" align="right">
+        <Tooltip
+          content="Change Due Date: Select a new deadline for this task."
+          position="top"
+          align="right"
+        >
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -178,7 +198,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         </Tooltip>
       )}
       {task.quadrant === "DELEGATE" && (
-        <Tooltip content="Reassign Delegate: Choose a different team member for this task." position="top" align="right">
+        <Tooltip
+          content="Reassign Delegate: Choose a different team member for this task."
+          position="top"
+          align="right"
+        >
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -196,7 +220,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           </button>
         </Tooltip>
       )}
-      <Tooltip content="Delete Task: Permanently remove this task." position="top" align="right">
+      <Tooltip
+        content="Delete Task: Permanently remove this task."
+        position="top"
+        align="right"
+      >
         <button
           onClick={(e) => {
             e.stopPropagation();

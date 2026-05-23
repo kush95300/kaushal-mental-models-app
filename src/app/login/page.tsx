@@ -3,7 +3,14 @@
 import { useState, useEffect } from "react";
 import { login, requestAccount, isAdminPasswordDefault } from "@/actions/auth";
 import { useRouter } from "next/navigation";
-import { Sparkles, KeyRound, User as UserIcon, LogIn, UserPlus, Info } from "lucide-react";
+import {
+  Sparkles,
+  KeyRound,
+  User as UserIcon,
+  LogIn,
+  UserPlus,
+  Info,
+} from "lucide-react";
 
 export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "request">("login");
@@ -16,7 +23,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    isAdminPasswordDefault().then(res => setShowAdminBanner(res));
+    isAdminPasswordDefault().then((res) => setShowAdminBanner(res));
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,7 +44,9 @@ export default function LoginPage() {
     } else {
       const res = await requestAccount(username, password);
       if (res.success) {
-        setSuccess("Account requested successfully! An administrator will review your request.");
+        setSuccess(
+          "Account requested successfully! An administrator will review your request.",
+        );
         setUsername("");
         setPassword("");
         setMode("login");
@@ -106,7 +115,15 @@ export default function LoginPage() {
           <div className="mb-6 p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/40 rounded-2xl flex items-start gap-2.5 text-indigo-900 dark:text-indigo-200">
             <Info className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
             <div className="text-xs leading-relaxed font-medium">
-              <span className="font-bold">Default Admin Credentials:</span> username: <code className="bg-indigo-100 dark:bg-indigo-800/60 px-1 py-0.5 rounded font-mono font-bold">admin</code> / password: <code className="bg-indigo-100 dark:bg-indigo-800/60 px-1 py-0.5 rounded font-mono font-bold">admin</code>
+              <span className="font-bold">Default Admin Credentials:</span>{" "}
+              username:{" "}
+              <code className="bg-indigo-100 dark:bg-indigo-800/60 px-1 py-0.5 rounded font-mono font-bold">
+                admin
+              </code>{" "}
+              / password:{" "}
+              <code className="bg-indigo-100 dark:bg-indigo-800/60 px-1 py-0.5 rounded font-mono font-bold">
+                admin
+              </code>
               <div className="mt-1 text-[11px] text-indigo-600/80 dark:text-indigo-300/80">
                 You can change your password anytime after logging in.
               </div>
@@ -173,7 +190,9 @@ export default function LoginPage() {
             className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white p-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
-              <span className="animate-pulse">{mode === "login" ? "Authenticating..." : "Submitting..."}</span>
+              <span className="animate-pulse">
+                {mode === "login" ? "Authenticating..." : "Submitting..."}
+              </span>
             ) : mode === "login" ? (
               <>
                 <LogIn className="w-5 h-5" /> Sign In

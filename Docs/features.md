@@ -85,3 +85,10 @@
 | **Secure Login**        | ✅ Working | Bcrypt password hashing and JWT cookies via jose.           |
 | **Admin Portal**        | ✅ Working | Role-based access control (`/admin`) to manage user accounts.|
 | **Multi-Tenant Isolation**| ✅ Working | Workspaces scoped to individual users or globally shared.   |
+
+## Code Quality & Styling
+
+| Feature | Status | Notes |
+| :--- | :--- | :--- |
+| **ESLint Static Analysis** | ✅ Configured | Customized configuration to ignore specific set-state-in-effect and unescaped entities; verified clean run. |
+| **Code Formatting** | ✅ Prettier | All components formatted. |

@@ -79,7 +79,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           </h2>
         </div>
         <div className="flex items-center gap-2">
-          <Tooltip content="Previous Month: Navigate to the previous month's calendar view." align="right">
+          <Tooltip
+            content="Previous Month: Navigate to the previous month's calendar view."
+            align="right"
+          >
             <button
               onClick={prevMonth}
               className="p-3 bg-white hover:bg-slate-50 border border-slate-100 rounded-2xl text-slate-400 hover:text-indigo-600 transition-all shadow-sm"
@@ -87,7 +90,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               <ChevronLeft size={20} />
             </button>
           </Tooltip>
-          <Tooltip content="Today: Return the calendar view to the current month and highlight today's date." align="right">
+          <Tooltip
+            content="Today: Return the calendar view to the current month and highlight today's date."
+            align="right"
+          >
             <button
               onClick={() => setCurrentDate(new Date())}
               className="px-4 py-3 bg-white hover:bg-slate-50 border border-slate-100 rounded-2xl text-xs font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600 transition-all shadow-sm"
@@ -95,7 +101,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               Today
             </button>
           </Tooltip>
-          <Tooltip content="Next Month: Navigate to the next month's calendar view." align="right">
+          <Tooltip
+            content="Next Month: Navigate to the next month's calendar view."
+            align="right"
+          >
             <button
               onClick={nextMonth}
               className="p-3 bg-white hover:bg-slate-50 border border-slate-100 rounded-2xl text-slate-400 hover:text-indigo-600 transition-all shadow-sm"

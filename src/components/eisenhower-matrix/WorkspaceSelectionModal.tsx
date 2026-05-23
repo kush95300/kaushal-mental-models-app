@@ -55,8 +55,19 @@ interface WorkspaceSelectionModalProps {
   onClose: () => void;
   workspaces: Workspace[];
   onSelect: (id: number | null) => void; // null for Test Mode
-  onCreate: (name: string, description: string, icon?: string, dailyNotificationTime?: string) => Promise<void>;
-  onUpdate: (id: number, name: string, description: string, icon?: string, dailyNotificationTime?: string) => Promise<void>;
+  onCreate: (
+    name: string,
+    description: string,
+    icon?: string,
+    dailyNotificationTime?: string,
+  ) => Promise<void>;
+  onUpdate: (
+    id: number,
+    name: string,
+    description: string,
+    icon?: string,
+    dailyNotificationTime?: string,
+  ) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
   initialView?: "initial" | "list" | "create" | "edit";
 }
@@ -78,7 +89,12 @@ export const WorkspaceSelectionModal: React.FC<
   );
   const [loading, setLoading] = useState(false);
   const [editingWs, setEditingWs] = useState<Workspace | null>(null);
-  const [formData, setFormData] = useState({ name: "", description: "", icon: "Briefcase", dailyNotificationTime: "09:00" });
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    icon: "Briefcase",
+    dailyNotificationTime: "09:00",
+  });
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -93,20 +109,41 @@ export const WorkspaceSelectionModal: React.FC<
   const handleCreate = async () => {
     if (!formData.name.trim()) return;
     setLoading(true);
-    await onCreate(formData.name, formData.description, formData.icon, formData.dailyNotificationTime);
+    await onCreate(
+      formData.name,
+      formData.description,
+      formData.icon,
+      formData.dailyNotificationTime,
+    );
     setLoading(false);
     setView("list");
-    setFormData({ name: "", description: "", icon: "Briefcase", dailyNotificationTime: "09:00" });
+    setFormData({
+      name: "",
+      description: "",
+      icon: "Briefcase",
+      dailyNotificationTime: "09:00",
+    });
   };
 
   const handleUpdate = async () => {
     if (!editingWs || !formData.name.trim()) return;
     setLoading(true);
-    await onUpdate(editingWs.id, formData.name, formData.description, formData.icon, formData.dailyNotificationTime);
+    await onUpdate(
+      editingWs.id,
+      formData.name,
+      formData.description,
+      formData.icon,
+      formData.dailyNotificationTime,
+    );
     setLoading(false);
     setView("list");
     setEditingWs(null);
-    setFormData({ name: "", description: "", icon: "Briefcase", dailyNotificationTime: "09:00" });
+    setFormData({
+      name: "",
+      description: "",
+      icon: "Briefcase",
+      dailyNotificationTime: "09:00",
+    });
   };
 
   const handleDelete = (id: number) => {
@@ -230,7 +267,8 @@ export const WorkspaceSelectionModal: React.FC<
                       >
                         <div className="p-3 bg-indigo-50 text-indigo-500 rounded-xl">
                           {(() => {
-                            const IconComponent = ICON_MAP[ws.icon || "Briefcase"] || Briefcase;
+                            const IconComponent =
+                              ICON_MAP[ws.icon || "Briefcase"] || Briefcase;
                             return <IconComponent size={20} />;
                           })()}
                         </div>
@@ -260,7 +298,8 @@ export const WorkspaceSelectionModal: React.FC<
                               name: ws.name,
                               description: ws.description || "",
                               icon: ws.icon || "Briefcase",
-                              dailyNotificationTime: ws.dailyNotificationTime || "09:00",
+                              dailyNotificationTime:
+                                ws.dailyNotificationTime || "09:00",
                             });
                             setView("edit");
                           }}
@@ -279,7 +318,12 @@ export const WorkspaceSelectionModal: React.FC<
                   ))}
                   <button
                     onClick={() => {
-                      setFormData({ name: "", description: "", icon: "Briefcase", dailyNotificationTime: "09:00" });
+                      setFormData({
+                        name: "",
+                        description: "",
+                        icon: "Briefcase",
+                        dailyNotificationTime: "09:00",
+                      });
                       setView("create");
                     }}
                     className="w-full flex items-center justify-center gap-3 p-4 bg-slate-50 hover:bg-white border border-dashed border-slate-200 hover:border-indigo-200 rounded-[1.5rem] text-slate-400 hover:text-indigo-600 transition-all font-bold group mt-2"
@@ -342,7 +386,9 @@ export const WorkspaceSelectionModal: React.FC<
                       <button
                         key={iconKey}
                         type="button"
-                        onClick={() => setFormData((prev) => ({ ...prev, icon: iconKey }))}
+                        onClick={() =>
+                          setFormData((prev) => ({ ...prev, icon: iconKey }))
+                        }
                         className={`p-3 rounded-xl flex items-center justify-center transition-all ${
                           isSelected
                             ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200 scale-110"
@@ -364,7 +410,10 @@ export const WorkspaceSelectionModal: React.FC<
                   type="time"
                   value={formData.dailyNotificationTime}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, dailyNotificationTime: e.target.value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      dailyNotificationTime: e.target.value,
+                    }))
                   }
                   className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-2xl px-5 py-4 text-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold"
                 />
@@ -391,7 +440,12 @@ export const WorkspaceSelectionModal: React.FC<
                   onClick={() => {
                     setView("list");
                     setEditingWs(null);
-                    setFormData({ name: "", description: "", icon: "Briefcase", dailyNotificationTime: "09:00" });
+                    setFormData({
+                      name: "",
+                      description: "",
+                      icon: "Briefcase",
+                      dailyNotificationTime: "09:00",
+                    });
                   }}
                   className="px-8 bg-slate-100 hover:bg-slate-200 text-slate-600 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest transition-all"
                 >
@@ -425,7 +479,9 @@ export const WorkspaceSelectionModal: React.FC<
               Delete Workspace?
             </h3>
             <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-8 leading-relaxed font-sans">
-              Are you sure you want to permanently delete this workspace? All tasks, notes, and history within this workspace will be permanently erased. This action cannot be undone.
+              Are you sure you want to permanently delete this workspace? All
+              tasks, notes, and history within this workspace will be
+              permanently erased. This action cannot be undone.
             </p>
             <div className="flex gap-2 font-sans">
               <button

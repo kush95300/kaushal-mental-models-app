@@ -13,9 +13,13 @@ interface AnalyticsPageProps {
 
 import { getSession } from "@/lib/auth";
 
-export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps) {
+export default async function AnalyticsPage({
+  searchParams,
+}: AnalyticsPageProps) {
   const params = await searchParams;
-  const paramWorkspaceId = params?.workspaceId ? parseInt(params.workspaceId) : null;
+  const paramWorkspaceId = params?.workspaceId
+    ? parseInt(params.workspaceId)
+    : null;
   const session = await getSession();
   let activeWorkspaceId = 1;
   if (session) {

@@ -90,9 +90,38 @@ npx prisma db push
 npm run dev
 ```
 
+## 🐳 Containerization & Orchestration (4 Deployment Options)
+
+We provide four complete, production-ready methods to deploy the application using the configurations located in the `deployment/` directory.
+
+### 🌟 Interactive Deployment Menu (Recommended)
+
+You can launch our interactive deployment helper script to automatically guide you through building, configuring, and deploying to any of the 4 targets (or starting local dev):
+
+```bash
+make deploy
+# or
+npm run deploy
+```
+
+### Manual Deployment Targets
+
+1. **Standalone Docker Container**: Multi-stage, highly optimized Next.js standalone container (`deployment/docker/Dockerfile`). Database migrations are applied automatically at container startup, and a custom `JWT_SECRET` environment variable must be provided in production.
+2. **Docker Compose**: Automated orchestration with persistent SQLite volume management (`deployment/docker-compose/docker-compose.yml`) and automated runtime database migrations. The volume `sqlite_data` stores the SQLite database, preserving data across container rebuilds. Make sure to update the `JWT_SECRET` variable in the Compose file.
+3. **Vanilla Kubernetes Manifests**: Declarative K8s resources including PVC, Deployment, Service, ConfigMap, and Ingress (`deployment/k8s/`).
+4. **Helm Chart**: Fully templated, dynamic Kubernetes package management (`deployment/helm/kaushal-mental-models`).
+
+For detailed step-by-step instructions on each deployment method, please refer to the **[Deployment Guide](deployment.md)**.
+
+## 🧹 Code Quality & Styling
+
+To maintain high code quality and styling consistency across the workspace:
+- **Linting**: Run `npm run lint` to perform static code analysis via ESLint.
+- **Formatting**: Run `npx prettier --write "src/**/*.{ts,tsx,css}"` to automatically format all source files.
+
 ## 🤝 Contributing
 
-Contributions are welcome! Please ensure that your pull requests pass the **pre-commit** checks to maintain code quality.
+Contributions are welcome! Please ensure that your pull requests pass all linting, formatting, and test checks.
 
 ## 📄 License
 

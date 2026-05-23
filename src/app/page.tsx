@@ -172,9 +172,15 @@ export default function Home() {
             title="Toggle Theme"
           >
             {mounted && theme === "dark" ? (
-              <Sun size={20} className="group-hover:rotate-45 transition-transform" />
+              <Sun
+                size={20}
+                className="group-hover:rotate-45 transition-transform"
+              />
             ) : (
-              <Moon size={20} className="group-hover:-rotate-12 transition-transform" />
+              <Moon
+                size={20}
+                className="group-hover:-rotate-12 transition-transform"
+              />
             )}
           </button>
         </div>
@@ -193,7 +199,8 @@ export default function Home() {
         <div
           className="absolute inset-0 opacity-[0.03] dark:opacity-[0.01]"
           style={{
-            backgroundImage: "radial-gradient(#4f46e5 0.5px, transparent 0.5px)",
+            backgroundImage:
+              "radial-gradient(#4f46e5 0.5px, transparent 0.5px)",
             backgroundSize: "32px 32px",
           }}
         />
@@ -211,7 +218,8 @@ export default function Home() {
             </span>
           </h1>
           <p className="text-slate-500 dark:text-slate-400 font-semibold text-xl max-w-2xl mx-auto">
-            Frameworks for better thinking, decision making, and productivity. Select a model to begin.
+            Frameworks for better thinking, decision making, and productivity.
+            Select a model to begin.
           </p>
         </div>
 
@@ -274,7 +282,7 @@ export default function Home() {
                     <HelpCircle className="w-8 h-8" />
                   </Link>
                 )}
-               </div>
+              </div>
             ),
           )}
         </div>
@@ -378,7 +386,8 @@ export default function Home() {
                   "https://github.com/kush95300/",
                   "https://flowcv.me/kaushal-soni",
                 ];
-                const randomLink = links[Math.floor(Math.random() * links.length)];
+                const randomLink =
+                  links[Math.floor(Math.random() * links.length)];
                 window.open(randomLink, "_blank", "noopener,noreferrer");
               }}
               className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 font-extrabold hover:opacity-80 transition-opacity cursor-pointer inline-block"

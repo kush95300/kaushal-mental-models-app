@@ -3,17 +3,7 @@
 import prisma from "@/lib/prisma";
 import { Delegate } from "@/types/eisenhower";
 import { revalidatePath } from "next/cache";
-import { getSession } from "@/lib/auth";
-
-async function verifyWorkspaceAccess(workspaceId: number) {
-  const session = await getSession();
-  if (!session) return { success: false, error: "Unauthorized" };
-  const ws = await prisma.workspace.findUnique({ where: { id: workspaceId } });
-  if (!ws || (ws.userId !== session.id && !session.isAdmin)) {
-    return { success: false, error: "Unauthorized workspace access" };
-  }
-  return { success: true, session };
-}
+import { verifyWorkspaceAccess } from "@/lib/workspace-access";
 
 export async function getDelegates(workspaceId: number) {
   try {
@@ -47,7 +37,11 @@ export async function getDelegates(workspaceId: number) {
   }
 }
 
-export async function createDelegate(data: { name: string; email?: string; workspaceId: number }) {
+export async function createDelegate(data: {
+  name: string;
+  email?: string;
+  workspaceId: number;
+}) {
   try {
     const access = await verifyWorkspaceAccess(data.workspaceId);
     if (!access.success) return { success: false, error: access.error };

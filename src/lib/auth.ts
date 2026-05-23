@@ -2,6 +2,11 @@ import { jwtVerify, SignJWT } from "jose";
 import { cookies } from "next/headers";
 import prisma from "@/lib/prisma";
 
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error(
+    "FATAL: JWT_SECRET environment variable is not set in production!",
+  );
+}
 const secretKey = process.env.JWT_SECRET || "super-secret-key-for-development";
 const key = new TextEncoder().encode(secretKey);
 
@@ -30,10 +35,20 @@ export async function getSession() {
 
     const user = await prisma.user.findUnique({
       where: { id: payload.id },
-      select: { id: true, username: true, isAdmin: true, status: true, tokenVersion: true }
+      select: {
+        id: true,
+        username: true,
+        isAdmin: true,
+        status: true,
+        tokenVersion: true,
+      },
     });
 
-    if (!user || user.status !== "APPROVED" || user.tokenVersion !== payload.tokenVersion) {
+    if (
+      !user ||
+      user.status !== "APPROVED" ||
+      user.tokenVersion !== payload.tokenVersion
+    ) {
       return null;
     }
 

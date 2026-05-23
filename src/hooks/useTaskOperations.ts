@@ -23,6 +23,7 @@ import {
   updateMaxDailyMinutes,
 } from "@/actions/workspace";
 import { Workspace, User } from "@/types/eisenhower";
+import { getCurrentUser } from "@/actions/auth";
 
 interface UseTaskOperationsProps {
   isTestMode: boolean;
@@ -43,12 +44,41 @@ export function useTaskOperations({
   const [loading, setLoading] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [maxDailyMinutes, setMaxDailyMinutes] = useState(480);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  // Authenticate user on mount to see if they're a guest or logged in
+  useEffect(() => {
+    const checkAuth = async () => {
+      const res = await getCurrentUser();
+      if (res.success && res.user) {
+        setCurrentUser(res.user as User);
+        if (initialIsTestMode) {
+          setIsTestMode(true);
+        } else {
+          setIsTestMode(false);
+        }
+      } else {
+        setCurrentUser(null);
+        setIsTestMode(true);
+      }
+      setAuthChecked(true);
+    };
+    checkAuth();
+  }, [initialIsTestMode]);
+
+  const visibleTasks = useMemo(() => {
+    if (isTestMode) {
+      return tasks.filter((t) => t.workspaceId === activeWorkspaceId);
+    }
+    return tasks;
+  }, [tasks, isTestMode, activeWorkspaceId]);
 
   const dailyWorkload = useMemo(() => {
-    return tasks
+    return visibleTasks
       .filter((t) => !t.isDeleted && t.quadrant === "DO" && t.status !== "DONE")
       .reduce((sum, t) => sum + (t.estimatedMinutes || 0), 0);
-  }, [tasks]);
+  }, [visibleTasks]);
 
   const isOverburdened = dailyWorkload > maxDailyMinutes;
 
@@ -76,7 +106,13 @@ export function useTaskOperations({
             updatedAt: "",
           },
         ]);
-        setActiveWorkspaceId(1);
+        setActiveWorkspaceId((prev) => {
+          if (prev === 1 || prev === 2) return prev;
+          if (initialWorkspaceId === 1 || initialWorkspaceId === 2)
+            return initialWorkspaceId;
+          if (initialWorkspaceId !== null || initialIsTestMode) return 1;
+          return null;
+        });
         return;
       }
       const res = await getWorkspaces();
@@ -105,7 +141,7 @@ export function useTaskOperations({
     } catch (error) {
       console.error("Fetch workspaces error:", error);
     }
-  }, [isTestMode, initialWorkspaceId]);
+  }, [isTestMode, initialWorkspaceId, initialIsTestMode]);
 
   // Fetch Delegates
   const fetchDelegates = useCallback(async () => {
@@ -180,16 +216,22 @@ export function useTaskOperations({
   }, [isTestMode, activeWorkspaceId]);
 
   useEffect(() => {
-    fetchWorkspaces();
-  }, [fetchWorkspaces]);
+    if (authChecked) {
+      fetchWorkspaces();
+    }
+  }, [authChecked, fetchWorkspaces]);
 
   useEffect(() => {
-    fetchDelegates();
-  }, [fetchDelegates]);
+    if (authChecked) {
+      fetchDelegates();
+    }
+  }, [authChecked, fetchDelegates]);
 
   useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
+    if (authChecked) {
+      fetchTasks();
+    }
+  }, [authChecked, fetchTasks]);
 
   // Actions
   const addTask = async (
@@ -285,7 +327,9 @@ export function useTaskOperations({
         if (t.id === taskId) {
           const updated = { ...t, quadrant, ...additionalData } as Task;
           if (additionalData.delegateId) {
-            const del = delegates.find((d) => d.id === additionalData.delegateId);
+            const del = delegates.find(
+              (d) => d.id === additionalData.delegateId,
+            );
             if (del) updated.delegate = del;
           }
           return updated;
@@ -314,12 +358,18 @@ export function useTaskOperations({
     // Optimistic Update
     setTasks((prev) =>
       prev.map((t) =>
-        t.id === id ? ({ ...t, content, estimatedMinutes, reminderMinutesBefore } as Task) : t,
+        t.id === id
+          ? ({ ...t, content, estimatedMinutes, reminderMinutesBefore } as Task)
+          : t,
       ),
     );
 
     if (isTestMode) return;
-    await updateTaskAction(id, { content, estimatedMinutes, reminderMinutesBefore });
+    await updateTaskAction(id, {
+      content,
+      estimatedMinutes,
+      reminderMinutesBefore,
+    });
   };
 
   const deleteTask = async (id: number) => {
@@ -363,7 +413,11 @@ export function useTaskOperations({
       }
       return;
     }
-    const res = await createDelegate({ name, email, workspaceId: activeWorkspaceId });
+    const res = await createDelegate({
+      name,
+      email,
+      workspaceId: activeWorkspaceId,
+    });
     if (res.success && res.data) {
       setDelegates((prev) => [...prev, res.data!]);
     }
@@ -378,7 +432,20 @@ export function useTaskOperations({
 
   const resetDataOp = async (type: "today" | "all") => {
     if (isTestMode) {
-      setTasks([]);
+      if (type === "all") {
+        setTasks((prev) =>
+          prev.filter((t) => t.workspaceId !== activeWorkspaceId),
+        );
+      } else {
+        const todayStr = new Date().toDateString();
+        setTasks((prev) =>
+          prev.filter(
+            (t) =>
+              t.workspaceId !== activeWorkspaceId ||
+              new Date(t.createdAt).toDateString() !== todayStr,
+          ),
+        );
+      }
       return;
     }
     const res = await resetTasksAction(type);
@@ -388,18 +455,25 @@ export function useTaskOperations({
   const selectWorkspaceOp = async (id: number | null) => {
     if (id === null) {
       setIsTestMode(true);
-      setActiveWorkspaceId(null);
+      setActiveWorkspaceId(1);
       setTasks([]);
     } else {
-      setIsTestMode(false);
-      setActiveWorkspaceId(id);
-      if (!isTestMode) {
+      if (currentUser) {
+        setIsTestMode(false);
+        setActiveWorkspaceId(id);
         await updateActiveWorkspace(id);
+      } else {
+        setIsTestMode(true);
+        setActiveWorkspaceId(id);
       }
     }
   };
 
-  const addWorkspaceOp = async (name: string, description: string, icon?: string) => {
+  const addWorkspaceOp = async (
+    name: string,
+    description: string,
+    icon?: string,
+  ) => {
     const res = await createWorkspace({ name, description, icon });
     if (res.success && res.data) {
       setWorkspaces((prev) => [...prev, res.data as Workspace]);
@@ -438,7 +512,7 @@ export function useTaskOperations({
   };
 
   return {
-    tasks,
+    tasks: visibleTasks,
     setTasks,
     delegates,
     setDelegates,

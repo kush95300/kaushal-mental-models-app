@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kaushal-mental-models-ingress
+  labels:
+    app: kaushal-mental-models
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false" # Set to true when TLS is configured
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: mental-models.local # Replace with your domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kaushal-mental-models-service
+                port:
+                  number: 80

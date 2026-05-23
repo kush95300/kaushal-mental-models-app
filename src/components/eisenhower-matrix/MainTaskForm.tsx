@@ -41,7 +41,9 @@ export const MainTaskForm: React.FC<MainTaskFormProps> = ({
               type="number"
               min="0"
               max="24"
-              value={Math.floor((parseInt(newEstimatedMinutes) || 0) / 60) || ""}
+              value={
+                Math.floor((parseInt(newEstimatedMinutes) || 0) / 60) || ""
+              }
               onChange={(e) => {
                 const h = Math.min(24, parseInt(e.target.value) || 0);
                 const m = (parseInt(newEstimatedMinutes) || 0) % 60;
@@ -49,7 +51,7 @@ export const MainTaskForm: React.FC<MainTaskFormProps> = ({
                   h > 0 || m > 0 ? (h * 60 + m).toString() : "",
                 );
               }}
-              className="w-6 bg-transparent outline-none font-black text-xs text-indigo-600 dark:text-indigo-400 text-center"
+              className="w-10 bg-transparent outline-none font-black text-xs text-indigo-600 dark:text-indigo-400 text-center"
               placeholder="0"
             />
             <span className="text-[7px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-tighter">
@@ -70,7 +72,7 @@ export const MainTaskForm: React.FC<MainTaskFormProps> = ({
                   h > 0 || m > 0 ? (h * 60 + m).toString() : "",
                 );
               }}
-              className="w-6 bg-transparent outline-none font-black text-xs text-indigo-600 dark:text-indigo-400 text-center"
+              className="w-10 bg-transparent outline-none font-black text-xs text-indigo-600 dark:text-indigo-400 text-center"
               placeholder="0"
             />
             <span className="text-[7px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-tighter">
@@ -78,7 +80,11 @@ export const MainTaskForm: React.FC<MainTaskFormProps> = ({
             </span>
           </div>
 
-          <Tooltip content="Add Task: Quickly add this task to your Draft Queue (Inbox) for later categorization." position="top" align="right">
+          <Tooltip
+            content="Add Task: Quickly add this task to your Draft Queue (Inbox) for later categorization."
+            position="top"
+            align="right"
+          >
             <button
               type="submit"
               disabled={!newTask.trim()}
