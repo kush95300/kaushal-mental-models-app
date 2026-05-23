@@ -76,22 +76,23 @@ bash scripts/deploy.sh
 
 ### Option 1: Standalone Docker Container
 
-Build and run the multi-stage, optimized Next.js standalone container:
+Build and run the multi-stage, optimized Next.js standalone container. Database migrations are applied automatically at container startup.
 
 ```bash
 # Build the Docker image
 docker build -t kaushal-mental-models:latest -f deployment/docker/Dockerfile .
 
-# Run the container on port 3000
-docker run -d -p 3000:3000 --name mental-models-app kaushal-mental-models:latest
+# Run the container on port 3000 (Note: JWT_SECRET is required in production)
+docker run -d -p 3000:3000 -e JWT_SECRET=your-strong-production-key-here --name mental-models-app kaushal-mental-models:latest
 ```
 
 ### Option 2: Docker Compose (Recommended for Single-Host Production)
 
-Deploy the application with automated persistent SQLite volume management:
+Deploy the application with automated persistent SQLite volume management and schema updates.
 
 ```bash
 # Start the multi-container environment
+# Be sure to customize JWT_SECRET in deployment/docker-compose/docker-compose.yml
 docker compose -f deployment/docker-compose/docker-compose.yml up -d --build
 
 # View real-time logs

@@ -106,8 +106,8 @@ npm run deploy
 
 ### Manual Deployment Targets
 
-1. **Standalone Docker Container**: Multi-stage, highly optimized Next.js standalone container (`deployment/docker/Dockerfile`).
-2. **Docker Compose**: Automated orchestration with persistent SQLite volume management (`deployment/docker-compose/docker-compose.yml`). The volume `sqlite_data` stores the SQLite database, preserving data across container rebuilds.
+1. **Standalone Docker Container**: Multi-stage, highly optimized Next.js standalone container (`deployment/docker/Dockerfile`). Database migrations are applied automatically at container startup, and a custom `JWT_SECRET` environment variable must be provided in production.
+2. **Docker Compose**: Automated orchestration with persistent SQLite volume management (`deployment/docker-compose/docker-compose.yml`) and automated runtime database migrations. The volume `sqlite_data` stores the SQLite database, preserving data across container rebuilds. Make sure to update the `JWT_SECRET` variable in the Compose file.
 3. **Vanilla Kubernetes Manifests**: Declarative K8s resources including PVC, Deployment, Service, ConfigMap, and Ingress (`deployment/k8s/`).
 4. **Helm Chart**: Fully templated, dynamic Kubernetes package management (`deployment/helm/kaushal-mental-models`).
 

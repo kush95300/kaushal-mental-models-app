@@ -2,6 +2,11 @@ import { jwtVerify, SignJWT } from "jose";
 import { cookies } from "next/headers";
 import prisma from "@/lib/prisma";
 
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error(
+    "FATAL: JWT_SECRET environment variable is not set in production!",
+  );
+}
 const secretKey = process.env.JWT_SECRET || "super-secret-key-for-development";
 const key = new TextEncoder().encode(secretKey);
 

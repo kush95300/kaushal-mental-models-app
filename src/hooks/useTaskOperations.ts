@@ -23,6 +23,7 @@ import {
   updateMaxDailyMinutes,
 } from "@/actions/workspace";
 import { Workspace, User } from "@/types/eisenhower";
+import { getCurrentUser } from "@/actions/auth";
 
 interface UseTaskOperationsProps {
   isTestMode: boolean;
@@ -43,12 +44,37 @@ export function useTaskOperations({
   const [loading, setLoading] = useState(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
   const [maxDailyMinutes, setMaxDailyMinutes] = useState(480);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  // Authenticate user on mount to see if they're a guest or logged in
+  useEffect(() => {
+    const checkAuth = async () => {
+      const res = await getCurrentUser();
+      if (res.success && res.user) {
+        setCurrentUser(res.user as User);
+        setIsTestMode(false);
+      } else {
+        setCurrentUser(null);
+        setIsTestMode(true);
+      }
+      setAuthChecked(true);
+    };
+    checkAuth();
+  }, []);
+
+  const visibleTasks = useMemo(() => {
+    if (isTestMode) {
+      return tasks.filter((t) => t.workspaceId === activeWorkspaceId);
+    }
+    return tasks;
+  }, [tasks, isTestMode, activeWorkspaceId]);
 
   const dailyWorkload = useMemo(() => {
-    return tasks
+    return visibleTasks
       .filter((t) => !t.isDeleted && t.quadrant === "DO" && t.status !== "DONE")
       .reduce((sum, t) => sum + (t.estimatedMinutes || 0), 0);
-  }, [tasks]);
+  }, [visibleTasks]);
 
   const isOverburdened = dailyWorkload > maxDailyMinutes;
 
@@ -76,7 +102,7 @@ export function useTaskOperations({
             updatedAt: "",
           },
         ]);
-        setActiveWorkspaceId(1);
+        setActiveWorkspaceId((prev) => (prev === 1 || prev === 2 ? prev : 1));
         return;
       }
       const res = await getWorkspaces();
@@ -180,16 +206,22 @@ export function useTaskOperations({
   }, [isTestMode, activeWorkspaceId]);
 
   useEffect(() => {
-    fetchWorkspaces();
-  }, [fetchWorkspaces]);
+    if (authChecked) {
+      fetchWorkspaces();
+    }
+  }, [authChecked, fetchWorkspaces]);
 
   useEffect(() => {
-    fetchDelegates();
-  }, [fetchDelegates]);
+    if (authChecked) {
+      fetchDelegates();
+    }
+  }, [authChecked, fetchDelegates]);
 
   useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
+    if (authChecked) {
+      fetchTasks();
+    }
+  }, [authChecked, fetchTasks]);
 
   // Actions
   const addTask = async (
@@ -390,7 +422,20 @@ export function useTaskOperations({
 
   const resetDataOp = async (type: "today" | "all") => {
     if (isTestMode) {
-      setTasks([]);
+      if (type === "all") {
+        setTasks((prev) =>
+          prev.filter((t) => t.workspaceId !== activeWorkspaceId),
+        );
+      } else {
+        const todayStr = new Date().toDateString();
+        setTasks((prev) =>
+          prev.filter(
+            (t) =>
+              t.workspaceId !== activeWorkspaceId ||
+              new Date(t.createdAt).toDateString() !== todayStr,
+          ),
+        );
+      }
       return;
     }
     const res = await resetTasksAction(type);
@@ -403,10 +448,13 @@ export function useTaskOperations({
       setActiveWorkspaceId(null);
       setTasks([]);
     } else {
-      setIsTestMode(false);
-      setActiveWorkspaceId(id);
-      if (!isTestMode) {
+      if (currentUser) {
+        setIsTestMode(false);
+        setActiveWorkspaceId(id);
         await updateActiveWorkspace(id);
+      } else {
+        setIsTestMode(true);
+        setActiveWorkspaceId(id);
       }
     }
   };
@@ -454,7 +502,7 @@ export function useTaskOperations({
   };
 
   return {
-    tasks,
+    tasks: visibleTasks,
     setTasks,
     delegates,
     setDelegates,

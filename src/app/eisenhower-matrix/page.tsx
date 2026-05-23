@@ -113,8 +113,7 @@ function EisenhowerMatrixContent() {
   const [activeQuadrant, setActiveQuadrant] = useState<string | null>(null);
   const [visibleLimit, setVisibleLimit] = useState(5);
   const [showDelegateModal, setShowDelegateModal] = useState(false);
-  const [showWorkspaceModal, setShowWorkspaceModal] =
-    useState(!paramWorkspaceId);
+  const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
   const [workspaceModalView, setWorkspaceModalView] = useState<
     "initial" | "list" | "create" | "edit"
   >("initial");
@@ -161,10 +160,15 @@ function EisenhowerMatrixContent() {
       const res = await getCurrentUser();
       if (res.success && res.user) {
         setUser(res.user as User);
+        if (!paramWorkspaceId && searchParams.get("showHelp") !== "true") {
+          setShowWorkspaceModal(true);
+        }
+      } else {
+        setShowWorkspaceModal(false);
       }
     };
     loadUser();
-  }, []);
+  }, [paramWorkspaceId, searchParams]);
 
   // Keyboard Shortcuts
   useEffect(() => {
@@ -280,7 +284,7 @@ function EisenhowerMatrixContent() {
 
   useEffect(() => {
     // fetchDelegates handled by hook
-    
+
     fetchConfig();
     setCurrentDateDisplay(
       new Date().toLocaleDateString("en-US", {
@@ -302,7 +306,6 @@ function EisenhowerMatrixContent() {
 
   useEffect(() => {
     if (searchParams.get("showHelp") === "true") {
-      
       setShowHelpModal(true);
       setShowWorkspaceModal(false);
     }

@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 // In-Memory Rate Limiter for Brute Force Protection
 type RateLimitEntry = { count: number; resetTime: number };
 const rateLimitMap = new Map<string, RateLimitEntry>();
+let adminInitialized = false;
 
 function checkRateLimit(identifier: string, limit = 5, windowMs = 60000) {
   const now = Date.now();
@@ -110,6 +111,7 @@ export async function logout() {
 }
 
 export async function createInitialAdmin() {
+  if (adminInitialized) return;
   try {
     const existing = await prisma.user.findUnique({
       where: { username: "admin" },
@@ -129,6 +131,7 @@ export async function createInitialAdmin() {
     } else {
       await ensureDefaultWorkspaces(existing.id);
     }
+    adminInitialized = true;
   } catch (err) {
     // Ignore race condition errors during concurrent static generation
   }

@@ -20,9 +20,8 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL="file:/app/prisma/dev.db"
 
-# Generate Prisma client, push schema to SQLite DB, and build Next.js
+# Generate Prisma client and build Next.js
 RUN npx prisma generate
-RUN npx prisma db push --accept-data-loss
 RUN npm run build
 
 # Clean up unused build dependencies, other platform engines, and WASM files to optimize image size
@@ -66,7 +65,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
 USER nextjs
-VOLUME /app/prisma
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]

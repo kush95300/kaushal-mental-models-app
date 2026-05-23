@@ -18,6 +18,7 @@ import {
   Sun,
   Shield,
   LogOut,
+  LogIn,
   Bell,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
@@ -117,6 +118,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
           onSwitch={updateWorkspaceOp}
           onAdd={addWorkspaceOp}
           onManage={onManageWorkspaces}
+          isTestMode={isTestMode}
         />
 
         {/* View Toggle & Theme Toggle */}
@@ -415,7 +417,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
           </Tooltip>
         </div>
 
-        {user && (
+        {user ? (
           <div className="flex bg-white/40 dark:bg-slate-900/40 p-1 rounded-2xl border border-white/50 dark:border-slate-800/50 transition-colors relative z-10 hover:z-[9999] ml-2 items-center gap-1">
             <Tooltip
               content="Sign Out: Securely log out of your account."
@@ -427,6 +429,20 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
               >
                 <LogOut size={12} /> Logout
               </button>
+            </Tooltip>
+          </div>
+        ) : (
+          <div className="flex bg-white/40 dark:bg-slate-900/40 p-1 rounded-2xl border border-white/50 dark:border-slate-800/50 transition-colors relative z-10 hover:z-[9999] ml-2 items-center gap-1">
+            <Tooltip
+              content="Sign In: Sign in to save your tasks permanently."
+              align="right"
+            >
+              <Link
+                href="/login"
+                className="p-2 px-3 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:text-slate-400 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans flex items-center gap-1"
+              >
+                <LogIn size={12} /> Sign In
+              </Link>
             </Tooltip>
           </div>
         )}

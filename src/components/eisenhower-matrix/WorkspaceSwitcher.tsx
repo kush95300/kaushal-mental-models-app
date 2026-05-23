@@ -49,6 +49,7 @@ interface WorkspaceSwitcherProps {
   onSwitch: (id: number) => void;
   onAdd: (name: string, color: string) => void;
   onManage: () => void;
+  isTestMode?: boolean;
 }
 
 export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
@@ -57,6 +58,7 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
   onSwitch,
   onAdd,
   onManage,
+  isTestMode = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -154,63 +156,67 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
                 </button>
               ))}
 
-              <div className="h-px bg-slate-100 dark:bg-white/5 my-2" />
+              {!isTestMode && (
+                <>
+                  <div className="h-px bg-slate-100 dark:bg-white/5 my-2" />
 
-              {!showAdd ? (
-                <div className="space-y-1">
-                  <button
-                    onClick={() => setShowAdd(true)}
-                    className="w-full flex items-center gap-3 p-3 text-slate-400 dark:text-white/40 hover:text-slate-700 dark:hover:text-white/80 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all"
-                    title="Create a new workspace"
-                  >
-                    <Plus size={16} />
-                    <span className="text-sm font-bold uppercase tracking-widest text-[10px]">
-                      New Workspace
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsOpen(false);
-                      onManage();
-                    }}
-                    className="w-full flex items-center gap-3 p-3 text-slate-400 dark:text-white/40 hover:text-slate-700 dark:hover:text-white/80 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all"
-                    title="Manage workspaces"
-                  >
-                    <Briefcase size={16} />
-                    <span className="text-sm font-bold uppercase tracking-widest text-[10px]">
-                      Manage Workspaces
-                    </span>
-                  </button>
-                </div>
-              ) : (
-                <div className="p-2 space-y-2">
-                  <input
-                    autoFocus
-                    type="text"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleAdd();
-                      if (e.key === "Escape") setShowAdd(false);
-                    }}
-                    placeholder="Workspace name..."
-                    className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-white placeholder:text-slate-300 dark:placeholder:text-white/20 focus:outline-none focus:border-indigo-500"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleAdd}
-                      className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95"
-                    >
-                      Create
-                    </button>
-                    <button
-                      onClick={() => setShowAdd(false)}
-                      className="flex-1 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-white/60 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
+                  {!showAdd ? (
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => setShowAdd(true)}
+                        className="w-full flex items-center gap-3 p-3 text-slate-400 dark:text-white/40 hover:text-slate-700 dark:hover:text-white/80 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all"
+                        title="Create a new workspace"
+                      >
+                        <Plus size={16} />
+                        <span className="text-sm font-bold uppercase tracking-widest text-[10px]">
+                          New Workspace
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsOpen(false);
+                          onManage();
+                        }}
+                        className="w-full flex items-center gap-3 p-3 text-slate-400 dark:text-white/40 hover:text-slate-700 dark:hover:text-white/80 hover:bg-slate-50 dark:hover:bg-white/5 rounded-xl transition-all"
+                        title="Manage workspaces"
+                      >
+                        <Briefcase size={16} />
+                        <span className="text-sm font-bold uppercase tracking-widest text-[10px]">
+                          Manage Workspaces
+                        </span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-2 space-y-2">
+                      <input
+                        autoFocus
+                        type="text"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleAdd();
+                          if (e.key === "Escape") setShowAdd(false);
+                        }}
+                        placeholder="Workspace name..."
+                        className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-white placeholder:text-slate-300 dark:placeholder:text-white/20 focus:outline-none focus:border-indigo-500"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleAdd}
+                          className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95"
+                        >
+                          Create
+                        </button>
+                        <button
+                          onClick={() => setShowAdd(false)}
+                          className="flex-1 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-white/60 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

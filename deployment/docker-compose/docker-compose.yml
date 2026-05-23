@@ -13,6 +13,7 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - DATABASE_URL=file:/app/prisma/dev.db
+      - JWT_SECRET=super-secret-production-key-change-me
     volumes:
       - sqlite_data:/app/prisma
 
