@@ -142,16 +142,72 @@ docker run -d \
 
 ### Option 2: Docker Compose (Recommended for Single-Host Production)
 
-Deploy the application with automated persistent SQLite volume management and schema updates.
+Deploy the application with automated multi-stage image building, automated database migration, seeding on boot, and automated persistent volume management. 
 
-```bash
-# Start the multi-container environment
-# Be sure to customize JWT_SECRET in deployment/docker-compose/docker-compose.yml
-docker compose -f deployment/docker-compose/docker-compose.yml up -d --build
+This option maps the application service to port `3001` on your host and mounts a named volume `kaushal_mental_models_sqlite_data` to ensure data persists across container recreations.
 
-# View real-time logs
-# docker compose -f deployment/docker-compose/docker-compose.yml logs -f
+#### 🏗️ Architecture & Orchestration Flow
+
+```mermaid
+graph TD
+    subgraph Host System
+        HostPort[Host Port: 3001] -->|Maps to| ContPort[Container Port: 3000]
+        Vol[(Named Volume: kaushal_mental_models_sqlite_data)] -->|Mounts to| ContDbPath[/app/prisma]
+    end
+
+    subgraph Docker Compose Service: web
+        Image[Builds deployment/docker/Dockerfile] --> Cont(Container: kaushal-mental-models-app)
+        ContDbPath --- Cont
+        ContPort --- Cont
+        Env[Env: JWT_SECRET / PORT / DATABASE_URL] --> Cont
+    end
+
+    subgraph Startup lifecycle
+        Cont -->|1. Applies migrations| Mig[npx prisma@6 migrate deploy]
+        Mig -->|2. Seeds admin credentials| Seed[node prisma/seed.js]
+        Seed -->|3. Starts server| Run[node server.js]
+    end
 ```
+
+#### 🚀 Deployment Steps
+
+**Step 1: Verify the Configuration**
+Review the configuration file at [deployment/docker-compose/docker-compose.yml](file:///Users/kaushalsoni/Desktop/WS/kaushal-mental-models/deployment/docker-compose/docker-compose.yml). Ensure the `JWT_SECRET` environment variable is configured:
+```yaml
+environment:
+  - NODE_ENV=production
+  - PORT=3000
+  - DATABASE_URL=file:/app/prisma/dev.db
+  - JWT_SECRET=super-secret-production-key-change-me
+```
+
+**Step 2: Build & Start the Application**
+Launch the multi-container environment in detached mode:
+```bash
+docker compose -f deployment/docker-compose/docker-compose.yml up -d --build
+```
+> [!NOTE]
+> Docker Compose will automatically build the production Next.js image using the root context and compile the standalone server.
+
+**Step 3: Monitor Logs & Container Status**
+Check if the service started correctly, ran migrations, seeded the database, and is listening:
+```bash
+# View container status
+docker compose -f deployment/docker-compose/docker-compose.yml ps
+
+# View live container startup logs
+docker compose -f deployment/docker-compose/docker-compose.yml logs -f
+```
+
+**Step 4: Stop / Tear Down the Service**
+To stop the application, remove the container, and clean up the internal networks (while keeping your database volume intact):
+```bash
+docker compose -f deployment/docker-compose/docker-compose.yml down
+```
+
+> [!IMPORTANT]
+> * **Host Access URL**: The application is exposed on host port `3001`: **[http://localhost:3001](http://localhost:3001)**
+> * **Database Persistence**: The SQLite data is stored securely in the named volume `kaushal_mental_models_sqlite_data`. Running `docker compose down` will **not** delete your data. To clean up the database completely, append the `-v` flag: `docker compose down -v`.
 
 ### Option 3: Vanilla Kubernetes (K8s) Manifests
 
