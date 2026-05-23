@@ -104,9 +104,13 @@ export default function EisenhowerMatrixPage() {
 
 function EisenhowerMatrixContent() {
   const searchParams = useSearchParams();
-  const paramWorkspaceId = searchParams.get("workspaceId")
-    ? parseInt(searchParams.get("workspaceId")!)
-    : null;
+  const testModeParam = searchParams.get("testMode");
+  const isTestModeParam = testModeParam === "true";
+  const workspaceIdVal = searchParams.get("workspaceId");
+  const paramWorkspaceId =
+    workspaceIdVal && !isNaN(parseInt(workspaceIdVal))
+      ? parseInt(workspaceIdVal)
+      : null;
   const [newTask, setNewTask] = useState("");
   const [newEstimatedMinutes, setNewEstimatedMinutes] = useState<string>("");
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
@@ -117,7 +121,9 @@ function EisenhowerMatrixContent() {
   const [workspaceModalView, setWorkspaceModalView] = useState<
     "initial" | "list" | "create" | "edit"
   >("initial");
-  const [selectionMade, setSelectionMade] = useState(!!paramWorkspaceId);
+  const [selectionMade, setSelectionMade] = useState(
+    !!paramWorkspaceId || isTestModeParam,
+  );
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [assignmentModal, setAssignmentModal] = useState<{
     taskId: number;
@@ -160,15 +166,28 @@ function EisenhowerMatrixContent() {
       const res = await getCurrentUser();
       if (res.success && res.user) {
         setUser(res.user as User);
-        if (!paramWorkspaceId && searchParams.get("showHelp") !== "true") {
-          setShowWorkspaceModal(true);
-        }
       } else {
-        setShowWorkspaceModal(false);
+        setUser(null);
       }
     };
     loadUser();
-  }, [paramWorkspaceId, searchParams]);
+  }, []);
+
+  // Show workspace modal on mount if no selection has been made yet
+  useEffect(() => {
+    const hasSelection =
+      searchParams.has("workspaceId") || searchParams.has("testMode");
+    const isHelp = searchParams.get("showHelp") === "true";
+
+    if (!hasSelection && !isHelp) {
+      setShowWorkspaceModal(true);
+    } else {
+      setShowWorkspaceModal(false);
+      if (hasSelection) {
+        setSelectionMade(true);
+      }
+    }
+  }, [searchParams]);
 
   // Keyboard Shortcuts
   useEffect(() => {
@@ -226,9 +245,36 @@ function EisenhowerMatrixContent() {
     dailyWorkload,
     isOverburdened,
   } = useTaskOperations({
-    isTestMode: false,
+    isTestMode: isTestModeParam,
     initialWorkspaceId: paramWorkspaceId,
   });
+
+  // Synchronize activeWorkspaceId and isTestMode with the URL query parameters
+  useEffect(() => {
+    if (activeWorkspaceId !== null && selectionMade) {
+      const isTest = isTestMode || !user;
+      const targetUrl = `/eisenhower-matrix?workspaceId=${activeWorkspaceId}${isTest ? "&testMode=true" : ""}`;
+
+      const currentWorkspaceParam = searchParams.get("workspaceId");
+      const currentTestModeParam = searchParams.get("testMode");
+      const expectedTestMode = isTest ? "true" : null;
+
+      if (
+        currentWorkspaceParam !== String(activeWorkspaceId) ||
+        currentTestModeParam !== expectedTestMode
+      ) {
+        router.replace(targetUrl);
+        setShowWorkspaceModal(false);
+      }
+    }
+  }, [
+    activeWorkspaceId,
+    isTestMode,
+    user,
+    router,
+    searchParams,
+    selectionMade,
+  ]);
 
   const handleSwitchWorkspace = () => {
     setWorkspaceModalView("initial");

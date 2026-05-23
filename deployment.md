@@ -33,11 +33,13 @@ The application will be live at: **[http://localhost:3000](http://localhost:3000
 - Ensure the **"← Back to Models"** link is present at the top left of the matrix page.
 - Click it to verify you can return to the home screen smoothly.
 
-### Step 3: Persistence Check (Onboarding)
+### Step 3: Persistence Check (Onboarding & Redirection Stability)
 
 - Return to the Eisenhower Matrix.
 - If it's your first time (or after reset), you should see the **Onboarding Modal**.
 - Choose "Start Today" or "Try in Test Mode".
+- **URL Parameter Verification**: Confirm that selecting a workspace appends `?workspaceId=<id>` to the URL, and entering Test Mode appends `?testMode=true`.
+- **Redirection Stability**: Perform task mutations (e.g., adding, dragging, or deleting tasks) and verify that the page does not get stuck in a redirect loop that re-opens the onboarding modal.
 
 ### Step 4: Real-time Categorization (Drag & Drop)
 
@@ -96,7 +98,7 @@ Deploy the application with automated persistent SQLite volume management and sc
 docker compose -f deployment/docker-compose/docker-compose.yml up -d --build
 
 # View real-time logs
-docker compose -f deployment/docker-compose/docker-compose.yml logs -f
+# docker compose -f deployment/docker-compose/docker-compose.yml logs -f
 ```
 
 ### Option 3: Vanilla Kubernetes (K8s) Manifests
@@ -167,3 +169,4 @@ npm start
 - [ ] Home button navigation functional
 - [ ] Real-time category updates working
 - [ ] Cross-page theme synchronization (Home-Matrix-Analytics)
+- [ ] URL parameters (`workspaceId` and `testMode`) are updated correctly and do not cause redirection loops during task operations

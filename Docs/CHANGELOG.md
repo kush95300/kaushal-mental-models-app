@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added & Fixed
 
 - **Persistent SQLite Volume & Runtime Migration**: Relocated `prisma db push` from build-time Dockerfile execution to runtime `npx prisma migrate deploy` at container startup. Removed the redundant Dockerfile `VOLUME /app/prisma` instruction to ensure persistent SQLite database volumes correctly apply migrations without data loss.
+- **Workspace Modal Redirection Fix**: Resolved a bug where workspace selection, workspace switching, and task mutations (adding/deleting tasks) caused redirect loops that reopened the "Get Started" modal. Implemented state-preserving query parameters (`workspaceId` and `testMode`) to keep the selection stable.
 - **Production Secret Hardening**: Added dynamic validation checks for the `JWT_SECRET` environment variable in production. The application now fails fast at startup if it is missing, preventing silent fallbacks to insecure development secrets. Enforced setting `JWT_SECRET` in `docker-compose.yml`.
 - **Shared Workspace Access Control**: Extracted duplicate workspace access checking logic across Server Actions into a single shared helper utility in `src/lib/workspace-access.ts`.
 - **Admin Seeding & Concurrency Guard**: Re-engineered database seeding using composite keys for default workspaces and delegates, and added an in-memory initialization check to prevent concurrent race conditions during static builds.

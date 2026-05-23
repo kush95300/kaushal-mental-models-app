@@ -53,7 +53,11 @@ export function useTaskOperations({
       const res = await getCurrentUser();
       if (res.success && res.user) {
         setCurrentUser(res.user as User);
-        setIsTestMode(false);
+        if (initialIsTestMode) {
+          setIsTestMode(true);
+        } else {
+          setIsTestMode(false);
+        }
       } else {
         setCurrentUser(null);
         setIsTestMode(true);
@@ -61,7 +65,7 @@ export function useTaskOperations({
       setAuthChecked(true);
     };
     checkAuth();
-  }, []);
+  }, [initialIsTestMode]);
 
   const visibleTasks = useMemo(() => {
     if (isTestMode) {
@@ -102,7 +106,13 @@ export function useTaskOperations({
             updatedAt: "",
           },
         ]);
-        setActiveWorkspaceId((prev) => (prev === 1 || prev === 2 ? prev : 1));
+        setActiveWorkspaceId((prev) => {
+          if (prev === 1 || prev === 2) return prev;
+          if (initialWorkspaceId === 1 || initialWorkspaceId === 2)
+            return initialWorkspaceId;
+          if (initialWorkspaceId !== null || initialIsTestMode) return 1;
+          return null;
+        });
         return;
       }
       const res = await getWorkspaces();
@@ -131,7 +141,7 @@ export function useTaskOperations({
     } catch (error) {
       console.error("Fetch workspaces error:", error);
     }
-  }, [isTestMode, initialWorkspaceId]);
+  }, [isTestMode, initialWorkspaceId, initialIsTestMode]);
 
   // Fetch Delegates
   const fetchDelegates = useCallback(async () => {
@@ -445,7 +455,7 @@ export function useTaskOperations({
   const selectWorkspaceOp = async (id: number | null) => {
     if (id === null) {
       setIsTestMode(true);
-      setActiveWorkspaceId(null);
+      setActiveWorkspaceId(1);
       setTasks([]);
     } else {
       if (currentUser) {
