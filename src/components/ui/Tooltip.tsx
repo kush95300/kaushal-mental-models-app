@@ -39,7 +39,9 @@ export const Tooltip: React.FC<TooltipProps> = ({
   }
 
   return (
-    <div className={`relative inline-flex group/tooltip items-center justify-center z-10 hover:z-[9999] ${className}`}>
+    <div
+      className={`relative inline-flex group/tooltip items-center justify-center z-10 hover:z-[9999] ${className}`}
+    >
       {children}
       <div
         className={`absolute ${positionClasses} hidden group-hover/tooltip:block z-[500] w-max max-w-xs p-3 bg-slate-900 dark:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 border border-slate-700 pointer-events-none text-center normal-case tracking-normal font-sans leading-relaxed`}

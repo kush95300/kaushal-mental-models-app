@@ -36,7 +36,7 @@ export async function getUserConfig() {
   try {
     const session = await getSession();
     if (!session) return { success: false, error: "Unauthorized" };
-    
+
     const config = await prisma.user.findUnique({
       where: { id: session.id },
     });
@@ -53,7 +53,9 @@ export async function updateActiveWorkspace(workspaceId: number) {
     if (!session) return { success: false, error: "Unauthorized" };
 
     // Verify ownership
-    const ws = await prisma.workspace.findUnique({ where: { id: workspaceId } });
+    const ws = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+    });
     if (!ws || (ws.userId !== session.id && !session.isAdmin)) {
       return { success: false, error: "Unauthorized workspace access" };
     }

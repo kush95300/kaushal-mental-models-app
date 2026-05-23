@@ -73,7 +73,10 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
 
   return (
     <div className="relative z-10 hover:z-[9999]">
-      <Tooltip content="Workspace Switcher: Click to switch between Work, Personal, or custom workspaces." align="left">
+      <Tooltip
+        content="Workspace Switcher: Click to switch between Work, Personal, or custom workspaces."
+        align="left"
+      >
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="flex items-center gap-3 px-4 py-2 bg-slate-900/10 dark:bg-white/10 hover:bg-slate-900/20 dark:hover:bg-white/20 backdrop-blur-md border border-slate-900/10 dark:border-white/20 rounded-2xl transition-all group"
@@ -86,7 +89,9 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
             }`}
           >
             {(() => {
-              const IconComponent = ICON_MAP[activeWorkspace?.icon || "Briefcase"] || (activeWorkspace?.name === "Personal" ? User : Briefcase);
+              const IconComponent =
+                ICON_MAP[activeWorkspace?.icon || "Briefcase"] ||
+                (activeWorkspace?.name === "Personal" ? User : Briefcase);
               return <IconComponent size={18} />;
             })()}
           </div>
@@ -133,7 +138,9 @@ export const WorkspaceSwitcher: React.FC<WorkspaceSwitcherProps> = ({
                       }`}
                     >
                       {(() => {
-                        const IconComponent = ICON_MAP[ws.icon || "Briefcase"] || (ws.name === "Personal" ? User : Briefcase);
+                        const IconComponent =
+                          ICON_MAP[ws.icon || "Briefcase"] ||
+                          (ws.name === "Personal" ? User : Briefcase);
                         return <IconComponent size={16} />;
                       })()}
                     </div>

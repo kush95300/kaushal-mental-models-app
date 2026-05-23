@@ -47,7 +47,11 @@ export async function getDelegates(workspaceId: number) {
   }
 }
 
-export async function createDelegate(data: { name: string; email?: string; workspaceId: number }) {
+export async function createDelegate(data: {
+  name: string;
+  email?: string;
+  workspaceId: number;
+}) {
   try {
     const access = await verifyWorkspaceAccess(data.workspaceId);
     if (!access.success) return { success: false, error: access.error };

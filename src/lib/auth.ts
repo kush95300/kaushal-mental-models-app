@@ -30,10 +30,20 @@ export async function getSession() {
 
     const user = await prisma.user.findUnique({
       where: { id: payload.id },
-      select: { id: true, username: true, isAdmin: true, status: true, tokenVersion: true }
+      select: {
+        id: true,
+        username: true,
+        isAdmin: true,
+        status: true,
+        tokenVersion: true,
+      },
     });
 
-    if (!user || user.status !== "APPROVED" || user.tokenVersion !== payload.tokenVersion) {
+    if (
+      !user ||
+      user.status !== "APPROVED" ||
+      user.tokenVersion !== payload.tokenVersion
+    ) {
       return null;
     }
 

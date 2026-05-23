@@ -31,10 +31,22 @@ export async function ensureDefaultWorkspaces(userId: number) {
   const count = await prisma.workspace.count({ where: { userId } });
   if (count === 0) {
     await prisma.workspace.create({
-      data: { name: "Personal", description: "Personal tasks and goals", color: "bg-indigo-500", icon: "User", userId },
+      data: {
+        name: "Personal",
+        description: "Personal tasks and goals",
+        color: "bg-indigo-500",
+        icon: "User",
+        userId,
+      },
     });
     await prisma.workspace.create({
-      data: { name: "Work", description: "Professional projects and deadlines", color: "bg-amber-500", icon: "Briefcase", userId },
+      data: {
+        name: "Work",
+        description: "Professional projects and deadlines",
+        color: "bg-amber-500",
+        icon: "Briefcase",
+        userId,
+      },
     });
   }
 }
@@ -42,7 +54,10 @@ export async function ensureDefaultWorkspaces(userId: number) {
 export async function login(username: string, password: string) {
   try {
     if (!checkRateLimit(`login_${username}`).success) {
-      return { success: false, error: "Too many login attempts. Please try again in a minute." };
+      return {
+        success: false,
+        error: "Too many login attempts. Please try again in a minute.",
+      };
     }
 
     const user = await prisma.user.findUnique({
@@ -65,14 +80,20 @@ export async function login(username: string, password: string) {
     await ensureDefaultWorkspaces(user.id);
 
     const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-    const session = await encrypt({ id: user.id, username: user.username, isAdmin: user.isAdmin, tokenVersion: user.tokenVersion, expires });
+    const session = await encrypt({
+      id: user.id,
+      username: user.username,
+      isAdmin: user.isAdmin,
+      tokenVersion: user.tokenVersion,
+      expires,
+    });
 
     const cookieStore = await cookies();
-    cookieStore.set("session", session, { 
-      expires, 
-      httpOnly: true, 
-      sameSite: "strict", 
-      secure: process.env.NODE_ENV === "production" 
+    cookieStore.set("session", session, {
+      expires,
+      httpOnly: true,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
     });
 
     return { success: true };
@@ -90,7 +111,9 @@ export async function logout() {
 
 export async function createInitialAdmin() {
   try {
-    const existing = await prisma.user.findUnique({ where: { username: "admin" } });
+    const existing = await prisma.user.findUnique({
+      where: { username: "admin" },
+    });
     if (!existing) {
       const hashedPassword = await bcrypt.hash("admin", 10);
       const admin = await prisma.user.create({
@@ -114,7 +137,10 @@ export async function createInitialAdmin() {
 export async function requestAccount(username: string, password: string) {
   try {
     if (!checkRateLimit(`req_${username}`).success) {
-      return { success: false, error: "Too many requests. Please try again later." };
+      return {
+        success: false,
+        error: "Too many requests. Please try again later.",
+      };
     }
 
     const existingUser = await prisma.user.findUnique({ where: { username } });
@@ -140,7 +166,11 @@ export async function requestAccount(username: string, password: string) {
   }
 }
 
-export async function createUser(username: string, password: string, isAdmin: boolean) {
+export async function createUser(
+  username: string,
+  password: string,
+  isAdmin: boolean,
+) {
   try {
     const cookieStore = await cookies();
     const session = cookieStore.get("session")?.value;
@@ -274,7 +304,10 @@ export async function deleteUser(id: number) {
   }
 }
 
-export async function changeUserPassword(oldPassword: string, newPassword: string) {
+export async function changeUserPassword(
+  oldPassword: string,
+  newPassword: string,
+) {
   try {
     const cookieStore = await cookies();
     const session = cookieStore.get("session")?.value;
@@ -289,7 +322,8 @@ export async function changeUserPassword(oldPassword: string, newPassword: strin
     if (!user) return { success: false, error: "User not found" };
 
     const isMatch = await bcrypt.compare(oldPassword, user.password);
-    if (!isMatch) return { success: false, error: "Incorrect current password" };
+    if (!isMatch)
+      return { success: false, error: "Incorrect current password" };
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await prisma.user.update({
@@ -308,7 +342,9 @@ export const changeAdminPassword = changeUserPassword;
 
 export async function isAdminPasswordDefault() {
   try {
-    const admin = await prisma.user.findUnique({ where: { username: "admin" } });
+    const admin = await prisma.user.findUnique({
+      where: { username: "admin" },
+    });
     if (!admin) return false;
     const isMatch = await bcrypt.compare("admin", admin.password);
     return isMatch;
@@ -321,12 +357,12 @@ export async function getCurrentUser() {
   try {
     const session = await getSession();
     if (!session) return { success: false };
-    
+
     const user = await prisma.user.findUnique({
       where: { id: session.id },
-      select: { id: true, username: true, isAdmin: true, status: true }
+      select: { id: true, username: true, isAdmin: true, status: true },
     });
-    
+
     if (!user || user.status !== "APPROVED") return { success: false };
     return { success: true, user };
   } catch (error) {

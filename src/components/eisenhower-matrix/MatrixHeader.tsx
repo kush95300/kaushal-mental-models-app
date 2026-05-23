@@ -83,7 +83,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
   useEffect(() => {
     setMounted(true);
     if (user?.isAdmin) {
-      getPendingUsers().then(res => {
+      getPendingUsers().then((res) => {
         if (res.success && res.users) {
           setPendingRequestsCount(res.users.length);
         }
@@ -91,13 +91,18 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
     }
   }, [user]);
 
-  const urgentTasks = tasks.filter(t => t.isUrgent && t.status !== "DONE" && !t.isDeleted);
-  const pendingTasks = tasks.filter(t => t.status !== "DONE" && !t.isDeleted);
+  const urgentTasks = tasks.filter(
+    (t) => t.isUrgent && t.status !== "DONE" && !t.isDeleted,
+  );
+  const pendingTasks = tasks.filter((t) => t.status !== "DONE" && !t.isDeleted);
 
   return (
     <div className="flex flex-wrap justify-between items-center gap-4 mb-6 relative z-20 hover:z-[9999]">
       <div className="flex flex-wrap items-center gap-3 w-full md:w-auto relative z-10 hover:z-[9999]">
-        <Tooltip content="Return to Models Library: Browse and select other mental models and productivity frameworks." align="left">
+        <Tooltip
+          content="Return to Models Library: Browse and select other mental models and productivity frameworks."
+          align="left"
+        >
           <Link
             href="/"
             className="flex items-center gap-2 text-slate-400 hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400 font-bold text-xs uppercase tracking-widest transition-all group w-fit"
@@ -121,7 +126,11 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
               onClick={toggleTheme}
               className="p-2 rounded-2xl transition-all flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:text-slate-500 dark:hover:text-amber-400 dark:hover:bg-slate-700 mr-1"
             >
-              {mounted && theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+              {mounted && theme === "dark" ? (
+                <Sun size={18} />
+              ) : (
+                <Moon size={18} />
+              )}
             </button>
           </Tooltip>
           <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1" />
@@ -168,7 +177,10 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
             >
               <CheckCircle2 size={16} /> Done
               <span className="bg-emerald-500/10 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-lg text-[8px]">
-                {tasks.filter((t) => t.status === "DONE" && !t.isDeleted).length}
+                {
+                  tasks.filter((t) => t.status === "DONE" && !t.isDeleted)
+                    .length
+                }
               </span>
             </button>
           </Tooltip>
@@ -239,17 +251,31 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                 <span className="font-black text-sm text-slate-800 dark:text-slate-200 flex items-center gap-2">
                   <Bell size={16} className="text-indigo-500" /> Notifications
                 </span>
-                <button onClick={() => setShowNotifications(false)} className="text-xs text-slate-400 hover:text-slate-600">Close</button>
+                <button
+                  onClick={() => setShowNotifications(false)}
+                  className="text-xs text-slate-400 hover:text-slate-600"
+                >
+                  Close
+                </button>
               </div>
 
               <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
                 {user?.isAdmin && pendingRequestsCount > 0 && (
                   <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-2xl flex items-start justify-between gap-2">
                     <div>
-                      <div className="text-xs font-bold text-amber-900 dark:text-amber-200">New Account Requests</div>
-                      <div className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">{pendingRequestsCount} user(s) waiting for admin approval.</div>
+                      <div className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                        New Account Requests
+                      </div>
+                      <div className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
+                        {pendingRequestsCount} user(s) waiting for admin
+                        approval.
+                      </div>
                     </div>
-                    <Link href="/admin" onClick={() => setShowNotifications(false)} className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black rounded-xl uppercase tracking-wider shrink-0 shadow-sm">
+                    <Link
+                      href="/admin"
+                      onClick={() => setShowNotifications(false)}
+                      className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black rounded-xl uppercase tracking-wider shrink-0 shadow-sm"
+                    >
                       Review
                     </Link>
                   </div>
@@ -258,24 +284,35 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                 {urgentTasks.length > 0 && (
                   <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-2xl">
                     <div className="text-xs font-bold text-rose-900 dark:text-rose-200 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" /> Urgent Tasks Pending
+                      <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-pulse" />{" "}
+                      Urgent Tasks Pending
                     </div>
-                    <div className="text-[11px] text-rose-700 dark:text-rose-400 mt-0.5">{urgentTasks.length} urgent task(s) require immediate attention in this workspace.</div>
+                    <div className="text-[11px] text-rose-700 dark:text-rose-400 mt-0.5">
+                      {urgentTasks.length} urgent task(s) require immediate
+                      attention in this workspace.
+                    </div>
                   </div>
                 )}
 
                 {pendingTasks.length > 0 && (
                   <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/50 rounded-2xl">
-                    <div className="text-xs font-bold text-indigo-900 dark:text-indigo-200">Workspace Status</div>
-                    <div className="text-[11px] text-indigo-700 dark:text-indigo-400 mt-0.5">{pendingTasks.length} active task(s) remaining to be completed.</div>
+                    <div className="text-xs font-bold text-indigo-900 dark:text-indigo-200">
+                      Workspace Status
+                    </div>
+                    <div className="text-[11px] text-indigo-700 dark:text-indigo-400 mt-0.5">
+                      {pendingTasks.length} active task(s) remaining to be
+                      completed.
+                    </div>
                   </div>
                 )}
 
-                {(!user?.isAdmin || pendingRequestsCount === 0) && urgentTasks.length === 0 && pendingTasks.length === 0 && (
-                  <div className="text-center py-6 text-xs text-slate-400 font-medium">
-                    No new notifications. You're all caught up!
-                  </div>
-                )}
+                {(!user?.isAdmin || pendingRequestsCount === 0) &&
+                  urgentTasks.length === 0 &&
+                  pendingTasks.length === 0 && (
+                    <div className="text-center py-6 text-xs text-slate-400 font-medium">
+                      No new notifications. You're all caught up!
+                    </div>
+                  )}
               </div>
             </div>
           )}
@@ -290,7 +327,10 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
           </button>
         </Tooltip>
         <div className="flex bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm p-1.5 rounded-[1.5rem] border border-white dark:border-slate-800 items-center gap-1 shadow-sm ml-2 transition-colors relative z-10 hover:z-[9999]">
-          <Tooltip content="Force Refresh: Immediately fetch the latest tasks and delegate data from the database." align="right">
+          <Tooltip
+            content="Force Refresh: Immediately fetch the latest tasks and delegate data from the database."
+            align="right"
+          >
             <button
               onClick={() => fetchTasks()}
               className="p-2 px-3 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-2xl transition-all flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest group font-sans"
@@ -302,7 +342,10 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
             </button>
           </Tooltip>
           <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
-          <Tooltip content="Auto-Refresh Interval: Choose how often the matrix automatically syncs with the database." align="right">
+          <Tooltip
+            content="Auto-Refresh Interval: Choose how often the matrix automatically syncs with the database."
+            align="right"
+          >
             <select
               value={refreshInterval}
               onChange={(e) => setRefreshInterval(Number(e.target.value))}
@@ -323,7 +366,10 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
             </select>
           </Tooltip>
         </div>
-        <Tooltip content="Focus Depth Slider: Adjust the maximum number of visible tasks displayed per quadrant to maintain focus." align="right">
+        <Tooltip
+          content="Focus Depth Slider: Adjust the maximum number of visible tasks displayed per quadrant to maintain focus."
+          align="right"
+        >
           <div className="flex items-center gap-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-4 py-2 rounded-[1.5rem] border border-white dark:border-slate-800 shadow-sm ml-2 transition-colors relative z-10 hover:z-[9999]">
             <div className="flex flex-col">
               <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest whitespace-nowrap leading-none mb-1 font-sans">
@@ -345,7 +391,10 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
         </Tooltip>
         <div className="h-8 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block mx-1" />
         <div className="flex items-center gap-1 bg-white/40 dark:bg-slate-900/40 p-1 rounded-2xl border border-white/50 dark:border-slate-800/50 transition-colors relative z-10 hover:z-[9999]">
-          <Tooltip content="Reset Today's Tasks: Delete all tasks created today to start with a clean slate." align="right">
+          <Tooltip
+            content="Reset Today's Tasks: Delete all tasks created today to start with a clean slate."
+            align="right"
+          >
             <button
               onClick={() => resetData("today")}
               className="p-2 px-3 text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans"
@@ -353,7 +402,10 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
               Reset Today
             </button>
           </Tooltip>
-          <Tooltip content="Reset Workspace: Delete all tasks in the current workspace." align="right">
+          <Tooltip
+            content="Reset Workspace: Delete all tasks in the current workspace."
+            align="right"
+          >
             <button
               onClick={() => resetData("all")}
               className="p-2 px-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans"
@@ -365,7 +417,10 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
 
         {user && (
           <div className="flex bg-white/40 dark:bg-slate-900/40 p-1 rounded-2xl border border-white/50 dark:border-slate-800/50 transition-colors relative z-10 hover:z-[9999] ml-2 items-center gap-1">
-            <Tooltip content="Sign Out: Securely log out of your account." align="right">
+            <Tooltip
+              content="Sign Out: Securely log out of your account."
+              align="right"
+            >
               <button
                 onClick={() => logout()}
                 className="p-2 px-3 text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:text-slate-400 dark:hover:text-rose-400 dark:hover:bg-rose-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans flex items-center gap-1"

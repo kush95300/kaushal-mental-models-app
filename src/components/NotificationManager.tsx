@@ -7,7 +7,11 @@ interface NotificationManagerProps {
   tasks: Task[];
   workspaces: Workspace[];
   activeWorkspaceId: number | null;
-  updateTaskStatus: (id: number, status: string, minutes: number | null) => Promise<void>;
+  updateTaskStatus: (
+    id: number,
+    status: string,
+    minutes: number | null,
+  ) => Promise<void>;
   // We should also be able to mark it as notified, but for simplicity, let's keep a local Set of notified task IDs
 }
 
@@ -18,14 +22,18 @@ export const NotificationManager: React.FC<NotificationManagerProps> = ({
 }) => {
   useEffect(() => {
     if ("Notification" in window) {
-      if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+      if (
+        Notification.permission !== "granted" &&
+        Notification.permission !== "denied"
+      ) {
         Notification.requestPermission();
       }
     }
   }, []);
 
   useEffect(() => {
-    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    if (!("Notification" in window) || Notification.permission !== "granted")
+      return;
 
     const notifiedTaskIds = new Set<number>();
     const notifiedWorkspaceDates = new Set<string>(); // "YYYY-MM-DD-workspaceId"
@@ -54,16 +62,25 @@ export const NotificationManager: React.FC<NotificationManagerProps> = ({
 
       // 2. Task Reminders
       tasks.forEach((task) => {
-        if (task.status === "DONE" || task.isDeleted || !task.dueDate || !task.reminderMinutesBefore) return;
+        if (
+          task.status === "DONE" ||
+          task.isDeleted ||
+          !task.dueDate ||
+          !task.reminderMinutesBefore
+        )
+          return;
 
         if (notifiedTaskIds.has(task.id)) return;
 
         const dueTime = new Date(task.dueDate).getTime();
         const notifyTime = dueTime - task.reminderMinutesBefore * 60 * 1000;
-        
+
         // Notify if we are past the notify time, but not past the due time
         // Give a 2-minute window to avoid stale notifications
-        if (now.getTime() >= notifyTime && now.getTime() <= notifyTime + 2 * 60 * 1000) {
+        if (
+          now.getTime() >= notifyTime &&
+          now.getTime() <= notifyTime + 2 * 60 * 1000
+        ) {
           new Notification("Task Reminder", {
             body: `Your task "${task.content}" is due in ${task.reminderMinutesBefore} minutes!`,
             icon: "/favicon.ico",

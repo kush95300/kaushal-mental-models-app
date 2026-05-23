@@ -9,16 +9,20 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Protect /eisenhower-matrix, /admin and /
-  if (pathname === "/" || pathname.startsWith("/eisenhower-matrix") || pathname.startsWith("/admin")) {
+  if (
+    pathname === "/" ||
+    pathname.startsWith("/eisenhower-matrix") ||
+    pathname.startsWith("/admin")
+  ) {
     if (!session) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
-    
+
     try {
       const { payload } = await jwtVerify(session, key, {
         algorithms: ["HS256"],
       });
-      
+
       // If going to admin portal, check if user is admin
       if (pathname.startsWith("/admin") && !payload.isAdmin) {
         return NextResponse.redirect(new URL("/", request.url));

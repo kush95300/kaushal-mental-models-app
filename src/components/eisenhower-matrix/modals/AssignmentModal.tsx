@@ -39,10 +39,10 @@ export const AssignmentModal: React.FC<AssignmentModalProps> = ({
               {assignmentModal.quadrant === "DELEGATE"
                 ? "Delegate Task"
                 : assignmentModal.quadrant === "DO"
-                ? "Plan Execution"
-                : assignmentModal.quadrant === "SCHEDULE"
-                ? "Schedule Task"
-                : "Confirm Action"}
+                  ? "Plan Execution"
+                  : assignmentModal.quadrant === "SCHEDULE"
+                    ? "Schedule Task"
+                    : "Confirm Action"}
             </h3>
             <p className="text-sm font-semibold text-indigo-600/70 dark:text-indigo-400/70 italic font-sans truncate max-w-[18rem]">
               &quot;{currentTask?.content}&quot;

@@ -285,7 +285,9 @@ export function useTaskOperations({
         if (t.id === taskId) {
           const updated = { ...t, quadrant, ...additionalData } as Task;
           if (additionalData.delegateId) {
-            const del = delegates.find((d) => d.id === additionalData.delegateId);
+            const del = delegates.find(
+              (d) => d.id === additionalData.delegateId,
+            );
             if (del) updated.delegate = del;
           }
           return updated;
@@ -314,12 +316,18 @@ export function useTaskOperations({
     // Optimistic Update
     setTasks((prev) =>
       prev.map((t) =>
-        t.id === id ? ({ ...t, content, estimatedMinutes, reminderMinutesBefore } as Task) : t,
+        t.id === id
+          ? ({ ...t, content, estimatedMinutes, reminderMinutesBefore } as Task)
+          : t,
       ),
     );
 
     if (isTestMode) return;
-    await updateTaskAction(id, { content, estimatedMinutes, reminderMinutesBefore });
+    await updateTaskAction(id, {
+      content,
+      estimatedMinutes,
+      reminderMinutesBefore,
+    });
   };
 
   const deleteTask = async (id: number) => {
@@ -363,7 +371,11 @@ export function useTaskOperations({
       }
       return;
     }
-    const res = await createDelegate({ name, email, workspaceId: activeWorkspaceId });
+    const res = await createDelegate({
+      name,
+      email,
+      workspaceId: activeWorkspaceId,
+    });
     if (res.success && res.data) {
       setDelegates((prev) => [...prev, res.data!]);
     }
@@ -399,7 +411,11 @@ export function useTaskOperations({
     }
   };
 
-  const addWorkspaceOp = async (name: string, description: string, icon?: string) => {
+  const addWorkspaceOp = async (
+    name: string,
+    description: string,
+    icon?: string,
+  ) => {
     const res = await createWorkspace({ name, description, icon });
     if (res.success && res.data) {
       setWorkspaces((prev) => [...prev, res.data as Workspace]);

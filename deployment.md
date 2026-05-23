@@ -135,6 +135,18 @@ helm status mental-models-app -n production
 npx prisma db push
 ```
 
+📋 **Code Linting:**
+
+```bash
+npm run lint
+```
+
+📋 **Code Formatting:**
+
+```bash
+npx prettier --write "src/**/*.{ts,tsx,css}"
+```
+
 📋 **Generate production build:**
 
 ```bash

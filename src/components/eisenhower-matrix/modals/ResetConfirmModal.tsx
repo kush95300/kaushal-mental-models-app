@@ -26,7 +26,9 @@ export const ResetConfirmModal: React.FC<ResetConfirmModalProps> = ({
         </div>
 
         <h3 className="text-xl font-black text-slate-900 dark:text-white mb-2 font-display uppercase tracking-tight">
-          {resetType === "today" ? "Reset Today's Tasks" : "Reset Workspace Tasks"}
+          {resetType === "today"
+            ? "Reset Today's Tasks"
+            : "Reset Workspace Tasks"}
         </h3>
         <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-8 font-sans leading-relaxed">
           {resetType === "today"

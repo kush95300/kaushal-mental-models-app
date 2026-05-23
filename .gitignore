@@ -50,3 +50,9 @@ dev.db
 next-env.d.ts
 
 /src/generated/prisma
+.vscode/*
+failure_screenshot.png
+*screenshot.png
+/temp_recordings_all
+*.webm
+webui_all_features_recording.webm

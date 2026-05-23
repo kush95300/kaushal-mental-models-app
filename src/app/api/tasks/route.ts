@@ -15,7 +15,8 @@ async function verifyWorkspaceAccess(workspaceId: number, session: any) {
 export async function GET(request: Request) {
   try {
     const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
     const includeDeleted = searchParams.get("includeDeleted") === "true";
@@ -25,8 +26,11 @@ export async function GET(request: Request) {
 
     if (workspaceIdParam) {
       const wsId = parseInt(workspaceIdParam);
-      if (!await verifyWorkspaceAccess(wsId, session)) {
-        return NextResponse.json({ error: "Unauthorized workspace access" }, { status: 403 });
+      if (!(await verifyWorkspaceAccess(wsId, session))) {
+        return NextResponse.json(
+          { error: "Unauthorized workspace access" },
+          { status: 403 },
+        );
       }
       where.workspaceId = wsId;
     } else if (!session.isAdmin) {
@@ -51,12 +55,16 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
     const workspaceId = body.workspaceId ? parseInt(body.workspaceId) : 1;
-    if (!await verifyWorkspaceAccess(workspaceId, session)) {
-      return NextResponse.json({ error: "Unauthorized workspace access" }, { status: 403 });
+    if (!(await verifyWorkspaceAccess(workspaceId, session))) {
+      return NextResponse.json(
+        { error: "Unauthorized workspace access" },
+        { status: 403 },
+      );
     }
 
     const {
@@ -113,15 +121,22 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
     const { id, ...updates } = body;
 
-    const existing = await prisma.task.findUnique({ where: { id: parseInt(id) } });
-    if (!existing) return NextResponse.json({ error: "Task not found" }, { status: 404 });
-    if (!await verifyWorkspaceAccess(existing.workspaceId, session)) {
-      return NextResponse.json({ error: "Unauthorized workspace access" }, { status: 403 });
+    const existing = await prisma.task.findUnique({
+      where: { id: parseInt(id) },
+    });
+    if (!existing)
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    if (!(await verifyWorkspaceAccess(existing.workspaceId, session))) {
+      return NextResponse.json(
+        { error: "Unauthorized workspace access" },
+        { status: 403 },
+      );
     }
 
     // Sanitize updates
@@ -180,7 +195,8 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const session = await getSession();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
@@ -188,7 +204,8 @@ export async function DELETE(request: Request) {
     const reset = searchParams.get("reset"); // 'today' or 'all'
 
     if (reset === "all") {
-      if (!session.isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      if (!session.isAdmin)
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
       await (prisma as any).task.deleteMany({});
       return NextResponse.json({ success: true });
     }
@@ -197,8 +214,11 @@ export async function DELETE(request: Request) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       if (!session.isAdmin) {
-        const userWorkspaces = await prisma.workspace.findMany({ where: { userId: session.id }, select: { id: true } });
-        const wsIds = userWorkspaces.map(w => w.id);
+        const userWorkspaces = await prisma.workspace.findMany({
+          where: { userId: session.id },
+          select: { id: true },
+        });
+        const wsIds = userWorkspaces.map((w) => w.id);
         await (prisma as any).task.deleteMany({
           where: { workspaceId: { in: wsIds }, createdAt: { gte: today } },
         });
@@ -215,9 +235,13 @@ export async function DELETE(request: Request) {
 
     const taskId = parseInt(id);
     const existing = await prisma.task.findUnique({ where: { id: taskId } });
-    if (!existing) return NextResponse.json({ error: "Task not found" }, { status: 404 });
-    if (!await verifyWorkspaceAccess(existing.workspaceId, session)) {
-      return NextResponse.json({ error: "Unauthorized workspace access" }, { status: 403 });
+    if (!existing)
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    if (!(await verifyWorkspaceAccess(existing.workspaceId, session))) {
+      return NextResponse.json(
+        { error: "Unauthorized workspace access" },
+        { status: 403 },
+      );
     }
 
     if (mode === "revert") {

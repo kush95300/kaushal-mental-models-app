@@ -113,9 +113,15 @@ npm run deploy
 
 For detailed step-by-step instructions on each deployment method, please refer to the **[Deployment Guide](deployment.md)**.
 
+## 🧹 Code Quality & Styling
+
+To maintain high code quality and styling consistency across the workspace:
+- **Linting**: Run `npm run lint` to perform static code analysis via ESLint.
+- **Formatting**: Run `npx prettier --write "src/**/*.{ts,tsx,css}"` to automatically format all source files.
+
 ## 🤝 Contributing
 
-Contributions are welcome! Please ensure that your pull requests pass the **pre-commit** checks to maintain code quality.
+Contributions are welcome! Please ensure that your pull requests pass all linting, formatting, and test checks.
 
 ## 📄 License
 

@@ -47,7 +47,7 @@ export const MatrixGrid: React.FC<MatrixGridProps> = ({
   setEditingDateTaskId,
   setAssignmentModal,
   QUAD_CONFIG,
- }) => {
+}) => {
   if (loading) {
     return (
       <div className="flex-grow flex flex-col items-center justify-center gap-4 opacity-50 py-20">
@@ -81,7 +81,11 @@ export const MatrixGrid: React.FC<MatrixGridProps> = ({
               </span>
             </div>
           </div>
-          <Tooltip content="Draft Queue Inbox: Tasks created without a specific quadrant appear here. Drag them into the matrix to prioritize." position="top" align="right">
+          <Tooltip
+            content="Draft Queue Inbox: Tasks created without a specific quadrant appear here. Drag them into the matrix to prioritize."
+            position="top"
+            align="right"
+          >
             <div className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-2xl relative z-10 hover:z-[9999]">
               <PlusCircle className="w-5 h-5" />
             </div>
