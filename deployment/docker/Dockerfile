@@ -25,6 +25,20 @@ RUN npx prisma generate
 RUN npx prisma db push --accept-data-loss
 RUN npm run build
 
+# Clean up unused build dependencies, other platform engines, and WASM files to optimize image size
+RUN rm -rf \
+    /app/.next/standalone/node_modules/typescript \
+    /app/.next/standalone/node_modules/.prisma/client/libquery_engine-darwin-* \
+    /app/.next/standalone/node_modules/.prisma/client/*.dylib \
+    /app/.next/standalone/node_modules/@prisma/client/runtime/*.wasm-base64.js \
+    /app/.next/standalone/node_modules/@prisma/client/runtime/*.wasm \
+    /app/.next/standalone/node_modules/@img/sharp-darwin-* \
+    /app/.next/standalone/node_modules/@img/sharp-libvips-darwin-* \
+    /app/.next/standalone/node_modules/@img/sharp-linux-arm64 \
+    /app/.next/standalone/node_modules/@img/sharp-linux-x64 \
+    /app/.next/standalone/node_modules/@img/sharp-libvips-linux-arm64 \
+    /app/.next/standalone/node_modules/@img/sharp-libvips-linux-x64
+
 # Production image, copy all the files and run next
 FROM base AS runner
 RUN apk add --no-cache openssl
