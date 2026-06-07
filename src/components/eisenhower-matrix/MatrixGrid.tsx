@@ -66,7 +66,7 @@ export const MatrixGrid: React.FC<MatrixGridProps> = ({
   return (
     <div className="flex-grow grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
       {/* Inbox / Queue */}
-      <div className="flex flex-col h-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm rounded-[2.5rem] p-6 border-2 border-dashed border-slate-200 dark:border-slate-800 min-h-[400px]">
+      <div id="matrix-inbox-container" className="flex flex-col h-full bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm rounded-[2.5rem] p-6 border-2 border-dashed border-slate-200 dark:border-slate-800 min-h-[400px]">
         <div className="flex justify-between items-center mb-6 px-2">
           <div>
             <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">

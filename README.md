@@ -20,7 +20,15 @@ Transform your to-do list into a strategic map by separating the urgent from the
   - **Done Archive**: Specialized view for all completed tasks with _Restore to TODO_ capability.
   - **Eliminated (Soft-Delete)**: Moving tasks to the **Eliminate** quadrant automatically archives them. View all removed items in the **Eliminated** list at the top.
   - **Data Resets**: Quickly wipe _Today's Data_ or _All Data_ for a clean slate.
-- **Onboarding & Analytics**:
+- **Onboarding & Interactive Tutorials (v2.0.0)**:
+  - **Interactive 4-Track Video Tour**: Built-in React-animated simulated video player with play/pause, scrubbing, speeds, and subtitles. Explains: (1) what mental models are, (2) what the Eisenhower Matrix is (20-minute masterclass simulation), (3) adding, moving, and completing tasks, and (4) key platform features (Workspaces, Analytics, Delegates, Database Cleanup). Launches automatically upon first-time user login, enforces a strictly sequential progression (chapters unlock one by one, persisting in local storage), and features a calmer, slowed-down pre-recorded neural conversational voiceover narration.
+  - **Contextual In-App Tutorials**: Floating step-by-step onboarding walkthrough pointers with focus highlights, tethered dynamically using viewport-relative `fixed` overlay coordinates to target UI elements on both the Eisenhower Matrix page and the Analytics Dashboard. Recalculates on page scroll/resize to follow UI elements smoothly without hijacking user scrolls.
+  - **Interactive Walkthrough Sub-Guides**: Complete interactive guides selectable from a post-walkthrough dialog modal:
+    - **How to Add a Task**: 3-step guide covering (1) entering a sample task ("Learn Eisenhower Matrix") and estimate ("45 min") in the form, (2) tracking its appearance in the Draft Queue (Inbox), and (3) dragging it to the appropriate matrix quadrant.
+    - **How to Add a Delegate**: 4-step guide covering (1) clicking Manage Delegates in the header, (2) auto-opening the dialog and highlighting the teammate name input, (3) typing a teammate name and clicking Add Team Member, and (4) returning to the grid for task delegation assignment.
+    - **How to Use Analytics**: Dynamic guide highlighting active productivity indicators.
+  - **Auto-popup Controls**: Includes skip options, language selectors (English, Hindi, Hinglish), and a persistent "Don't show again" local storage toggle.
+  - **Zero-Asset Synthesized Audio**: Utilizes the native browser Web Audio API `AudioContext` to synthesize premium click ticks, chime success sweeps, and swoosh transitions dynamically, removing the need for external audio assets.
   - **Smart Onboarding**: Prompt for analytics start date on first visit.
   - **Test Mode**: Explore the full matrix feature set without persisting any data to the database.
 - **Server Actions Architecture (v1.2)**:
@@ -107,7 +115,7 @@ npm run deploy
 ### Manual Deployment Targets
 
 1. **Standalone Docker Container**: Multi-stage, highly optimized Next.js standalone container (`deployment/docker/Dockerfile`). Database migrations are applied automatically at container startup, and a custom `JWT_SECRET` environment variable must be provided in production.
-2. **Docker Compose**: Automated orchestration with persistent SQLite volume management (`deployment/docker-compose/docker-compose.yml`) and automated runtime database migrations. The volume `sqlite_data` stores the SQLite database, preserving data across container rebuilds. Make sure to update the `JWT_SECRET` variable in the Compose file.
+2. **Docker Compose**: Automated orchestration pulling the pre-built `kaushal95300/kaushal-mental-models:latest` image. Persistent data is stored in the volume `sqlite_data` (preserving data across container restarts). You can pull updates and hot-reload containers safely with `make app-update`, which creates a database backup file (`dev_db_backup_before_update.db`) on the host prior to the update. Make sure to configure the `JWT_SECRET` in the Compose file.
 3. **Vanilla Kubernetes Manifests**: Declarative K8s resources including PVC, Deployment, Service, ConfigMap, and Ingress (`deployment/k8s/`).
 4. **Helm Chart**: Fully templated, dynamic Kubernetes package management (`deployment/helm/kaushal-mental-models`).
 

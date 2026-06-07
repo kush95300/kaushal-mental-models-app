@@ -18,8 +18,17 @@ build: ## Build Next.js production bundle
 docker: ## Build standalone Docker image
 	docker build -t kaushal-mental-models:latest -f deployment/docker/Dockerfile .
 
-compose: ## Start Docker Compose multi-container environment
-	docker compose -f deployment/docker-compose/docker-compose.yml up -d --build
+compose: ## Start Docker Compose multi-container environment using remote registry image
+	docker compose -f deployment/docker-compose/docker-compose.yml pull
+	docker compose -f deployment/docker-compose/docker-compose.yml up -d
+
+app-update: ## Back up database, pull the latest registry image and hot-reload container (retains persistent volume)
+	@echo "💾 Creating database volume backup on the host..."
+	docker cp kaushal-mental-models-app:/app/prisma/dev.db ./dev_db_backup_before_update.db || true
+	@echo "📥 Pulling latest image from registry..."
+	docker compose -f deployment/docker-compose/docker-compose.yml pull
+	@echo "🚀 Restarting containers..."
+	docker compose -f deployment/docker-compose/docker-compose.yml up -d
 
 k8s: ## Apply Vanilla Kubernetes manifests
 	kubectl apply -f deployment/k8s/configmap.yaml
