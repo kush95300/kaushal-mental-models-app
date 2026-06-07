@@ -2,9 +2,7 @@
 
 services:
   web:
-    build:
-      context: ../..
-      dockerfile: deployment/docker/Dockerfile
+    image: kaushal95300/kaushal-mental-models:latest
     container_name: kaushal-mental-models-app
     restart: unless-stopped
     ports:

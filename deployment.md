@@ -186,25 +186,38 @@ graph TD
 
 #### 🚀 Deployment Steps
 
-**Step 1: Verify the Configuration**
-Review the configuration file at [deployment/docker-compose/docker-compose.yml](file:///Users/kaushalsoni/Desktop/WS/kaushal-mental-models/deployment/docker-compose/docker-compose.yml). Ensure the `JWT_SECRET` environment variable is configured:
-```yaml
-environment:
-  - NODE_ENV=production
-  - PORT=3000
-  - DATABASE_URL=file:/app/prisma/dev.db
-  - JWT_SECRET=super-secret-production-key-change-me
+**Step 2: Package, Tag, and Push the Docker Image**
+Build the Next.js standalone image, tag it with `latest` and `v1.2` labels, and push both tags to your Docker Hub repository:
+```bash
+# 1. Build the standalone image
+docker build -t kaushal95300/kaushal-mental-models:latest -f deployment/docker/Dockerfile .
+
+# 2. Add the version tag
+docker tag kaushal95300/kaushal-mental-models:latest kaushal95300/kaushal-mental-models:v1.2
+
+# 3. Push to Docker Hub (ensure you ran 'docker login -u kaushal95300' first)
+docker push kaushal95300/kaushal-mental-models:latest
+docker push kaushal95300/kaushal-mental-models:v1.2
 ```
 
-**Step 2: Build & Start the Application**
-Launch the multi-container environment in detached mode:
+**Step 3: Pull & Start the Application**
+Pull the registry image and launch the container in detached mode:
 ```bash
-docker compose -f deployment/docker-compose/docker-compose.yml up -d --build
+make compose
+# or
+docker compose -f deployment/docker-compose/docker-compose.yml pull
+docker compose -f deployment/docker-compose/docker-compose.yml up -d
+```
+
+**Step 4: Update the App & Hot-Reload with Database Backups**
+Whenever a new update is pushed to Docker Hub, pull the fresh image layers and hot-recreate the container without losing data. This command also creates a database copy on the host:
+```bash
+make app-update
 ```
 > [!NOTE]
-> Docker Compose will automatically build the production Next.js image using the root context and compile the standalone server.
+> `make app-update` executes `docker cp kaushal-mental-models-app:/app/prisma/dev.db ./dev_db_backup_before_update.db` to back up your database to the host directory before pulling the registry updates and starting the new container.
 
-**Step 3: Monitor Logs & Container Status**
+**Step 5: Monitor Logs & Container Status**
 Check if the service started correctly, ran migrations, seeded the database, and is listening:
 ```bash
 # View container status
@@ -214,7 +227,7 @@ docker compose -f deployment/docker-compose/docker-compose.yml ps
 docker compose -f deployment/docker-compose/docker-compose.yml logs -f
 ```
 
-**Step 4: Stop / Tear Down the Service**
+**Step 6: Stop / Tear Down the Service**
 To stop the application, remove the container, and clean up the internal networks (while keeping your database volume intact):
 ```bash
 docker compose -f deployment/docker-compose/docker-compose.yml down
@@ -222,7 +235,7 @@ docker compose -f deployment/docker-compose/docker-compose.yml down
 
 > [!IMPORTANT]
 > * **Host Access URL**: The application is exposed on host port `3001`: **[http://localhost:3001](http://localhost:3001)**
-> * **Database Persistence**: The SQLite data is stored securely in the named volume `kaushal_mental_models_sqlite_data`. Running `docker compose down` will **not** delete your data. To clean up the database completely, append the `-v` flag: `docker compose down -v`.
+> * **Database Persistence**: The SQLite data is stored securely in the named volume `kaushal_mental_models_sqlite_data`. Recreating the container will **not** delete your data. To clean up the database completely, append the `-v` flag: `docker compose down -v`.
 
 ### Option 3: Vanilla Kubernetes (K8s) Manifests
 

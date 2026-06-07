@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v2.0.9] - 2026-06-07
+
+### Added & Fixed
+
+- **Docker Hub Registry Deployment**: Configured `docker-compose.yml` to pull and run the remote image `kaushal95300/kaushal-mental-models:latest` from the Docker Hub registry instead of building locally from folder contexts.
+- **Docker Image Tagging and Pushing**: Packaged, tagged (`latest` and version `v1.2` labels), and pushed the Next.js production standalone image to the user's remote Docker Hub directory `kaushal95300`.
+- **Database Backup Before Upgrade**: Added an automated database backup task before hot-recreation. The script now copies the active SQLite database file from the running container onto the local host (`dev_db_backup_before_update.db`) before pulling any new images, preventing any potential data loss.
+- **Automated Makefile Target `app-update`**: Added `make app-update` to back up, pull, and hot-reload container instances in-place.
+
 ## [v2.0.8] - 2026-06-07
 
 ### Added & Fixed
