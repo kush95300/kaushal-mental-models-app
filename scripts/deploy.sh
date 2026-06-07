@@ -42,7 +42,10 @@ case $choice in
     docker stop mental-models-app 2>/dev/null || true
     docker rm mental-models-app 2>/dev/null || true
 
-    docker run -d -p "${port}:3000" --name mental-models-app "${img_name}"
+    echo -e "\n${YELLOW}Ensuring docker volume 'kaushal-db-volume' exists...${NC}"
+    docker volume create kaushal-db-volume >/dev/null
+
+    docker run -d -p "${port}:3000" -v kaushal-db-volume:/app/prisma -e JWT_SECRET=super-secret-production-key-change-me --name mental-models-app "${img_name}"
     echo -e "\n${GREEN}✔ Standalone Docker container successfully deployed at http://localhost:${port}${NC}"
     ;;
   

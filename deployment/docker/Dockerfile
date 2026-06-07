@@ -19,6 +19,7 @@ COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL="file:/app/prisma/dev.db"
+ENV JWT_SECRET="placeholder-secret-for-building"
 
 # Generate Prisma client and build Next.js
 RUN npx prisma generate
@@ -67,4 +68,4 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 USER nextjs
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
+CMD ["sh", "-c", "npx prisma@6 migrate deploy && node prisma/seed.js && node server.js"]

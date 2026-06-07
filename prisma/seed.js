@@ -1,5 +1,4 @@
 const { PrismaClient } = require("@prisma/client");
-const bcrypt = require("bcryptjs");
 const prisma = new PrismaClient();
 
 async function main() {
@@ -12,7 +11,7 @@ async function main() {
 
   let adminId;
   if (!existingAdmin) {
-    const hashedPassword = await bcrypt.hash("admin", 10);
+    const hashedPassword = "$2b$10$axgq2bvijvKQeb3Zw0Oi.OQcw31bwd1.0vuQYnMD0l.vBRF9tNzM6";
     const admin = await prisma.user.create({
       data: {
         username: "admin",
