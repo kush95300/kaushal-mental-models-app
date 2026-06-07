@@ -2,24 +2,28 @@ import { jwtVerify, SignJWT } from "jose";
 import { cookies } from "next/headers";
 import prisma from "@/lib/prisma";
 
-if (!process.env.JWT_SECRET && process.env.NODE_ENV === "production") {
-  throw new Error(
-    "FATAL: JWT_SECRET environment variable is not set in production!",
-  );
-}
-const secretKey = process.env.JWT_SECRET || "super-secret-key-for-development";
-const key = new TextEncoder().encode(secretKey);
+const getSecretKey = () => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret && process.env.NODE_ENV === "production") {
+    throw new Error(
+      "FATAL: JWT_SECRET environment variable is not set in production!",
+    );
+  }
+  return secret || "super-secret-key-for-development";
+};
+
+const getKey = () => new TextEncoder().encode(getSecretKey());
 
 export async function encrypt(payload: any) {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
-    .sign(key);
+    .sign(getKey());
 }
 
 export async function decrypt(input: string): Promise<any> {
-  const { payload } = await jwtVerify(input, key, {
+  const { payload } = await jwtVerify(input, getKey(), {
     algorithms: ["HS256"],
   });
   return payload;

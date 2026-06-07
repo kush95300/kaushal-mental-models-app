@@ -609,7 +609,7 @@
       "y": 530,
       "width": 200,
       "height": 30,
-      "text": "JWT (jose) + bcryptjs\nmiddleware.ts guards\nCookie-based sessions",
+      "text": "JWT (jose) + bcryptjs\nproxy.ts guards\nCookie-based sessions",
       "fontSize": 12,
       "fontFamily": 3,
       "textAlign": "left",
@@ -637,7 +637,7 @@
       "updated": 1779540332342,
       "verticalAlign": "top",
       "containerId": null,
-      "originalText": "JWT (jose) + bcryptjs\nmiddleware.ts guards\nCookie-based sessions",
+      "originalText": "JWT (jose) + bcryptjs\nproxy.ts guards\nCookie-based sessions",
       "autoResize": true,
       "lineHeight": 0.8333333333333334
     },

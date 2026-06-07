@@ -48,6 +48,7 @@ export const DelegateModal: React.FC<DelegateModalProps> = ({
       <div className="space-y-6">
         <div className="flex gap-2 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 focus-within:border-amber-200 dark:focus-within:border-amber-900/50 transition-all">
           <input
+            id="input-delegate-name"
             type="text"
             value={newDelegateName}
             onChange={(e) => setNewDelegateName(e.target.value)}
@@ -55,6 +56,7 @@ export const DelegateModal: React.FC<DelegateModalProps> = ({
             className="flex-grow px-4 bg-transparent outline-none font-bold text-sm placeholder:text-slate-300 dark:placeholder:text-slate-600 text-slate-700 dark:text-slate-200 font-sans"
           />
           <button
+            id="btn-add-delegate"
             onClick={addDelegate}
             className="p-3 px-5 bg-slate-900 dark:bg-slate-800 text-white dark:text-slate-200 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-amber-500 dark:hover:bg-amber-600 transition-all shadow-lg active:scale-95 font-sans"
           >

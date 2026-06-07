@@ -25,6 +25,8 @@ import {
 import Link from "next/link";
 import { getAnalyticsData, AnalyticsData } from "@/actions/analytics";
 import { useTheme } from "@/hooks/useTheme";
+import { PageTutorial, TutorialStep } from "@/components/tour/PageTutorial";
+import { getCurrentUser } from "@/actions/auth";
 
 interface AnalyticsDashboardProps {
   workspaceId: number;
@@ -35,9 +37,46 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
   const [mounted, setMounted] = useState(false);
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showPageTutorial, setShowPageTutorial] = useState(false);
+  const [username, setUsername] = useState("guest");
+
+  const TUTORIAL_STEPS: TutorialStep[] = [
+    {
+      selector: "#analytics-kpis",
+      title: "Key Performance Indicators",
+      description: "Review total task completion count, active tasks, average velocity, and efficiency ratios.",
+      position: "bottom"
+    },
+    {
+      selector: "#analytics-distribution",
+      title: "Focus Distribution",
+      description: "A pie-chart breakdown showing where your cognitive efforts are distributed across Eisenhower quadrants.",
+      position: "right"
+    },
+    {
+      selector: "#analytics-velocity",
+      title: "Completion Velocity",
+      description: "A bar chart representing your completion trend over the past 14 days.",
+      position: "left"
+    },
+    {
+      selector: "#analytics-delegation",
+      title: "Delegation Report",
+      description: "Aggregated workload sharing metrics showing task counts distributed per team member.",
+      position: "top"
+    }
+  ];
 
   useEffect(() => {
     setMounted(true);
+    getCurrentUser().then((res) => {
+      const activeUser = res.success && res.user ? res.user.username : "guest";
+      setUsername(activeUser);
+      const dismissed = localStorage.getItem(`tutorial_dismissed_analytics_${activeUser}`);
+      if (!dismissed) {
+        setShowPageTutorial(true);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -70,7 +109,7 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
   if (!data) return null;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 p-6 lg:p-12 font-sans text-slate-900 dark:text-slate-100 transition-colors">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 p-6 lg:p-12 font-sans text-slate-900 dark:text-slate-100 transition-colors relative">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-2">
@@ -110,7 +149,7 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 mt-8">
+        <div id="analytics-kpis" className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 mt-8">
           <KpiCard
             label="Total Completed"
             value={data.summary.totalCompleted}
@@ -148,7 +187,7 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Distribution */}
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
+          <div id="analytics-distribution" className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
             <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-6">
               Focus Distribution
             </h3>
@@ -204,7 +243,7 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
           </div>
 
           {/* Velocity */}
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
+          <div id="analytics-velocity" className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
             <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-6">
               Completion Velocity (14 Days)
             </h3>
@@ -261,7 +300,7 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
         </div>
 
         {/* Delegation Row */}
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
+        <div id="analytics-delegation" className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
           <div className="flex items-center gap-2 mb-6">
             <Users className="text-amber-500" size={20} />
             <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
@@ -299,6 +338,21 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
           )}
         </div>
       </div>
+
+      {showPageTutorial && (
+        <PageTutorial
+          pageKey="analytics"
+          steps={TUTORIAL_STEPS}
+          onClose={() => setShowPageTutorial(false)}
+          onDontShowAgain={(val) => {
+            if (val) {
+              localStorage.setItem(`tutorial_dismissed_analytics_${username}`, "true");
+            } else {
+              localStorage.removeItem(`tutorial_dismissed_analytics_${username}`);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

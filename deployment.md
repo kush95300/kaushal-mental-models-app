@@ -52,8 +52,23 @@ The application will be live at: **[http://localhost:3000](http://localhost:3000
 ### Step 5: Advanced Features
 
 - Toggle **"Show Full Matrix"** (should be default view now).
-- Test **Mark Done** by clicking the circle icon (confirm completion time).
 - Test **Reset Mode** using the top header buttons.
+
+### Step 6: Interactive Walkthrough Guides & Sandbox Testing
+
+- **Verify Scroll-Ability**: Run the page tutorial and scroll the page up and down using the mouse wheel or touch gesture. Ensure the highlight overlays and tooltips float correctly in viewport-relative positions and do not stutter or hijack the scroll.
+- **Verify "How to Add a Task" Sandbox**:
+  - Complete the walkthrough or trigger it from the "Walkthrough Completed" dialog modal.
+  - Verify Step 1 highlights the input fields (prefilled with "Sample Task: Learn Eisenhower Matrix" and estimated time "45").
+  - Click Add Task. Verify Step 2 highlights the Draft Queue Inbox where the task appears.
+  - Advance. Verify Step 3 explains how to drag the task from the Inbox to the appropriate matrix quadrant to finish.
+- **Verify "How to Add a Delegate" Sandbox**:
+  - Select "How to Add a Delegate" from the completion choices modal.
+  - Verify Step 1 highlights the header "Manage Delegates" button.
+  - Click Next. Confirm the "Manage Delegates" dialog box automatically opens.
+  - Verify Step 2 highlights the teammate name input field inside the open dialog.
+  - Verify Step 3 highlights the "Add Team Member" button, asking to type the name and add it.
+  - Click Next. Confirm the dialog automatically closes and Step 4 highlights the matrix grid, confirming the delegate is now ready for task assignment.
 
 ---
 
@@ -278,3 +293,7 @@ npm start
 - [ ] Real-time category updates working
 - [ ] Cross-page theme synchronization (Home-Matrix-Analytics)
 - [ ] URL parameters (`workspaceId` and `testMode`) are updated correctly and do not cause redirection loops during task operations
+- [ ] Interactive 4-Track Video Tour with text-to-speech audio launches automatically on first-time login and manual "Watch Tour" click
+- [ ] Contextual step-by-step PageTutorials run successfully on Focus Matrix and Analytics Dashboard
+- [ ] Persistent "Don't show again" preference is respected and stored in local storage
+- [ ] Audio synthesis for ticks, swooshes, and chimes plays successfully via Web Audio API context

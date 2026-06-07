@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-if (!process.env.JWT_SECRET && process.env.NODE_ENV === "production") {
-  throw new Error(
-    "FATAL: JWT_SECRET environment variable is not set in production!",
-  );
-}
-const secretKey = process.env.JWT_SECRET || "super-secret-key-for-development";
-const key = new TextEncoder().encode(secretKey);
+const getSecretKey = () => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret && process.env.NODE_ENV === "production") {
+    throw new Error(
+      "FATAL: JWT_SECRET environment variable is not set in production!",
+    );
+  }
+  return secret || "super-secret-key-for-development";
+};
 
-export async function middleware(request: NextRequest) {
+const getKey = () => new TextEncoder().encode(getSecretKey());
+
+export async function proxy(request: NextRequest) {
+  const key = getKey();
   const session = request.cookies.get("session")?.value;
   const { pathname } = request.nextUrl;
 

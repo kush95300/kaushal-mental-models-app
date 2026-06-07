@@ -86,6 +86,16 @@
 | **Admin Portal**        | ✅ Working | Role-based access control (`/admin`) to manage user accounts.|
 | **Multi-Tenant Isolation**| ✅ Working | Workspaces scoped to individual users or globally shared.   |
 
+## Interactive Onboarding & Tutorials (v2.0.0)
+
+| Feature                 | Status     | Notes                                                       |
+| :---------------------- | :--------- | :---------------------------------------------------------- |
+| **Video Tour Player**   | ✅ Working | Interactive 4-track simulated video tour player with multilingual text-to-speech (English, Hindi, and Hinglish) and gesture-unlocked audio controls. |
+| **Contextual Tutorial** | ✅ Working | Focus highlighting and tethered tooltips on matrix/analytics.|
+| **Preference Storage**  | ✅ Working | Toggles for "Don't show again" persisted in local storage.  |
+| **Synthesized Audio**   | ✅ Working | Zero-asset audio synthesis (ticks, chimes, swooshes) via Web Audio API.|
+
+
 ## Code Quality & Styling
 
 | Feature | Status | Notes |

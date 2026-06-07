@@ -11,6 +11,11 @@ import {
   Linkedin,
   Github,
   ExternalLink,
+  RotateCcw,
+  PlusCircle,
+  UserCog,
+  BarChart3,
+  CheckCircle2,
 } from "lucide-react";
 import { MatrixHeader } from "@/components/eisenhower-matrix/MatrixHeader";
 import { StatsView } from "@/components/eisenhower-matrix/StatsView";
@@ -18,6 +23,8 @@ import { MainTaskForm } from "@/components/eisenhower-matrix/MainTaskForm";
 import { MatrixGrid } from "@/components/eisenhower-matrix/MatrixGrid";
 import { CalendarView } from "@/components/eisenhower-matrix/CalendarView";
 import { WorkspaceSelectionModal } from "@/components/eisenhower-matrix/WorkspaceSelectionModal";
+import { PageTutorial, TutorialStep } from "@/components/tour/PageTutorial";
+import { VideoTourPlayer } from "@/components/tour/VideoTourPlayer";
 
 import { useTaskOperations } from "@/hooks/useTaskOperations";
 import { HelpModal } from "@/components/eisenhower-matrix/modals/HelpModal";
@@ -159,15 +166,29 @@ function EisenhowerMatrixContent() {
   const [currentDateDisplay, setCurrentDateDisplay] = useState("");
   const [modalWarning, setModalWarning] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [showPageTutorial, setShowPageTutorial] = useState(false);
+  const [showVideoTour, setShowVideoTour] = useState(false);
+  const [isManualTour, setIsManualTour] = useState(false);
+  const [selectedTutorialType, setSelectedTutorialType] = useState<"main" | "addTask" | "addDelegate" | "analytics">("main");
+  const [showTutorialCompletionModal, setShowTutorialCompletionModal] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     const loadUser = async () => {
       const res = await getCurrentUser();
-      if (res.success && res.user) {
-        setUser(res.user as User);
+      const activeUser = res.success && res.user ? (res.user as User) : null;
+      const username = activeUser?.username || "guest";
+      
+      setUser(activeUser);
+
+      const tourDismissed = localStorage.getItem(`tour_dismissed_${username}`);
+      if (!tourDismissed) {
+        setShowVideoTour(true);
       } else {
-        setUser(null);
+        const dismissedPage = localStorage.getItem(`tutorial_dismissed_eisenhower_${username}`);
+        if (!dismissedPage) {
+          setShowPageTutorial(true);
+        }
       }
     };
     loadUser();
@@ -248,6 +269,122 @@ function EisenhowerMatrixContent() {
     isTestMode: isTestModeParam,
     initialWorkspaceId: paramWorkspaceId,
   });
+
+  const MAIN_STEPS: TutorialStep[] = [
+    {
+      selector: "#matrix-header",
+      title: "Header Workspace & Settings",
+      description: "Here you can switch workspaces, adjust refresh intervals, toggle light/dark theme, and manage settings.",
+      position: "bottom"
+    },
+    {
+      selector: "#matrix-stats-view",
+      title: "Focus Statistics & Workload",
+      description: "Track your workload balance, daily active limits, and core matrix metrics to gauge your output.",
+      position: "bottom"
+    },
+    {
+      selector: "#matrix-task-form",
+      title: "Quick-Add Task Queue",
+      description: "To add a task, type your objective and time estimate here. Pressing enter or clicking Add Task places it in the inbox (Draft Queue) instantly.",
+      position: "bottom"
+    },
+    {
+      selector: "#matrix-grid-container",
+      title: "Eisenhower Grid Quadrants",
+      description: "Drag and drop tasks here to prioritize. Double click or click to edit a task's due dates, quadrant, or team delegates.",
+      position: "top"
+    },
+    {
+      selector: "#btn-manage-delegates",
+      title: "Manage Team Delegates",
+      description: "Need to hand off a task? Click Manage Delegates to define team members, then assign tasks to them in the Delegate quadrant.",
+      position: "bottom"
+    },
+    {
+      selector: "#btn-archives",
+      title: "Recover Completed & Eliminated Tasks",
+      description: "Mistakes happen or tasks get finished! Click Done to view your history, or Eliminated to recover deleted/archived tasks.",
+      position: "bottom"
+    },
+    ...(!isTestMode ? [{
+      selector: "#btn-analytics",
+      title: "Analytics & Performance Insights",
+      description: "Ready to inspect your workload trends? Click the Analytics button to view detailed productivity distributions and delegation charts.",
+      position: "bottom" as const
+    }] : [])
+  ];
+
+  const ADD_TASK_STEPS: TutorialStep[] = [
+    {
+      selector: "#matrix-task-form",
+      title: "1. Capture Objective & Time Estimate",
+      description: "Start by drafting your task here. Enter a clear, action-oriented title (such as 'Sample Task: Learn Eisenhower Matrix') and specify an estimated duration in minutes. Setting time estimates is key to managing your daily workload capacity! When ready, click 'Add Task' or press Enter.",
+      position: "bottom" as const
+    },
+    {
+      selector: "#matrix-inbox-container",
+      title: "2. Track in Draft Queue Inbox",
+      description: "Once submitted, the task immediately lands in this Draft Queue (Inbox). This acts as a temporary holding zone, capturing all incoming noise before you prioritize, keeping your main workspace organized.",
+      position: "right" as const
+    },
+    {
+      selector: "#matrix-grid-container",
+      title: "3. Prioritize via Quadrant Drag-and-Drop",
+      description: "Now, click and drag the task out of the Inbox and drop it into the appropriate matrix quadrant based on its urgency and importance. This completes the priority setup!",
+      position: "top" as const
+    }
+  ];
+
+  const ADD_DELEGATE_STEPS: TutorialStep[] = [
+    {
+      selector: "#btn-manage-delegates",
+      title: "1. Access the Team Delegation Center",
+      description: "To delegate or share workload, click the 'Manage Delegates' button in the header. This opens the control panel where you can register teammates, collaborators, or project assignees.",
+      position: "bottom" as const
+    },
+    {
+      selector: "#input-delegate-name",
+      title: "2. Focus Teammate Registration Field",
+      description: "Inside the open dialog box, click on the teammate name input field to prepare the registration of a new assignee.",
+      position: "bottom" as const
+    },
+    {
+      selector: "#btn-add-delegate",
+      title: "3. Register & Save Teammate",
+      description: "Type your teammate's name (for example, 'Alex (Product Designer)') and click the 'Add Team Member' button to save them to your active workspace directory.",
+      position: "bottom" as const
+    },
+    {
+      selector: "#matrix-grid-container",
+      title: "4. Hand Off & Assign Tasks",
+      description: "Your teammate is now registered! You can assign tasks to them by placing tasks in the 'Delegate' quadrant or double-clicking any task in the grid and selecting their name from the assignees list.",
+      position: "top" as const
+    }
+  ];
+
+  const ANALYTICS_STEPS: TutorialStep[] = [
+    {
+      selector: "#btn-analytics",
+      title: "Open Analytics Dashboard",
+      description: "Click the Analytics icon in the header to view your productivity metrics, workload balance, and completion trends.",
+      position: "bottom" as const
+    }
+  ];
+
+  const activeTutorialSteps = (() => {
+    switch (selectedTutorialType) {
+      case "addTask":
+        return ADD_TASK_STEPS;
+      case "addDelegate":
+        return ADD_DELEGATE_STEPS;
+      case "analytics":
+        return ANALYTICS_STEPS;
+      case "main":
+      default:
+        return MAIN_STEPS;
+    }
+  })();
 
   // Synchronize activeWorkspaceId and isTestMode with the URL query parameters
   useEffect(() => {
@@ -513,7 +650,7 @@ function EisenhowerMatrixContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 relative overflow-hidden text-slate-900 dark:text-slate-100 font-sans p-4 md:p-8 flex flex-col transition-colors">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 relative overflow-x-hidden text-slate-900 dark:text-slate-100 font-sans p-4 md:p-8 flex flex-col transition-colors">
       {/* Decorative Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[5%] right-[-10%] opacity-[0.05] dark:opacity-[0.03] text-amber-500 animate-pulse-slow">
@@ -541,38 +678,46 @@ function EisenhowerMatrixContent() {
           activeWorkspaceId={activeWorkspaceId}
           updateTaskStatus={updateTaskStatus}
         />
-        <MatrixHeader
-          isTestMode={isTestMode}
-          tasks={tasks}
-          refreshInterval={refreshInterval}
-          setRefreshInterval={setRefreshInterval}
-          visibleLimit={visibleLimit}
-          setVisibleLimit={setVisibleLimit}
-          setShowDoneList={setShowDoneList}
-          setShowDeletedList={setShowDeletedList}
-          setShowHelpModal={setShowHelpModal}
-          setShowDelegateModal={setShowDelegateModal}
-          fetchTasks={fetchTasks}
-          resetData={resetData}
-          workspaces={workspaces}
-          activeWorkspaceId={activeWorkspaceId || 0}
-          updateWorkspaceOp={(id) => selectWorkspaceOp(id)}
-          addWorkspaceOp={addWorkspaceOp}
-          onSettingsClick={() => setShowSettingsModal(true)}
-          isOverburdened={isOverburdened}
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          onManageWorkspaces={handleManageWorkspaces}
-          user={user}
-        />
+        <div id="matrix-header">
+          <MatrixHeader
+            isTestMode={isTestMode}
+            tasks={tasks}
+            refreshInterval={refreshInterval}
+            setRefreshInterval={setRefreshInterval}
+            visibleLimit={visibleLimit}
+            setVisibleLimit={setVisibleLimit}
+            setShowDoneList={setShowDoneList}
+            setShowDeletedList={setShowDeletedList}
+            setShowHelpModal={setShowHelpModal}
+            setShowDelegateModal={setShowDelegateModal}
+            fetchTasks={fetchTasks}
+            resetData={resetData}
+            workspaces={workspaces}
+            activeWorkspaceId={activeWorkspaceId || 0}
+            updateWorkspaceOp={(id) => selectWorkspaceOp(id)}
+            addWorkspaceOp={addWorkspaceOp}
+            onSettingsClick={() => setShowSettingsModal(true)}
+            isOverburdened={isOverburdened}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            onManageWorkspaces={handleManageWorkspaces}
+            user={user}
+            onWatchTourClick={() => {
+              setIsManualTour(true);
+              setShowVideoTour(true);
+            }}
+          />
+        </div>
 
-        <StatsView
-          currentDateDisplay={currentDateDisplay}
-          stats={stats}
-          dailyWorkload={dailyWorkload}
-          maxDailyMinutes={maxDailyMinutes}
-          isOverburdened={isOverburdened}
-        />
+        <div id="matrix-stats-view">
+          <StatsView
+            currentDateDisplay={currentDateDisplay}
+            stats={stats}
+            dailyWorkload={dailyWorkload}
+            maxDailyMinutes={maxDailyMinutes}
+            isOverburdened={isOverburdened}
+          />
+        </div>
       </div>
 
       <WorkspaceSelectionModal
@@ -594,33 +739,37 @@ function EisenhowerMatrixContent() {
 
       {viewMode === "matrix" ? (
         <>
-          <MainTaskForm
-            newTask={newTask}
-            setNewTask={setNewTask}
-            newEstimatedMinutes={newEstimatedMinutes}
-            setNewEstimatedMinutes={setNewEstimatedMinutes}
-            handleAddTask={handleAddTask}
-          />
+          <div id="matrix-task-form">
+            <MainTaskForm
+              newTask={newTask}
+              setNewTask={setNewTask}
+              newEstimatedMinutes={newEstimatedMinutes}
+              setNewEstimatedMinutes={setNewEstimatedMinutes}
+              handleAddTask={handleAddTask}
+            />
+          </div>
 
-          <MatrixGrid
-            loading={loading}
-            tasks={tasks}
-            visibleLimit={visibleLimit}
-            activeQuadrant={activeQuadrant}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
-            onDragStart={onDragStart}
-            setActiveQuadrant={setActiveQuadrant}
-            toggleComplete={toggleComplete}
-            deleteTask={deleteTask}
-            setEditingContentTaskId={setEditingContentTaskId}
-            setEditingContentValue={setEditingContentValue}
-            setEditingEstimatedMinutes={setEditingEstimatedMinutes}
-            setEditingReminderMinutes={setEditingReminderMinutes}
-            setEditingDateTaskId={setEditingDateTaskId}
-            setAssignmentModal={setAssignmentModal}
-            QUAD_CONFIG={QUADRANTS}
-          />
+          <div id="matrix-grid-container">
+            <MatrixGrid
+              loading={loading}
+              tasks={tasks}
+              visibleLimit={visibleLimit}
+              activeQuadrant={activeQuadrant}
+              onDragOver={onDragOver}
+              onDrop={onDrop}
+              onDragStart={onDragStart}
+              setActiveQuadrant={setActiveQuadrant}
+              toggleComplete={toggleComplete}
+              deleteTask={deleteTask}
+              setEditingContentTaskId={setEditingContentTaskId}
+              setEditingContentValue={setEditingContentValue}
+              setEditingEstimatedMinutes={setEditingEstimatedMinutes}
+              setEditingReminderMinutes={setEditingReminderMinutes}
+              setEditingDateTaskId={setEditingDateTaskId}
+              setAssignmentModal={setAssignmentModal}
+              QUAD_CONFIG={QUADRANTS}
+            />
+          </div>
         </>
       ) : (
         <CalendarView
@@ -799,6 +948,154 @@ function EisenhowerMatrixContent() {
         onClose={() => setShowResetModal(null)}
         onConfirm={handleConfirmReset}
       />
+
+      {showPageTutorial && !showWorkspaceModal && activeWorkspaceId !== null && (
+        <PageTutorial
+          pageKey="eisenhower"
+          steps={activeTutorialSteps}
+          onClose={(completed) => {
+            setShowPageTutorial(false);
+            if (selectedTutorialType === "addDelegate") {
+              setShowDelegateModal(false);
+            }
+            if (completed) {
+              setShowTutorialCompletionModal(true);
+            }
+          }}
+          onDontShowAgain={(val) => {
+            const username = user?.username || "guest";
+            if (val) {
+              localStorage.setItem(`tutorial_dismissed_eisenhower_${username}`, "true");
+            } else {
+              localStorage.removeItem(`tutorial_dismissed_eisenhower_${username}`);
+            }
+          }}
+          onStepChange={(index) => {
+            if (selectedTutorialType === "addDelegate") {
+              if (index === 1 || index === 2) {
+                setShowDelegateModal(true);
+              } else {
+                setShowDelegateModal(false);
+              }
+            }
+          }}
+        />
+      )}
+
+      {showVideoTour && (
+        <VideoTourPlayer
+          onClose={() => {
+            setShowVideoTour(false);
+            const username = user?.username || "guest";
+            localStorage.setItem(`tour_dismissed_${username}`, "true");
+            
+            // Auto chain page tutorial if not dismissed yet and NOT manually clicked
+            if (!isManualTour) {
+              const dismissedPage = localStorage.getItem(`tutorial_dismissed_eisenhower_${username}`);
+              if (!dismissedPage) {
+                setShowPageTutorial(true);
+              }
+            }
+            setIsManualTour(false); // Reset manual trigger flag
+          }}
+          onDontShowAgain={(val) => {
+            const username = user?.username || "guest";
+            if (val) {
+              localStorage.setItem(`tour_dismissed_${username}`, "true");
+            } else {
+              localStorage.removeItem(`tour_dismissed_${username}`);
+            }
+          }}
+          excludeTrackIds={[1]}
+        />
+      )}
+
+      {showTutorialCompletionModal && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 text-slate-900 dark:text-white">
+            <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/50 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-6">
+              <CheckCircle2 size={24} className="animate-bounce" />
+            </div>
+            <h3 className="text-xl font-black mb-2 uppercase tracking-tight">
+              Walkthrough Completed! 🎉
+            </h3>
+            <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-8 leading-relaxed">
+              Great job! You have completed the tour. What would you like to do next? Choose from our quick interactive guides below.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  setSelectedTutorialType("main");
+                  setShowPageTutorial(true);
+                  setShowTutorialCompletionModal(false);
+                }}
+                className="w-full flex items-center gap-3 p-4 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:hover:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 rounded-2xl text-indigo-700 dark:text-indigo-400 font-black text-xs uppercase tracking-wider transition-all hover:scale-[1.01] active:scale-95"
+              >
+                <RotateCcw size={16} /> Redo Main Walkthrough
+              </button>
+              
+              <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-2 mb-1 ml-1">
+                Interactive Guides
+              </div>
+
+              <button
+                onClick={() => {
+                  setSelectedTutorialType("addTask");
+                  setNewTask("Sample Task: Learn Eisenhower Matrix");
+                  setNewEstimatedMinutes("45");
+                  setShowPageTutorial(true);
+                  setShowTutorialCompletionModal(false);
+                }}
+                className="w-full flex items-center gap-3 p-4 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-700 dark:text-slate-300 font-bold text-xs transition-all hover:scale-[1.01] active:scale-95"
+              >
+                <PlusCircle size={16} className="text-indigo-500" /> How to Add a Task
+              </button>
+
+              <button
+                onClick={async () => {
+                  const selfDel = delegates.find(d => d.name.toLowerCase() === "self");
+                  const activeTasks = tasks.filter(t => !t.isDeleted && t.status !== "DONE");
+                  if (activeTasks.length === 0) {
+                    await addTask("Sample Task: Double-click to delegate", 30, selfDel?.id || null);
+                  }
+                  const hasOtherDel = delegates.some(d => d.name.toLowerCase() !== "self");
+                  if (!hasOtherDel) {
+                    await addDelegateOp("Alex (Product Designer)");
+                  }
+                  setSelectedTutorialType("addDelegate");
+                  setShowPageTutorial(true);
+                  setShowTutorialCompletionModal(false);
+                }}
+                className="w-full flex items-center gap-3 p-4 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-700 dark:text-slate-300 font-bold text-xs transition-all hover:scale-[1.01] active:scale-95"
+              >
+                <UserCog size={16} className="text-amber-500" /> How to Add a Delegate
+              </button>
+
+              {!isTestMode && (
+                <button
+                  onClick={() => {
+                    setSelectedTutorialType("analytics");
+                    setShowPageTutorial(true);
+                    setShowTutorialCompletionModal(false);
+                  }}
+                  className="w-full flex items-center gap-3 p-4 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 rounded-2xl text-slate-700 dark:text-slate-300 font-bold text-xs transition-all hover:scale-[1.01] active:scale-95"
+                >
+                  <BarChart3 size={16} className="text-emerald-500" /> How to Use Analytics
+                </button>
+              )}
+            </div>
+
+            <div className="flex gap-2 mt-6 pt-4 border-t border-slate-100 dark:border-slate-800/80">
+              <button
+                onClick={() => setShowTutorialCompletionModal(false)}
+                className="flex-1 py-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black text-xs uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95 text-center cursor-pointer"
+              >
+                Done / Go to App
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Estimated Minutes Input in Edit Modal - Since I can't easily edit the EditContentModal again without another write, I'll add a temporary overlay or just update it now */}
     </div>

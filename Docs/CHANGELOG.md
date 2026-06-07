@@ -2,6 +2,93 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v2.0.8] - 2026-06-07
+
+### Added & Fixed
+
+- **Restructured Onboarding Guides**:
+  - **Add Task Walkthrough**: Refactored to feature 3 steps: (1) quick-add task creation with title and finish time, (2) highlighting the Draft Queue Inbox to see where new tasks appear, and (3) dragging tasks to prioritize in the matrix.
+  - **Add Delegate Walkthrough**: Refactored to feature 4 steps: (1) header button click to trigger the dialog, (2) highlighting the teammate name input inside the dialog, (3) typing a name and clicking "Add Team Member", and (4) returning to the grid for assignment.
+- **Programmatic Dialog Synchronization**: Integrated an `onStepChange` callback into `PageTutorial.tsx` to automatically trigger dialog state changes. The delegates dialog now opens automatically during steps 2 and 3 of the delegate walkthrough and closes automatically when advancing or skipping, keeping highlights perfectly synced with the modal lifecycle.
+- **Walkthrough DOM IDs**: Added `matrix-inbox-container` (Draft Queue Inbox), `input-delegate-name` (teammate name input), and `btn-add-delegate` (add button) selector identifiers to support focused walkthrough targeting.
+
+## [v2.0.7] - 2026-06-07
+
+### Added & Fixed
+
+- **Viewport-Relative Fixed Overlays**: Refactored `PageTutorial.tsx` to position the highlight overlay masks, focus ring, and popover tooltip using `fixed` viewport-relative positioning. This prevents tooltips from being rendered off-screen (e.g., above or below the viewport) when coordinates are constrained.
+- **Scroll Hijacking Resolution**: Split coordinate updates from step-advance animations. The walkthrough now only triggers a smooth `scrollIntoView` when the step changes (`currentStepIdx` changes). Routine page scrolling and resizing now only recalculate coordinates without resetting/locking the user's scroll position, allowing users to scroll naturally.
+- **Interactive Sandbox Resources**: Programmed the walkthrough sub-guides to automatically initialize dummy resources when launched:
+  - Starting the **How to Add a Task** guide automatically pre-fills the quick-add input fields with a sample objective ("Learn Eisenhower Matrix") and estimate ("45 min").
+  - Starting the **How to Add a Delegate** guide automatically adds a draft task ("Double-click to delegate") to the grid if the task list is empty, and seeds a helper delegate team member ("Alex (Product Designer)") if only "Self" is present.
+- **Vertical Page Scrolling**: Changed the main layout class on the Eisenhower Matrix page from `overflow-hidden` to `overflow-x-hidden` so that vertical page scrollbars function correctly on smaller screens.
+
+## [v2.0.6] - 2026-06-07
+
+### Fixed & Enhanced
+
+- **Native Page Scrolling During Walkthroughs**: Resolved a bug where the absolute dim/blur overlays in `PageTutorial.tsx` blocked page scrolling and touch gestures, causing the screen to halt and preventing tooltips from being visible on tall screens. Configured `pointer-events-none` on the four overlay masks, which allows native scrolling, swipe gestures, and wheel events to pass through, keeping the walkthrough fully responsive while keeping targeted sections highlighted and sharp.
+- **Accidental Dismissal Prevention**: Removed the backdrop click trigger for skipping tutorials, preventing accidental onboarding cancellations when users interact with scroll gestures.
+
+## [v2.0.5] - 2026-06-07
+
+### Added & Fixed
+
+- **Manual Watch Tour Auto-Chain Bug Fix**: Resolved a bug where manually launching the Video Tour from the Eisenhower page header button would automatically trigger the Page Onboarding Tutorial focus walkthrough upon closing. Introduced an `isManualTour` state flag to bypass auto-chaining on manual requests.
+- **Walkthrough Completion Dialog**: Programmed a beautiful, glassmorphic "Walkthrough Completed" dialog modal to appear when the Page Onboarding Tutorial is completed (by clicking "Finish" on the last step).
+- **Interactive Onboarding Sub-Guides**: Integrated direct guides within the completion modal, allowing users to instantly select and play targeted mini-walkthroughs for:
+  - **How to Add a Task**: starts a focused quick-add task walkthrough.
+  - **How to Add a Delegate**: starts a focused delegate management walkthrough.
+  - **How to Use Analytics**: starts a focused analytics dashboard walkthrough (conditionally rendered).
+- **Page Tutorial Callback Enhancement**: Updated `PageTutorial.tsx`'s `onClose` callback to pass a boolean `completed` state, indicating whether the tutorial was completed or skipped.
+
+## [v2.0.4] - 2026-06-07
+
+### Added & Refined
+
+- **Suggestive Walkthrough Steps**: Expanded the Eisenhower Matrix step-by-step onboarding tutorial to include interactive walkthrough steps for quick-adding tasks into the queue (`#matrix-task-form`), managing team delegates (`#btn-manage-delegates`), recovering completed and eliminated tasks from archives (`#btn-archives`), and reviewing analytics insights and performance distribution (`#btn-analytics`, conditionally rendered outside test mode).
+- **First-Time Login Redirection**: Updated the login page redirection logic to automatically route first-time users (or those who haven't dismissed the tour) to `/eisenhower-matrix` instead of the home page models library.
+- **Auto-Chaining Walkthrough Flow**: Programmed the Eisenhower page's Video Tour and Page Tutorial triggers to chain-execute seamlessly. Upon completing or skipping the Video Tour, the interactive focus highlight walkthrough launches automatically.
+
+## [v2.0.3] - 2026-06-07
+
+### Added & Fixed
+
+- **Manual Watch Tour Integration**: Added a "Watch Tour" button with a pulsing Sparkles icon inside the Eisenhower Matrix page header to play the interactive video tour on-demand.
+- **Contextual Video Tour Track Exclusions**: Configured the Matrix Watch Tour trigger to launch `VideoTourPlayer` excluding Track 1 (Mental Models introduction), starting directly from Track 2 (Eisenhower Matrix) with all sequential progress locks disabled.
+- **Adaptive Tour Completion CTA**: Reworked the final video tour CTA button label to adapt dynamically to the context: displays "Back to App" when launched in-context from the Eisenhower Matrix page, and "Start with App" when playing from the initial onboarding screen.
+- **Onboarding Tutorial Blur and Coordinates Optimization**: Fixed the first-time page onboarding tutorial so it only triggers once the workspace modal is closed and a workspace is active. Refined `PageTutorial.tsx` overlay masks to avoid full-screen blur flashes during mount coordinate calculations. Added a relative positioning container class to the Analytics Dashboard page to correctly align the walkthrough tooltip.
+
+## [v2.0.2] - 2026-06-07
+
+### Added & Refactored
+
+- **Eisenhower Matrix Tour Structure Update (Track 2)**: Extended the Track 2 video duration to 90 seconds (7 chapters) to introduce the Eisenhower Matrix's purpose and its 4-quadrant layout structure first, before explaining the individual quadrants and the logic summary.
+- **UI Card Visual Overhaul**: Redesigned the visual cards displayed in the tour canvas for Track 2. Added a glassmorphic prioritization introduction card (0s - 15s) and an interactive 2x2 grid representing the four quadrants structure overview (15s - 30s) before showing detailed quadrant cards.
+- **Neural Voiceover Regeneration**: Regenerated Track 2 neural speech synthesis audio files for English, Hindi, and Hinglish using Microsoft Edge-TTS to include the new introductory chapters.
+- **Dynamic Playback Speed Sync**: Fixed a bug where changing the video tour speed (e.g. 1.5x, 2x) did not speed up the audio narration. Implemented dynamic `playbackRate` updates on the active `HTMLAudioElement` so voice speed changes on the fly.
+- **Precision Scrubbing Offset Sync**: Fixed a bug where scrubbing the timeline started the audio from the beginning of the subtitle segment rather than the matching position. Implemented relative offset calculation (`currentTime - subtitle.start`) to set `currentTime` on the audio element, keeping video and audio perfectly in sync.
+
+## [v2.0.1] - 2026-06-07
+
+### Added & Fixed
+
+- **Conversational & Expressive Neural Voiceovers**: Replaced browser-native speech synthesis with high-quality, pre-recorded neural audio files generated via Edge-TTS. English uses the highly realistic `en-US-AvaNeural` voice, Hindi uses fluent `hi-IN-SwaraNeural`, and Hinglish uses the expressive `en-IN-NeerjaExpressiveNeural` (conversational Indian English accent).
+- **Bilingual & Hinglish Language Support**: Integrated complete English, Hindi, and Hinglish translation sets for all 4 tracks of the platform tour. Added a language toggle UI widget in the player control bar to switch subtitles and audio narration instantly.
+- **Audio Autoplay & Gesture Unlock**: Fixed browser restrictions by playing standard HTML5 `Audio` elements triggered directly from user interactions.
+- **Timeline Scrubbing Voice Resync**: Fixed a bug where timeline scrubbing caused the audio engine to stay silent. The player now determines the subtitle at the new time and plays the corresponding neural MP3 segment immediately.
+- **Codebase Cleanup & Dry Definition**: Refactored `VideoTourPlayer.tsx` to import the single source-of-truth `TRACKS` array from `src/lib/tracks.ts`, deleting redundant inline configuration.
+
+
+## [v2.0.0] - 2026-06-07
+
+### Added
+
+- **Interactive 4-Track Video Tour**: Reworked simulated video tour player showing mental models, Eisenhower Matrix (20-minute masterclass simulation), task operations, and key platform features, complete with synchronized browser text-to-speech audio explanation. Enforces sequential progression (chapters unlock one-by-one, persisting in local storage) and utilizes a calmer, slowed-down voice engine (0.8x rate factor) for maximum clarity and understandability.
+- **Contextual In-App Tutorials**: Focus highlight rings and tethered tooltips walking the user through elements on the Eisenhower Matrix page and the Analytics Dashboard page.
+- **Preference Persistence**: Configured persistent local storage preferences ("Don't show again") scoped to individual users or guest profiles.
+- **Zero-Asset Sound Synthesis Engine**: Implemented native browser Web Audio API oscillator synthesis for chimes, ticks, and swooshes, eliminating the need to load external audio assets.
+
 ## [v1.9.2] - 2026-05-23
 
 ### Added & Fixed

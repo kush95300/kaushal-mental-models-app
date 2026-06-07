@@ -20,6 +20,7 @@ import {
   LogOut,
   LogIn,
   Bell,
+  Sparkles,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { Task, Workspace, User } from "@/types/eisenhower";
@@ -50,6 +51,7 @@ interface MatrixHeaderProps {
   setViewMode: (mode: "matrix" | "calendar") => void;
   onManageWorkspaces: () => void;
   user: User | null;
+  onWatchTourClick?: () => void;
 }
 
 export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
@@ -75,6 +77,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
   setViewMode,
   onManageWorkspaces,
   user,
+  onWatchTourClick,
 }) => {
   const { theme, toggleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -171,7 +174,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
             </div>
           </Tooltip>
         )}
-        <div className="flex bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm p-1.5 rounded-[1.5rem] border border-white dark:border-slate-800 items-center gap-1 shadow-sm transition-colors relative z-10 hover:z-[9999]">
+        <div id="btn-archives" className="flex bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm p-1.5 rounded-[1.5rem] border border-white dark:border-slate-800 items-center gap-1 shadow-sm transition-colors relative z-10 hover:z-[9999]">
           <Tooltip content="Completed Tasks Archive: View, inspect, or restore tasks that have been marked as finished.">
             <button
               onClick={() => setShowDoneList(true)}
@@ -199,6 +202,16 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
           </Tooltip>
         </div>
         <div className="h-8 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block mx-1" />
+        {onWatchTourClick && (
+          <Tooltip content="Watch Tour: Play the video walkthrough for the Eisenhower Matrix.">
+            <button
+              onClick={onWatchTourClick}
+              className="p-2.5 text-indigo-500 dark:text-indigo-400 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-white dark:border-slate-800 shadow-sm transition-all hover:shadow-md relative z-10 hover:z-[9999] hover:bg-indigo-50 dark:hover:bg-indigo-950/20"
+            >
+              <Sparkles size={18} className="animate-pulse" />
+            </button>
+          </Tooltip>
+        )}
         <Tooltip content="Eisenhower Matrix Guide: Learn how to effectively use the 4 quadrants to prioritize your workflow.">
           <button
             onClick={() => setShowHelpModal(true)}
@@ -225,6 +238,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
         {!isTestMode && (
           <Tooltip content="Analytics & Insights: View detailed productivity charts, completion trends, and workload distribution.">
             <Link
+              id="btn-analytics"
               href={`/analytics?workspaceId=${activeWorkspaceId}`}
               className="p-2.5 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-white dark:border-slate-800 shadow-sm transition-all hover:shadow-md ml-1 relative z-10 hover:z-[9999]"
             >
@@ -322,6 +336,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
 
         <Tooltip content="Manage Delegates: Add, edit, or remove team members and assignees for your tasks.">
           <button
+            id="btn-manage-delegates"
             onClick={() => setShowDelegateModal(true)}
             className="flex items-center gap-2 text-amber-500 dark:text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 font-black text-[10px] uppercase tracking-widest transition-all bg-white/80 dark:bg-slate-900/80 p-2.5 px-4 rounded-2xl border border-white dark:border-slate-800 shadow-sm hover:shadow-md font-sans relative z-10 hover:z-[9999]"
           >

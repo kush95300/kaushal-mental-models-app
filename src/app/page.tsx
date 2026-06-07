@@ -20,10 +20,13 @@ import {
   LogIn,
   User as UserIcon,
   X,
+  Play,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useState, useEffect } from "react";
 import { getCurrentUser, logout, changeUserPassword } from "@/actions/auth";
+import { VideoTourPlayer } from "@/components/tour/VideoTourPlayer";
+import { audioSynth } from "@/lib/audio";
 
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
@@ -36,12 +39,17 @@ export default function Home() {
   const [passError, setPassError] = useState("");
   const [passSuccess, setPassSuccess] = useState("");
   const [passLoading, setPassLoading] = useState(false);
+  const [showTour, setShowTour] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     getCurrentUser().then((res) => {
       if (res.success && res.user) {
         setCurrentUser(res.user);
+        const tourDismissed = localStorage.getItem(`tour_dismissed_${res.user.username}`);
+        if (!tourDismissed) {
+          setShowTour(true);
+        }
       }
     });
   }, []);
@@ -221,6 +229,17 @@ export default function Home() {
             Frameworks for better thinking, decision making, and productivity.
             Select a model to begin.
           </p>
+          <div className="pt-2 flex justify-center">
+            <button
+              onClick={() => {
+                audioSynth.unlockSpeech();
+                setShowTour(true);
+              }}
+              className="px-6 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-500 dark:hover:border-indigo-400 text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center gap-2.5 shadow-md hover:shadow-indigo-500/10 active:scale-95 cursor-pointer"
+            >
+              <Play className="w-4 h-4 fill-current text-indigo-500 animate-pulse" /> Watch Intro Tour
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full px-4">
@@ -427,6 +446,22 @@ export default function Home() {
           </a>
         </div>
       </footer>
+
+      {/* Interactive Platform Tour Video Overlay */}
+      {showTour && (
+        <VideoTourPlayer
+          onClose={() => setShowTour(false)}
+          onDontShowAgain={(val) => {
+            if (currentUser) {
+              if (val) {
+                localStorage.setItem(`tour_dismissed_${currentUser.username}`, "true");
+              } else {
+                localStorage.removeItem(`tour_dismissed_${currentUser.username}`);
+              }
+            }
+          }}
+        />
+      )}
     </main>
   );
 }
