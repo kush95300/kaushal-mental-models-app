@@ -32,7 +32,7 @@ graph TD
     end
 
     subgraph NextJS["⚡ Next.js 16 Runtime"]
-        MW["middleware.ts<br/>JWT Guard"]
+        MW["proxy.ts<br/>JWT Guard"]
         Pages["App Router Pages<br/>/, /login, /eisenhower-matrix, /admin, /analytics"]
         SA["Server Actions<br/>actions/task · auth · workspace · delegate · analytics"]
         API["API Routes (legacy)<br/>api/tasks · api/delegates · api/config"]
@@ -125,38 +125,38 @@ graph TD
 sequenceDiagram
     actor User
     participant Browser
-    participant Middleware as middleware.ts
+    participant Proxy as proxy.ts
     participant Page as Page Component
     participant Action as Server Action
     participant AuthLib as lib/auth.ts
     participant DB as SQLite (Prisma)
 
     User->>Browser: Navigate to /eisenhower-matrix
-    Browser->>Middleware: HTTP GET /eisenhower-matrix
+    Browser->>Proxy: HTTP GET /eisenhower-matrix
 
-    Note over Middleware: Check matcher config<br/>[/, /login, /eisenhower-matrix/*, /admin/*]
+    Note over Proxy: Check matcher config<br/>[/, /login, /eisenhower-matrix/*, /admin/*]
 
     alt Path is /admin/*
-        Middleware->>Middleware: Read "session" cookie
+        Proxy->>Proxy: Read "session" cookie
         alt No cookie
-            Middleware-->>Browser: 302 Redirect → /login
+            Proxy-->>Browser: 302 Redirect → /login
         else Has cookie
-            Middleware->>Middleware: jwtVerify(session, key)
+            Proxy->>Proxy: jwtVerify(session, key)
             alt Not admin
-                Middleware-->>Browser: 302 Redirect → /
+                Proxy-->>Browser: 302 Redirect → /
             else Valid admin
-                Middleware-->>Page: NextResponse.next()
+                Proxy-->>Page: NextResponse.next()
             end
         end
     else Path is /login
-        Middleware->>Middleware: Read "session" cookie
+        Proxy->>Proxy: Read "session" cookie
         alt Valid session exists
-            Middleware-->>Browser: 302 Redirect → /
+            Proxy-->>Browser: 302 Redirect → /
         else No/invalid session
-            Middleware-->>Page: NextResponse.next()
+            Proxy-->>Page: NextResponse.next()
         end
     else Path is / or /eisenhower-matrix
-        Middleware-->>Page: NextResponse.next() (no auth check)
+        Proxy-->>Page: NextResponse.next() (no auth check)
     end
 
     Page->>Browser: Render Client Component
@@ -426,7 +426,7 @@ Tasks use an `isDeleted` flag for soft deletion with a "Trash" view for recovery
 
 ### 🚨 CRITICAL: Hardcoded JWT Secret Fallback
 
-**Files**: `src/lib/auth.ts:5`, `src/middleware.ts:4`
+**Files**: `src/lib/auth.ts:5`, `src/proxy.ts:4`
 
 ```typescript
 const secretKey = process.env.JWT_SECRET || "super-secret-key-for-development";
@@ -606,13 +606,13 @@ export const getSession = cache(async () => { /* ... */ });
 
 ---
 
-### 3. Middleware Matcher Too Broad
+### 3. Proxy Matcher Too Broad
 
 ```typescript
 matcher: ["/", "/login", "/eisenhower-matrix/:path*", "/admin/:path*"],
 ```
 
-Middleware runs JWT verification on `/` and `/eisenhower-matrix` but only actually **redirects** for `/admin` and `/login`. The other two just call `NextResponse.next()`.
+Proxy runs JWT verification on `/` and `/eisenhower-matrix` but only actually **redirects** for `/admin` and `/login`. The other two just call `NextResponse.next()`.
 
 **Fix**: Remove unused routes from matcher or add actual logic.
 
@@ -666,7 +666,7 @@ Build runs `prisma db push --accept-data-loss` → creates fresh DB inside image
 | 🟡 P2 | Replace `any` types with proper interfaces | 1 hr | Next Sprint |
 | 🟢 P3 | Bulk-update action for auto-promote | 30 min | Backlog |
 | 🟢 P3 | Remove redundant `VOLUME` from Dockerfile | 2 min | Backlog |
-| 🟢 P3 | Clean middleware matcher to only relevant routes | 5 min | Backlog |
+| 🟢 P3 | Clean proxy matcher to only relevant routes | 5 min | Backlog |
 
 ---
 
@@ -714,7 +714,7 @@ kaushal-mental-models/
 │   │   ├── dateUtils.ts                # Date helpers
 │   │   └── formatTime.ts
 │   ├── types/eisenhower.ts             # TypeScript interfaces
-│   └── middleware.ts                   # Route protection
+│   └── proxy.ts                        # Route protection
 ├── prisma/
 │   ├── schema.prisma                   # 4 models, SQLite
 │   ├── seed.js                         # ⚠️ Broken (old schema refs)

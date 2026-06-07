@@ -35,7 +35,12 @@ export default function LoginPage() {
     if (mode === "login") {
       const res = await login(username, password);
       if (res.success) {
-        router.push("/");
+        const tourDismissed = localStorage.getItem(`tour_dismissed_${username}`);
+        if (!tourDismissed) {
+          router.push("/eisenhower-matrix");
+        } else {
+          router.push("/");
+        }
         router.refresh();
       } else {
         setError(res.error || "Login failed");
