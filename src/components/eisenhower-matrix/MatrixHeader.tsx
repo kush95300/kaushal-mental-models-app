@@ -21,6 +21,9 @@ import {
   LogIn,
   Bell,
   Sparkles,
+  Menu,
+  Sliders,
+  X,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { Task, Workspace, User } from "@/types/eisenhower";
@@ -83,6 +86,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
   const [mounted, setMounted] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -174,80 +178,8 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
             </div>
           </Tooltip>
         )}
-        <div id="btn-archives" className="flex bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm p-1.5 rounded-[1.5rem] border border-white dark:border-slate-800 items-center gap-1 shadow-sm transition-colors relative z-10 hover:z-[9999]">
-          <Tooltip content="Completed Tasks Archive: View, inspect, or restore tasks that have been marked as finished.">
-            <button
-              onClick={() => setShowDoneList(true)}
-              className="p-2 px-3 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-2xl transition-all flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest font-sans"
-            >
-              <CheckCircle2 size={16} /> Done
-              <span className="bg-emerald-500/10 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-lg text-[8px]">
-                {
-                  tasks.filter((t) => t.status === "DONE" && !t.isDeleted)
-                    .length
-                }
-              </span>
-            </button>
-          </Tooltip>
-          <Tooltip content="Eliminated Tasks Archive: View or permanently delete tasks that were moved to the Eliminate quadrant.">
-            <button
-              onClick={() => setShowDeletedList(true)}
-              className="p-2 px-3 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-2xl transition-all flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest font-sans"
-            >
-              <Trash2 size={16} /> Eliminated
-              <span className="bg-emerald-500/10 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-md text-[8px]">
-                {tasks.filter((t) => t.isDeleted).length}
-              </span>
-            </button>
-          </Tooltip>
-        </div>
-        <div className="h-8 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block mx-1" />
-        {onWatchTourClick && (
-          <Tooltip content="Watch Tour: Play the video walkthrough for the Eisenhower Matrix.">
-            <button
-              onClick={onWatchTourClick}
-              className="p-2.5 text-indigo-500 dark:text-indigo-400 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-white dark:border-slate-800 shadow-sm transition-all hover:shadow-md relative z-10 hover:z-[9999] hover:bg-indigo-50 dark:hover:bg-indigo-950/20"
-            >
-              <Sparkles size={18} className="animate-pulse" />
-            </button>
-          </Tooltip>
-        )}
-        <Tooltip content="Eisenhower Matrix Guide: Learn how to effectively use the 4 quadrants to prioritize your workflow.">
-          <button
-            onClick={() => setShowHelpModal(true)}
-            className="p-2.5 text-slate-400 dark:text-slate-50 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-white dark:border-slate-800 shadow-sm transition-all hover:shadow-md relative z-10 hover:z-[9999]"
-          >
-            <HelpCircle size={18} />
-          </button>
-        </Tooltip>
-        <Tooltip content="Settings Menu: Configure time management, daily workload limits, and matrix preferences.">
-          <button
-            onClick={onSettingsClick}
-            className={`p-2.5 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-white dark:border-slate-800 shadow-sm transition-all hover:shadow-md relative z-10 hover:z-[9999] ${
-              isOverburdened
-                ? "border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-500 hover:text-rose-600"
-                : ""
-            }`}
-          >
-            <Settings
-              size={18}
-              className={isOverburdened ? "animate-pulse" : ""}
-            />
-          </button>
-        </Tooltip>
-        {!isTestMode && (
-          <Tooltip content="Analytics & Insights: View detailed productivity charts, completion trends, and workload distribution.">
-            <Link
-              id="btn-analytics"
-              href={`/analytics?workspaceId=${activeWorkspaceId}`}
-              className="p-2.5 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-white dark:border-slate-800 shadow-sm transition-all hover:shadow-md ml-1 relative z-10 hover:z-[9999]"
-            >
-              <BarChart3 size={18} />
-            </Link>
-          </Tooltip>
-        )}
 
-        {/* Notifications Popover */}
+        {/* Notifications Popover (Visible on desktop and mobile) */}
         <div className="relative z-30">
           <Tooltip content="Notifications & Alerts" align="right">
             <button
@@ -262,7 +194,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
           </Tooltip>
 
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-4 z-50 animate-in fade-in-50 slide-in-from-top-2 duration-200">
+            <div className="fixed inset-x-4 top-20 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:w-80 mt-2 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-4 z-[50800] animate-in fade-in-50 slide-in-from-top-2 duration-200">
               <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100 dark:border-slate-800">
                 <span className="font-black text-sm text-slate-800 dark:text-slate-200 flex items-center gap-2">
                   <Bell size={16} className="text-indigo-500" /> Notifications
@@ -334,134 +266,503 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
           )}
         </div>
 
-        <Tooltip content="Manage Delegates: Add, edit, or remove team members and assignees for your tasks.">
+        {/* Mobile Menu Toggle (Visible only on mobile) */}
+        <Tooltip content="More Settings" align="right">
           <button
-            id="btn-manage-delegates"
-            onClick={() => setShowDelegateModal(true)}
-            className="flex items-center gap-2 text-amber-500 dark:text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 font-black text-[10px] uppercase tracking-widest transition-all bg-white/80 dark:bg-slate-900/80 p-2.5 px-4 rounded-2xl border border-white dark:border-slate-800 shadow-sm hover:shadow-md font-sans relative z-10 hover:z-[9999]"
+            onClick={() => setShowMobileMenu(true)}
+            className="p-2.5 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-white dark:border-slate-800 shadow-sm transition-all hover:shadow-md flex md:hidden relative"
           >
-            <UserCog size={14} /> Manage Delegates
+            <Menu size={18} />
           </button>
         </Tooltip>
-        <div className="flex bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm p-1.5 rounded-[1.5rem] border border-white dark:border-slate-800 items-center gap-1 shadow-sm ml-2 transition-colors relative z-10 hover:z-[9999]">
-          <Tooltip
-            content="Force Refresh: Immediately fetch the latest tasks and delegate data from the database."
-            align="right"
-          >
-            <button
-              onClick={() => fetchTasks()}
-              className="p-2 px-3 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-2xl transition-all flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest group font-sans"
-            >
-              <RefreshCcw
-                size={14}
-                className="group-hover:rotate-180 transition-transform duration-500"
-              />
-            </button>
-          </Tooltip>
-          <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
-          <Tooltip
-            content="Auto-Refresh Interval: Choose how often the matrix automatically syncs with the database."
-            align="right"
-          >
-            <select
-              value={refreshInterval}
-              onChange={(e) => setRefreshInterval(Number(e.target.value))}
-              className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 outline-none cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 font-sans px-1"
-            >
-              <option value={0} className="dark:bg-slate-900">
-                Off
-              </option>
-              <option value={30} className="dark:bg-slate-900">
-                30s
-              </option>
-              <option value={60} className="dark:bg-slate-900">
-                1m
-              </option>
-              <option value={300} className="dark:bg-slate-900">
-                5m
-              </option>
-            </select>
-          </Tooltip>
-        </div>
-        <Tooltip
-          content="Focus Depth Slider: Adjust the maximum number of visible tasks displayed per quadrant to maintain focus."
-          align="right"
-        >
-          <div className="flex items-center gap-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-4 py-2 rounded-[1.5rem] border border-white dark:border-slate-800 shadow-sm ml-2 transition-colors relative z-10 hover:z-[9999]">
-            <div className="flex flex-col">
-              <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest whitespace-nowrap leading-none mb-1 font-sans">
-                Focus Depth
-              </span>
-              <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 leading-none">
-                {visibleLimit} Items
-              </span>
-            </div>
-            <input
-              type="range"
-              min="5"
-              max="50"
-              value={visibleLimit}
-              onChange={(e) => setVisibleLimit(parseInt(e.target.value))}
-              className="w-24 accent-indigo-600 dark:accent-indigo-500 h-1 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer hover:accent-indigo-50 transition-all"
-            />
-          </div>
-        </Tooltip>
-        <div className="h-8 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block mx-1" />
-        <div className="flex items-center gap-1 bg-white/40 dark:bg-slate-900/40 p-1 rounded-2xl border border-white/50 dark:border-slate-800/50 transition-colors relative z-10 hover:z-[9999]">
-          <Tooltip
-            content="Reset Today's Tasks: Delete all tasks created today to start with a clean slate."
-            align="right"
-          >
-            <button
-              onClick={() => resetData("today")}
-              className="p-2 px-3 text-slate-400 dark:text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans"
-            >
-              Reset Today
-            </button>
-          </Tooltip>
-          <Tooltip
-            content="Reset Workspace: Delete all tasks in the current workspace."
-            align="right"
-          >
-            <button
-              onClick={() => resetData("all")}
-              className="p-2 px-3 text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans"
-            >
-              Reset All
-            </button>
-          </Tooltip>
-        </div>
 
-        {user ? (
-          <div className="flex bg-white/40 dark:bg-slate-900/40 p-1 rounded-2xl border border-white/50 dark:border-slate-800/50 transition-colors relative z-10 hover:z-[9999] ml-2 items-center gap-1">
-            <Tooltip
-              content="Sign Out: Securely log out of your account."
-              align="right"
-            >
+        {/* Desktop-only secondary buttons */}
+        <div className="hidden md:flex md:items-center md:gap-2">
+          <div
+            id="btn-archives"
+            className="flex bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm p-1.5 rounded-[1.5rem] border border-white dark:border-slate-800 items-center gap-1 shadow-sm transition-colors relative z-10 hover:z-[9999]"
+          >
+            <Tooltip content="Completed Tasks Archive: View, inspect, or restore tasks that have been marked as finished.">
               <button
-                onClick={() => logout()}
-                className="p-2 px-3 text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:text-slate-400 dark:hover:text-rose-400 dark:hover:bg-rose-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans flex items-center gap-1"
+                onClick={() => setShowDoneList(true)}
+                className="p-2 px-3 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-2xl transition-all flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest font-sans"
               >
-                <LogOut size={12} /> Logout
+                <CheckCircle2 size={16} /> Done
+                <span className="bg-emerald-500/10 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-lg text-[8px]">
+                  {
+                    tasks.filter((t) => t.status === "DONE" && !t.isDeleted)
+                      .length
+                  }
+                </span>
+              </button>
+            </Tooltip>
+            <Tooltip content="Eliminated Tasks Archive: View or permanently delete tasks that were moved to the Eliminate quadrant.">
+              <button
+                onClick={() => setShowDeletedList(true)}
+                className="p-2 px-3 text-slate-400 dark:text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-2xl transition-all flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest font-sans"
+              >
+                <Trash2 size={16} /> Eliminated
+                <span className="bg-emerald-500/10 dark:bg-emerald-400/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-md text-[8px]">
+                  {tasks.filter((t) => t.isDeleted).length}
+                </span>
               </button>
             </Tooltip>
           </div>
-        ) : (
-          <div className="flex bg-white/40 dark:bg-slate-900/40 p-1 rounded-2xl border border-white/50 dark:border-slate-800/50 transition-colors relative z-10 hover:z-[9999] ml-2 items-center gap-1">
-            <Tooltip
-              content="Sign In: Sign in to save your tasks permanently."
-              align="right"
-            >
-              <Link
-                href="/login"
-                className="p-2 px-3 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:text-slate-400 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans flex items-center gap-1"
+          <div className="h-8 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block mx-1" />
+          {onWatchTourClick && (
+            <Tooltip content="Watch Tour: Play the video walkthrough for the Eisenhower Matrix.">
+              <button
+                onClick={onWatchTourClick}
+                className="p-2.5 text-indigo-500 dark:text-indigo-400 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-white dark:border-slate-800 shadow-sm transition-all hover:shadow-md relative z-10 hover:z-[9999] hover:bg-indigo-50 dark:hover:bg-indigo-950/20"
               >
-                <LogIn size={12} /> Sign In
+                <Sparkles size={18} className="animate-pulse" />
+              </button>
+            </Tooltip>
+          )}
+          <Tooltip content="Eisenhower Matrix Guide: Learn how to effectively use the 4 quadrants to prioritize your workflow.">
+            <button
+              onClick={() => setShowHelpModal(true)}
+              className="p-2.5 text-slate-400 dark:text-slate-550 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-white dark:border-slate-800 shadow-sm transition-all hover:shadow-md relative z-10 hover:z-[9999]"
+            >
+              <HelpCircle size={18} />
+            </button>
+          </Tooltip>
+          <Tooltip content="Settings Menu: Configure time management, daily workload limits, and matrix preferences.">
+            <button
+              onClick={onSettingsClick}
+              className={`p-2.5 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-white dark:border-slate-800 shadow-sm transition-all hover:shadow-md relative z-10 hover:z-[9999] ${
+                isOverburdened
+                  ? "border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-500 hover:text-rose-600"
+                  : ""
+              }`}
+            >
+              <Settings
+                size={18}
+                className={isOverburdened ? "animate-pulse" : ""}
+              />
+            </button>
+          </Tooltip>
+          {!isTestMode && (
+            <Tooltip content="Analytics & Insights: View detailed productivity charts, completion trends, and workload distribution.">
+              <Link
+                id="btn-analytics"
+                href={`/analytics?workspaceId=${activeWorkspaceId}`}
+                className="p-2.5 text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-white dark:border-slate-800 shadow-sm transition-all hover:shadow-md ml-1 relative z-10 hover:z-[9999]"
+              >
+                <BarChart3 size={18} />
               </Link>
             </Tooltip>
+          )}
+
+          <Tooltip content="Manage Delegates: Add, edit, or remove team members and assignees for your tasks.">
+            <button
+              id="btn-manage-delegates"
+              onClick={() => setShowDelegateModal(true)}
+              className="flex items-center gap-2 text-amber-500 dark:text-amber-400 hover:text-amber-600 dark:hover:text-amber-300 font-black text-[10px] uppercase tracking-widest transition-all bg-white/80 dark:bg-slate-900/80 p-2.5 px-4 rounded-2xl border border-white dark:border-slate-800 shadow-sm hover:shadow-md font-sans relative z-10 hover:z-[9999]"
+            >
+              <UserCog size={14} /> Manage Delegates
+            </button>
+          </Tooltip>
+          <div className="flex bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm p-1.5 rounded-[1.5rem] border border-white dark:border-slate-800 items-center gap-1 shadow-sm ml-2 transition-colors relative z-10 hover:z-[9999]">
+            <Tooltip
+              content="Force Refresh: Immediately fetch the latest tasks and delegate data from the database."
+              align="right"
+            >
+              <button
+                onClick={() => fetchTasks()}
+                className="p-2 px-3 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-2xl transition-all flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest group font-sans"
+              >
+                <RefreshCcw
+                  size={14}
+                  className="group-hover:rotate-180 transition-transform duration-500"
+                />
+              </button>
+            </Tooltip>
+            <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
+            <Tooltip
+              content="Auto-Refresh Interval: Choose how often the matrix automatically syncs with the database."
+              align="right"
+            >
+              <select
+                value={refreshInterval}
+                onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 outline-none cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 font-sans px-1"
+              >
+                <option value={0} className="dark:bg-slate-900">
+                  Off
+                </option>
+                <option value={30} className="dark:bg-slate-900">
+                  30s
+                </option>
+                <option value={60} className="dark:bg-slate-900">
+                  1m
+                </option>
+                <option value={300} className="dark:bg-slate-900">
+                  5m
+                </option>
+              </select>
+            </Tooltip>
           </div>
-        )}
+          <Tooltip
+            content="Focus Depth Slider: Adjust the maximum number of visible tasks displayed per quadrant to maintain focus."
+            align="right"
+          >
+            <div className="flex items-center gap-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm px-4 py-2 rounded-[1.5rem] border border-white dark:border-slate-800 shadow-sm ml-2 transition-colors relative z-10 hover:z-[9999]">
+              <div className="flex flex-col">
+                <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest whitespace-nowrap leading-none mb-1 font-sans">
+                  Focus Depth
+                </span>
+                <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 leading-none">
+                  {visibleLimit} Items
+                </span>
+              </div>
+              <input
+                type="range"
+                min="5"
+                max="50"
+                value={visibleLimit}
+                onChange={(e) => setVisibleLimit(parseInt(e.target.value))}
+                className="w-24 accent-indigo-600 dark:accent-indigo-500 h-1 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer hover:accent-indigo-50 transition-all"
+              />
+            </div>
+          </Tooltip>
+          <div className="h-8 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block mx-1" />
+          <div className="flex items-center gap-1 bg-white/40 dark:bg-slate-900/40 p-1 rounded-2xl border border-white/50 dark:border-slate-800/50 transition-colors relative z-10 hover:z-[9999]">
+            <Tooltip
+              content="Reset Today's Tasks: Delete all tasks created today to start with a clean slate."
+              align="right"
+            >
+              <button
+                onClick={() => resetData("today")}
+                className="p-2 px-3 text-slate-400 dark:text-slate-505 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans"
+              >
+                Reset Today
+              </button>
+            </Tooltip>
+            <Tooltip
+              content="Reset Workspace: Delete all tasks in the current workspace."
+              align="right"
+            >
+              <button
+                onClick={() => resetData("all")}
+                className="p-2 px-3 text-slate-400 dark:text-slate-505 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans"
+              >
+                Reset All
+              </button>
+            </Tooltip>
+          </div>
+
+          {user ? (
+            <div className="flex bg-white/40 dark:bg-slate-900/40 p-1 rounded-2xl border border-white/50 dark:border-slate-800/50 transition-colors relative z-10 hover:z-[9999] ml-2 items-center gap-1">
+              <Tooltip
+                content="Sign Out: Securely log out of your account."
+                align="right"
+              >
+                <button
+                  onClick={() => logout()}
+                  className="p-2 px-3 text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:text-slate-400 dark:hover:text-rose-400 dark:hover:bg-rose-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans flex items-center gap-1"
+                >
+                  <LogOut size={12} /> Logout
+                </button>
+              </Tooltip>
+            </div>
+          ) : (
+            <div className="flex bg-white/40 dark:bg-slate-900/40 p-1 rounded-2xl border border-white/50 dark:border-slate-800/50 transition-colors relative z-10 hover:z-[9999] ml-2 items-center gap-1">
+              <Tooltip
+                content="Sign In: Sign in to save your tasks permanently."
+                align="right"
+              >
+                <Link
+                  href="/login"
+                  className="p-2 px-3 text-slate-505 hover:text-indigo-600 hover:bg-indigo-50 dark:text-slate-400 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans flex items-center gap-1"
+                >
+                  <LogIn size={12} /> Sign In
+                </Link>
+              </Tooltip>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Mobile Drawer Overlay */}
+      {showMobileMenu && (
+        <div className="fixed inset-0 z-[50200] flex items-end justify-center sm:items-center p-4 bg-slate-900/60 backdrop-blur-xl animate-in fade-in duration-300">
+          <div
+            className="fixed inset-0"
+            onClick={() => setShowMobileMenu(false)}
+          />
+          <div className="bg-white dark:bg-slate-900 rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 max-w-md w-full shadow-2xl border-t sm:border border-white/50 dark:border-slate-800 transition-colors animate-in slide-in-from-bottom duration-300 sm:zoom-in-95 max-h-[85vh] overflow-y-auto custom-scrollbar relative z-10">
+            <div className="flex justify-between items-center mb-6 pb-2 border-b border-slate-100 dark:border-slate-800">
+              <span className="font-black text-sm text-slate-800 dark:text-slate-200 flex items-center gap-2 uppercase tracking-wider">
+                <Sliders size={16} className="text-indigo-500" /> More Settings
+              </span>
+              <button
+                onClick={() => setShowMobileMenu(false)}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+              >
+                <X size={20} className="text-slate-400 dark:text-slate-550" />
+              </button>
+            </div>
+
+            <div className="space-y-4 font-sans text-left">
+              {/* Archives group */}
+              <div>
+                <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 px-1">
+                  Archives
+                </h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      setShowDoneList(true);
+                      setShowMobileMenu(false);
+                    }}
+                    className="flex flex-col items-start p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 text-left transition-all"
+                  >
+                    <CheckCircle2 size={16} className="text-emerald-500 mb-1" />
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                      Done List
+                    </span>
+                    <span className="text-[9px] font-bold text-slate-400 mt-0.5">
+                      {
+                        tasks.filter((t) => t.status === "DONE" && !t.isDeleted)
+                          .length
+                      }{" "}
+                      items
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowDeletedList(true);
+                      setShowMobileMenu(false);
+                    }}
+                    className="flex flex-col items-start p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-indigo-50 dark:hover:bg-slate-850 rounded-2xl border border-slate-100 dark:border-slate-800/80 text-left transition-all"
+                  >
+                    <Trash2 size={16} className="text-rose-500 mb-1" />
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                      Eliminated
+                    </span>
+                    <span className="text-[9px] font-bold text-slate-400 mt-0.5">
+                      {tasks.filter((t) => t.isDeleted).length} items
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Organization & Help */}
+              <div>
+                <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 px-1">
+                  Organization & Help
+                </h4>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => {
+                      setShowDelegateModal(true);
+                      setShowMobileMenu(false);
+                    }}
+                    className="w-full flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-850 rounded-2xl border border-slate-100 dark:border-slate-800 transition-all text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <UserCog size={16} className="text-amber-500" />
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                        Manage Delegates
+                      </span>
+                    </div>
+                  </button>
+
+                  {!isTestMode && (
+                    <Link
+                      href={`/analytics?workspaceId=${activeWorkspaceId}`}
+                      onClick={() => setShowMobileMenu(false)}
+                      className="w-full flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-850 rounded-2xl border border-slate-100 dark:border-slate-800 transition-all text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                        <BarChart3 size={16} className="text-indigo-500" />
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                          Analytics & Insights
+                        </span>
+                      </div>
+                    </Link>
+                  )}
+
+                  {onWatchTourClick && (
+                    <button
+                      onClick={() => {
+                        onWatchTourClick();
+                        setShowMobileMenu(false);
+                      }}
+                      className="w-full flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-850 rounded-2xl border border-slate-100 dark:border-slate-800 transition-all text-left"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Sparkles
+                          size={16}
+                          className="text-indigo-500 animate-pulse"
+                        />
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                          Watch Video Tour
+                        </span>
+                      </div>
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      setShowHelpModal(true);
+                      setShowMobileMenu(false);
+                    }}
+                    className="w-full flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-850 rounded-2xl border border-slate-100 dark:border-slate-800 transition-all text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <HelpCircle
+                        size={16}
+                        className="text-slate-500 dark:text-slate-400"
+                      />
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                        Eisenhower Matrix Guide
+                      </span>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      onSettingsClick();
+                      setShowMobileMenu(false);
+                    }}
+                    className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all text-left ${
+                      isOverburdened
+                        ? "bg-rose-50 border-rose-200 dark:bg-rose-950/20 dark:border-rose-900/50"
+                        : "bg-slate-50 border-slate-100 dark:bg-slate-800/50 dark:border-slate-800"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Settings
+                        size={16}
+                        className={
+                          isOverburdened
+                            ? "text-rose-500 animate-pulse"
+                            : "text-slate-550"
+                        }
+                      />
+                      <span
+                        className={`text-xs font-bold ${isOverburdened ? "text-rose-600 dark:text-rose-400" : "text-slate-700 dark:text-slate-200"}`}
+                      >
+                        Settings {isOverburdened && "(Overloaded)"}
+                      </span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Preferences & Sync */}
+              <div>
+                <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 px-1">
+                  Sync & Slider
+                </h4>
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-4">
+                  {/* Focus Depth Slider */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider text-slate-500">
+                      <span>Focus Depth</span>
+                      <span className="text-indigo-600 dark:text-indigo-400">
+                        {visibleLimit} Items
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min="5"
+                      max="50"
+                      value={visibleLimit}
+                      onChange={(e) =>
+                        setVisibleLimit(parseInt(e.target.value))
+                      }
+                      className="w-full accent-indigo-600 dark:accent-indigo-500 h-1 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Refresh Options */}
+                  <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-850 pt-3">
+                    <button
+                      onClick={() => {
+                        fetchTasks();
+                        setShowMobileMenu(false);
+                      }}
+                      className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                    >
+                      <RefreshCcw size={12} /> Sync Now
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] font-bold text-slate-400 dark:text-slate-550 uppercase">
+                        Auto Sync:
+                      </span>
+                      <select
+                        value={refreshInterval}
+                        onChange={(e) =>
+                          setRefreshInterval(Number(e.target.value))
+                        }
+                        className="bg-transparent text-[10px] font-black uppercase tracking-widest text-slate-500 outline-none cursor-pointer px-1 border border-slate-250 dark:border-slate-700 rounded-lg"
+                      >
+                        <option value={0}>Off</option>
+                        <option value={30}>30s</option>
+                        <option value={60}>1m</option>
+                        <option value={300}>5m</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Maintenance Tools */}
+              <div>
+                <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 px-1">
+                  Danger Zone
+                </h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      resetData("today");
+                      setShowMobileMenu(false);
+                    }}
+                    className="p-3 bg-amber-500/10 hover:bg-amber-500/25 border border-amber-500/20 text-amber-600 dark:text-amber-400 rounded-2xl text-[9px] font-black uppercase tracking-widest font-sans transition-all text-center"
+                  >
+                    Reset Today
+                  </button>
+                  <button
+                    onClick={() => {
+                      resetData("all");
+                      setShowMobileMenu(false);
+                    }}
+                    className="p-3 bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/20 text-rose-600 dark:text-rose-400 rounded-2xl text-[9px] font-black uppercase tracking-widest font-sans transition-all text-center"
+                  >
+                    Reset All
+                  </button>
+                </div>
+              </div>
+
+              {/* Auth */}
+              <div className="pt-2">
+                {user ? (
+                  <button
+                    onClick={() => {
+                      logout();
+                      setShowMobileMenu(false);
+                    }}
+                    className="w-full py-3.5 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-100 dark:shadow-none"
+                  >
+                    <LogOut size={14} /> Logout
+                  </button>
+                ) : (
+                  <Link
+                    href="/login"
+                    onClick={() => setShowMobileMenu(false)}
+                    className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-100 dark:shadow-none"
+                  >
+                    <LogIn size={14} /> Sign In
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

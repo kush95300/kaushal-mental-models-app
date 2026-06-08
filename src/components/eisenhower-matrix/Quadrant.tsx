@@ -58,6 +58,15 @@ export const Quadrant: React.FC<QuadrantProps> = ({
   setEditingDateTaskId,
   setAssignmentModal,
 }) => {
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   const quadrantTasks = tasks.filter(
     (t) => t.quadrant === qConfig.id && !t.isDeleted && t.status !== "DONE",
   );
@@ -70,7 +79,7 @@ export const Quadrant: React.FC<QuadrantProps> = ({
 
   return (
     <div
-      className={`relative flex flex-col h-full min-h-[300px] rounded-[2rem] border-2 transition-all duration-500 overflow-hidden ${
+      className={`relative flex flex-col h-full min-h-[250px] md:min-h-[300px] rounded-[2rem] border-2 transition-all duration-500 overflow-hidden ${
         isActive
           ? "scale-[1.02] border-indigo-400 shadow-2xl z-10 bg-white dark:bg-slate-900"
           : qConfig.borderColor +
@@ -81,11 +90,11 @@ export const Quadrant: React.FC<QuadrantProps> = ({
       onDrop={(e) => onDrop(e, qConfig.id)}
     >
       <div
-        className={`p-5 flex items-center justify-between border-b ${qConfig.borderColor} ${qConfig.lightColor} dark:bg-slate-800/50 dark:border-slate-800 transition-colors duration-300`}
+        className={`p-4 md:p-5 flex items-center justify-between border-b ${qConfig.borderColor} ${qConfig.lightColor} dark:bg-slate-800/50 dark:border-slate-800 transition-colors duration-300`}
       >
         <div className="flex items-center gap-3">
           <div
-            className={`p-2.5 rounded-2xl text-white shadow-lg ${qConfig.color} transition-transform duration-500 hover:rotate-6`}
+            className={`p-2 md:p-2.5 rounded-2xl text-white shadow-lg ${qConfig.color} transition-transform duration-500 hover:rotate-6`}
           >
             {qConfig.icon}
           </div>
@@ -116,7 +125,7 @@ export const Quadrant: React.FC<QuadrantProps> = ({
 
       <div
         className="flex-grow p-4 overflow-y-auto custom-scrollbar scroll-smooth"
-        style={{ maxHeight: `${visibleLimit * 54 + 16}px` }}
+        style={{ maxHeight: isMobile ? "60vh" : `${visibleLimit * 54 + 16}px` }}
       >
         {quadrantTasks.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center opacity-20 dark:opacity-40 text-center px-4">
@@ -150,7 +159,7 @@ export const Quadrant: React.FC<QuadrantProps> = ({
         )}
       </div>
 
-      <div className="px-5 py-3 bg-white/40 dark:bg-slate-800/40 border-t border-white/50 dark:border-slate-800">
+      <div className="px-4 py-2 md:px-5 md:py-3 bg-white/40 dark:bg-slate-800/40 border-t border-white/50 dark:border-slate-800">
         <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter flex items-center gap-1.5">
           <Info className="w-3.5 h-3.5" /> {qConfig.description}
         </p>

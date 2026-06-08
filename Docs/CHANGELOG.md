@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v2.2.0] - 2026-06-08
+
+### Added & Fixed
+
+- **Video Tour Controls Auto-Hide**: Video tour player controls (header, tab bar, footer controls) now automatically fade out after 2.5 seconds of inactivity while the tour is playing — identical to YouTube/video player behaviour. Any mouse movement, click, or touch instantly restores them with a smooth transition. Controls always remain visible while paused.
+- **Show/Hide Captions Toggle**: Added a CC button to the video player controls footer, allowing users to toggle closed captions on or off dynamically during the tour.
+- **Mobile/Tablet Chapter Selector Dropdown**: Replaced the cramped horizontally scrolling "Video 1", "Video 2" buttons on mobile/tablet viewports with a beautifully styled select dropdown showing proper video chapter titles (e.g. "What is Mental Models?", "What is the Eisenhower Matrix?"), allowing users to select and watch any chapter in any order without sequential restrictions.
+- **Tour Skip/Close Redirect**: When a user dismisses or skips the intro tour before selecting a workspace or entering Test Mode, they are now redirected back to the landing page (`/`) instead of being dropped into the workspace selection modal with no context.
+- **Responsive Homepage Header**: Condensed top navigation bar on small screens — the logo text "The Wisdom Lab" is hidden (icon only), action button labels ("User Management", "Change Password") collapse to icon-only, and paddings/gaps scale down on `< sm` viewports, preventing icon overflow and clipping.
+- **Calendar Week View on Mobile**: Calendar now defaults to a 7-day week view on screens narrower than 768 px, with a Month/Week toggle in the header. Prev/Next navigation steps by 7 days in week mode and by 1 month in month mode.
+- **Drag-to-Switch Quadrant Tabs**: Dragging a task card and hovering over any mobile tab switcher button now immediately switches to that quadrant, and tabs also act as drop zones — tasks dropped directly onto a tab are moved to that quadrant.
+- **Fluid Modal Sizing**: All modals (Edit Content, Settings, Date Picker, Reset Confirm, Completion, Done List, Deleted List, Help, Onboarding, Workspace Selection) now use fluid widths (`w-[calc(100%-2rem)]`), responsive paddings, and corner radii that scale between mobile and desktop breakpoints.
+- **Absolute Page Navigation Header**: Switched the homepage header from fixed to absolute on mobile screens to prevent scrolling jitter and layout clashing.
+- **True Fullscreen Video Tour Player**: Integrated HTML5 Fullscreen API capability to allow users to toggle the simulated video tour to full screen, and refactored controls using a responsive layout with abbreviated language selector tags (EN/HI/HING) on narrow viewports to prevent controls from disappearing.
+- **Compact Mobile Stats Grid**: Restructured stats display cards to render in a 3-column layout on mobile viewports rather than a 2-column configuration, using tighter padding and smaller text to save vertical space.
+- **Topmost Modal Layering**: Standardized modal overlays and the page tutorial completion panel to use elevated z-index values (starting at `z-[50000]`), preventing z-index layering bugs from rendering modals behind hover-highlighted elements (`hover:z-[9999]`).
+- **Centered Notifications Panel**: Replaced relative positioning on the notifications popover with a viewport-relative `fixed` layout on mobile, keeping notifications centered and readable without flowing off-screen.
+- **Stackable Delegate Modal Form**: Configured the add teammate form container to stack inputs vertically on mobile screen widths, resolving horizontal button clipping.
+- **Interactive Move Handle UI & Helper Tip**: Styled the task cards' touch-reassignment `🎯` button with a clear background/border and added a mobile-only tip banner in the matrix grid to guide touch screen users.
+
+## [v2.1.0] - 2026-06-07
+
+### Added & Fixed
+
+- **Mobile Tabbed Grid Navigation**: Integrated a horizontally scrollable mobile switcher (Inbox, Do First, Schedule, Delegate, Eliminate tabs) to show one quadrant at a time, avoiding long vertical stacks on small viewports.
+- **Collapsible More Settings Menu**: Compressed secondary settings and action items in `MatrixHeader` into a slide-up "More Settings" drawer sheet on mobile, preserving header whitespace.
+- **Stacked Quick-Add Task Form**: Form inputs and buttons stack cleanly in column orientation on smaller screen widths, preventing layout overflow.
+- **Touch-Friendly "Move/Prioritize" Option**: Added a visible target action trigger on task cards for mobile touch devices, integrating with `AssignmentModal` for quick quadrant relocations without drag-and-drop.
+
 ## [v2.0.9] - 2026-06-07
 
 ### Added & Fixed

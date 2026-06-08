@@ -874,6 +874,7 @@ function EisenhowerMatrixContent() {
           updateTaskQuadrant={updateTaskQuadrant}
           setShowDelegateModal={setShowDelegateModal}
           setShowOnboarding={setShowOnboarding}
+          setAssignmentModal={setAssignmentModal}
         />
       )}
       {showDelegateModal && (
@@ -989,6 +990,11 @@ function EisenhowerMatrixContent() {
             const username = user?.username || "guest";
             localStorage.setItem(`tour_dismissed_${username}`, "true");
             
+            if (!selectionMade) {
+              router.push("/");
+              return;
+            }
+
             // Auto chain page tutorial if not dismissed yet and NOT manually clicked
             if (!isManualTour) {
               const dismissedPage = localStorage.getItem(`tutorial_dismissed_eisenhower_${username}`);
@@ -1011,7 +1017,7 @@ function EisenhowerMatrixContent() {
       )}
 
       {showTutorialCompletionModal && (
-        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[50700] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 text-slate-900 dark:text-white">
             <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/50 rounded-2xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-6">
               <CheckCircle2 size={24} className="animate-bounce" />

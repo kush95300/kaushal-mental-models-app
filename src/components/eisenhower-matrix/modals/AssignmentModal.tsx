@@ -1,7 +1,16 @@
 "use client";
 
 import React from "react";
-import { X, Users, UserPlus, Target } from "lucide-react";
+import {
+  X,
+  Users,
+  UserPlus,
+  Target,
+  Flame,
+  Calendar,
+  Trash2,
+  Inbox,
+} from "lucide-react";
 import { Task, Delegate } from "@/types/eisenhower";
 
 interface AssignmentModalProps {
@@ -16,6 +25,9 @@ interface AssignmentModalProps {
   ) => void;
   setShowDelegateModal: (show: boolean) => void;
   setShowOnboarding: (show: boolean) => void;
+  setAssignmentModal?: (
+    data: { taskId: number; quadrant: string } | null,
+  ) => void;
 }
 
 export const AssignmentModal: React.FC<AssignmentModalProps> = ({
@@ -25,13 +37,14 @@ export const AssignmentModal: React.FC<AssignmentModalProps> = ({
   onClose,
   updateTaskQuadrant,
   setShowDelegateModal,
+  setAssignmentModal,
 }) => {
   if (!assignmentModal) return null;
 
   const currentTask = tasks.find((t) => t.id === assignmentModal.taskId);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[50000] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300">
       <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-white dark:border-slate-800 animate-in zoom-in-95 duration-300 transition-colors">
         <div className="flex justify-between items-start mb-6">
           <div>
@@ -42,7 +55,9 @@ export const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   ? "Plan Execution"
                   : assignmentModal.quadrant === "SCHEDULE"
                     ? "Schedule Task"
-                    : "Confirm Action"}
+                    : assignmentModal.quadrant === "MOVE"
+                      ? "Prioritize / Move Task"
+                      : "Confirm Action"}
             </h3>
             <p className="text-sm font-semibold text-indigo-600/70 dark:text-indigo-400/70 italic font-sans truncate max-w-[18rem]">
               &quot;{currentTask?.content}&quot;
@@ -205,6 +220,136 @@ export const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   </span>
                   <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
                     Add to {assignmentModal.quadrant}
+                  </span>
+                </div>
+              </button>
+            </div>
+          )}
+
+          {assignmentModal.quadrant === "MOVE" && (
+            <div className="grid grid-cols-1 gap-2 font-sans max-h-[60vh] overflow-y-auto pr-1">
+              <button
+                onClick={() => {
+                  const today = new Date();
+                  updateTaskQuadrant(assignmentModal.taskId, "DO", {
+                    dueDate: today.toISOString(),
+                  });
+                  onClose();
+                }}
+                className="flex items-center gap-3 p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/20 border-2 border-rose-100 dark:border-rose-900/30 hover:border-rose-500 hover:bg-white dark:hover:bg-slate-800 transition-all text-left group"
+              >
+                <div className="w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center shrink-0">
+                  <Flame size={14} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-black text-xs uppercase tracking-wide text-rose-700 dark:text-rose-400">
+                    Do First (Urgent & Important)
+                  </span>
+                  <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">
+                    Move to Do
+                  </span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  if (setAssignmentModal) {
+                    setAssignmentModal({
+                      taskId: assignmentModal.taskId,
+                      quadrant: "SCHEDULE",
+                    });
+                  } else {
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    updateTaskQuadrant(assignmentModal.taskId, "SCHEDULE", {
+                      dueDate: tomorrow.toISOString(),
+                    });
+                    onClose();
+                  }
+                }}
+                className="flex items-center gap-3 p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border-2 border-emerald-100 dark:border-emerald-900/30 hover:border-emerald-500 hover:bg-white dark:hover:bg-slate-800 transition-all text-left group"
+              >
+                <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                  <Calendar size={14} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-black text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+                    Schedule (Not Urgent & Important)
+                  </span>
+                  <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">
+                    Move to Schedule
+                  </span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  if (setAssignmentModal) {
+                    setAssignmentModal({
+                      taskId: assignmentModal.taskId,
+                      quadrant: "DELEGATE",
+                    });
+                  } else {
+                    updateTaskQuadrant(assignmentModal.taskId, "DELEGATE", {});
+                    onClose();
+                  }
+                }}
+                className="flex items-center gap-3 p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-100 dark:border-amber-900/30 hover:border-amber-500 hover:bg-white dark:hover:bg-slate-800 transition-all text-left group"
+              >
+                <div className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center shrink-0">
+                  <Users size={14} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-black text-xs uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                    Delegate (Urgent & Not Important)
+                  </span>
+                  <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">
+                    Move to Delegate
+                  </span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  updateTaskQuadrant(assignmentModal.taskId, "ELIMINATE", {
+                    isDeleted: true,
+                  });
+                  onClose();
+                }}
+                className="flex items-center gap-3 p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/20 border-2 border-rose-100 dark:border-rose-900/30 hover:border-rose-500 hover:bg-white dark:hover:bg-slate-800 transition-all text-left group"
+              >
+                <div className="w-8 h-8 rounded-full bg-rose-500 text-white flex items-center justify-center shrink-0">
+                  <Trash2 size={14} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-black text-xs uppercase tracking-wide text-rose-700 dark:text-rose-450">
+                    Eliminate (Not Urgent & Not Important)
+                  </span>
+                  <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">
+                    Delete Task
+                  </span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  updateTaskQuadrant(assignmentModal.taskId, "INBOX", {
+                    delegateId: null,
+                    dueDate: null,
+                  });
+                  onClose();
+                }}
+                className="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-800 hover:border-indigo-400 hover:bg-white dark:hover:bg-slate-800 transition-all text-left group"
+              >
+                <div className="w-8 h-8 rounded-full bg-slate-500 text-white flex items-center justify-center shrink-0">
+                  <Inbox size={14} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-black text-xs uppercase tracking-wide text-slate-700 dark:text-slate-200">
+                    Move to Inbox
+                  </span>
+                  <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase">
+                    Remove Priority
                   </span>
                 </div>
               </button>
