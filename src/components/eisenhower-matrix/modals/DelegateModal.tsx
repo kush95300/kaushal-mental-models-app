@@ -21,8 +21,8 @@ export const DelegateModal: React.FC<DelegateModalProps> = ({
   removeDelegate,
   onClose,
 }) => (
-  <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xl animate-in fade-in duration-300">
-    <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-10 max-w-lg w-full shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] border border-white dark:border-slate-800 animate-in zoom-in-95 duration-500 transition-colors">
+  <div className="fixed inset-0 z-[50100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xl animate-in fade-in duration-300">
+    <div className="bg-white dark:bg-slate-900 rounded-3xl sm:rounded-[3rem] p-6 sm:p-10 max-w-lg w-full shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] border border-white dark:border-slate-800 animate-in zoom-in-95 duration-500 transition-colors">
       <div className="flex justify-between items-start mb-8">
         <div className="flex items-center gap-4">
           <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-2xl text-amber-500 dark:text-amber-400">
@@ -41,24 +41,24 @@ export const DelegateModal: React.FC<DelegateModalProps> = ({
           onClick={onClose}
           className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition-all"
         >
-          <X size={24} className="text-slate-400 dark:text-slate-500" />
+          <X size={24} className="text-slate-400 dark:text-slate-550" />
         </button>
       </div>
 
       <div className="space-y-6">
-        <div className="flex gap-2 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 focus-within:border-amber-200 dark:focus-within:border-amber-900/50 transition-all">
+        <div className="flex flex-col sm:flex-row gap-2 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-2xl sm:rounded-[2rem] border-2 border-slate-100 dark:border-slate-800 focus-within:border-amber-200 dark:focus-within:border-amber-900/50 transition-all">
           <input
             id="input-delegate-name"
             type="text"
             value={newDelegateName}
             onChange={(e) => setNewDelegateName(e.target.value)}
             placeholder="Enter teammate name..."
-            className="flex-grow px-4 bg-transparent outline-none font-bold text-sm placeholder:text-slate-300 dark:placeholder:text-slate-600 text-slate-700 dark:text-slate-200 font-sans"
+            className="flex-grow px-4 py-3 sm:py-0 bg-transparent outline-none font-bold text-sm placeholder:text-slate-300 dark:placeholder:text-slate-600 text-slate-700 dark:text-slate-200 font-sans"
           />
           <button
             id="btn-add-delegate"
             onClick={addDelegate}
-            className="p-3 px-5 bg-slate-900 dark:bg-slate-800 text-white dark:text-slate-200 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-amber-500 dark:hover:bg-amber-600 transition-all shadow-lg active:scale-95 font-sans"
+            className="w-full sm:w-auto p-3.5 sm:p-3 px-5 bg-slate-900 dark:bg-slate-800 text-white dark:text-slate-200 rounded-xl sm:rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest hover:bg-amber-500 dark:hover:bg-amber-600 transition-all shadow-lg active:scale-95 font-sans text-center"
           >
             Add Team Member
           </button>

@@ -151,13 +151,13 @@ export const WorkspaceSelectionModal: React.FC<
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[50000] flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-xl animate-in fade-in duration-300"
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-[480px] bg-white rounded-[2rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] border border-white/50 overflow-hidden animate-in zoom-in-95 duration-300 transform transition-all text-slate-900">
+      <div className="relative w-[calc(100%-2rem)] max-w-[480px] bg-white rounded-3xl sm:rounded-[2rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] border border-white/50 overflow-hidden animate-in zoom-in-95 duration-300 transform transition-all text-slate-900">
         {/* Header */}
         <div className="flex items-start justify-between p-8 pb-4">
           <div>
@@ -470,8 +470,8 @@ export const WorkspaceSelectionModal: React.FC<
       </div>
 
       {deleteConfirmId && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-white dark:border-slate-800 animate-in zoom-in-95 duration-200 text-slate-900 dark:text-white">
+        <div className="fixed inset-0 z-[50100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl sm:rounded-[2.5rem] p-6 sm:p-8 w-[calc(100%-2rem)] max-w-md shadow-2xl border border-white dark:border-slate-800 animate-in zoom-in-95 duration-200 text-slate-900 dark:text-white">
             <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-2xl flex items-center justify-center text-rose-500 mb-6">
               <Trash2 size={24} />
             </div>

@@ -21,7 +21,7 @@ Transform your to-do list into a strategic map by separating the urgent from the
   - **Eliminated (Soft-Delete)**: Moving tasks to the **Eliminate** quadrant automatically archives them. View all removed items in the **Eliminated** list at the top.
   - **Data Resets**: Quickly wipe _Today's Data_ or _All Data_ for a clean slate.
 - **Onboarding & Interactive Tutorials (v2.0.0)**:
-  - **Interactive 4-Track Video Tour**: Built-in React-animated simulated video player with play/pause, scrubbing, speeds, and subtitles. Explains: (1) what mental models are, (2) what the Eisenhower Matrix is (20-minute masterclass simulation), (3) adding, moving, and completing tasks, and (4) key platform features (Workspaces, Analytics, Delegates, Database Cleanup). Launches automatically upon first-time user login, enforces a strictly sequential progression (chapters unlock one by one, persisting in local storage), and features a calmer, slowed-down pre-recorded neural conversational voiceover narration.
+  - **Interactive 4-Track Video Tour**: Built-in React-animated simulated video player with play/pause, scrubbing, speeds, toggleable subtitles (CC), and a mobile-optimized chapter selector dropdown. Explains: (1) what mental models are, (2) what the Eisenhower Matrix is (20-minute masterclass simulation), (3) adding, moving, and completing tasks, and (4) key platform features (Workspaces, Analytics, Delegates, Database Cleanup). Launches automatically upon first-time user login, allows users to choose any chapter to watch at any time, and features a calmer, slowed-down pre-recorded neural conversational voiceover narration.
   - **Contextual In-App Tutorials**: Floating step-by-step onboarding walkthrough pointers with focus highlights, tethered dynamically using viewport-relative `fixed` overlay coordinates to target UI elements on both the Eisenhower Matrix page and the Analytics Dashboard. Recalculates on page scroll/resize to follow UI elements smoothly without hijacking user scrolls.
   - **Interactive Walkthrough Sub-Guides**: Complete interactive guides selectable from a post-walkthrough dialog modal:
     - **How to Add a Task**: 3-step guide covering (1) entering a sample task ("Learn Eisenhower Matrix") and estimate ("45 min") in the form, (2) tracking its appearance in the Draft Queue (Inbox), and (3) dragging it to the appropriate matrix quadrant.
@@ -31,6 +31,15 @@ Transform your to-do list into a strategic map by separating the urgent from the
   - **Zero-Asset Synthesized Audio**: Utilizes the native browser Web Audio API `AudioContext` to synthesize premium click ticks, chime success sweeps, and swoosh transitions dynamically, removing the need for external audio assets.
   - **Smart Onboarding**: Prompt for analytics start date on first visit.
   - **Test Mode**: Explore the full matrix feature set without persisting any data to the database.
+- **Mobile & Cross-Device Responsiveness (v2.2.0)**:
+  - **Horizontal scrollable tab bar** on mobile viewports to toggle selectively between Inbox and each matrix quadrant, preventing long layout stacking.
+  - **Stacked forms** and touch-friendly controls with comfortable pad tap areas on screens `< 768px`.
+  - **Collapsible settings drawer**: Slide-up settings sheet in the matrix view to clean up header space.
+  - **Touch-Friendly "Move/Prioritize" Quick Selector**: Target icon on task cards with prominent background and helper tip banner for easy mobile relocation.
+  - **Fluid text & compact stats grid**: Dynamically scaling header fonts, smaller paddings, and a compact 3-column stats view to prevent vertical screen takeover on mobile.
+  - **Responsive video controls & Fullscreen**: Custom Video Tour Player control panel wrapping dynamically with abbreviated labels, toggleable closed captions (CC), and native HTML5 Fullscreen API toggle.
+  - **Robust layering**: Standardized topmost modal z-indices (`z-[50000]+`) to avoid clashes with hover-highlighted elements.
+  - **Centered popover notifications**: Centered fixed layouts for alerts to guarantee readability on narrow screens.
 - **Server Actions Architecture (v1.2)**:
   - **Unified Operations**: All task and delegate management moved to high-performance **Server Actions**.
   - **Optimistic UI**: Instant visual feedback for task creation, movement, and deletion before server confirmation.

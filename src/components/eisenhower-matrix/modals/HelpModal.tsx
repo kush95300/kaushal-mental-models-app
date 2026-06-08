@@ -8,18 +8,18 @@ interface HelpModalProps {
 }
 
 export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => (
-  <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xl animate-in fade-in duration-300">
-    <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-8 md:p-12 max-w-4xl w-full shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] border border-white dark:border-slate-800 animate-in zoom-in-95 duration-500 overflow-y-auto max-h-[90vh] custom-scrollbar transition-colors">
-      <div className="flex justify-between items-start mb-10">
-        <div className="flex items-center gap-5">
-          <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-3xl text-indigo-600 dark:text-indigo-400">
-            <Target size={32} />
+  <div className="fixed inset-0 z-[50200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xl animate-in fade-in duration-300">
+    <div className="bg-white dark:bg-slate-900 rounded-3xl sm:rounded-[3rem] p-5 sm:p-10 w-[calc(100%-2rem)] max-w-4xl shadow-[0_35px_60px_-15px_rgba(0,0,0,0.3)] border border-white dark:border-slate-800 animate-in zoom-in-95 duration-500 overflow-y-auto max-h-[90vh] custom-scrollbar transition-colors">
+      <div className="flex justify-between items-start mb-6 sm:mb-10">
+        <div className="flex items-center gap-3 sm:gap-5">
+          <div className="p-3 sm:p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl sm:rounded-3xl text-indigo-600 dark:text-indigo-400">
+            <Target size={24} className="sm:w-8 sm:h-8" />
           </div>
           <div>
-            <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+            <h3 className="text-xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
               The Eisenhower Matrix
             </h3>
-            <p className="text-sm font-semibold text-indigo-600/70 dark:text-indigo-400/70 uppercase tracking-widest font-sans">
+            <p className="text-xs sm:text-sm font-semibold text-indigo-600/70 dark:text-indigo-400/70 uppercase tracking-widest font-sans">
               Mastering the Art of Prioritization
             </p>
           </div>
@@ -32,7 +32,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => (
         </button>
       </div>
 
-      <div className="mb-10 bg-indigo-50/30 dark:bg-indigo-900/10 p-8 rounded-[2.5rem] border border-indigo-100/50 dark:border-indigo-800/50">
+      <div className="mb-6 sm:mb-10 bg-indigo-50/30 dark:bg-indigo-900/10 p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2.5rem] border border-indigo-100/50 dark:border-indigo-800/50">
         <p className="text-slate-600 dark:text-slate-400 text-sm md:text-base leading-relaxed font-medium font-sans">
           The{" "}
           <span className="text-indigo-600 dark:text-indigo-400 font-black">

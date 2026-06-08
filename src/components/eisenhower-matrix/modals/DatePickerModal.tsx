@@ -25,8 +25,8 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
   const task = tasks.find((t) => t.id === editingDateTaskId);
 
   return (
-    <div className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl border border-white dark:border-slate-800 animate-in zoom-in-95 duration-300 transition-colors">
+    <div className="fixed inset-0 z-[50300] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-300">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl sm:rounded-[2.5rem] p-6 sm:p-8 w-[calc(100%-2rem)] max-w-sm shadow-2xl border border-white dark:border-slate-800 animate-in zoom-in-95 duration-300 transition-colors">
         <div className="flex justify-between items-start mb-6">
           <h3 className="text-xl font-black text-slate-900 dark:text-white">
             Set Due Date
