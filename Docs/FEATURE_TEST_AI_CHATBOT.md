@@ -1,4 +1,4 @@
-# 🧪 Feature Test — AI Chatbot Tasker (Priya) v2.3.0
+# 🧪 Feature Test — AI Chatbot Tasker (Betu) v2.3.0
 
 Manual step-by-step verification guide for the AI Chatbot Tasker feature.
 
@@ -19,7 +19,7 @@ Manual step-by-step verification guide for the AI Chatbot Tasker feature.
 1. Make sure you are **NOT logged in** (or open in incognito)
 2. Click the floating **bot icon** (bottom-right)
 
-**Expected:** A "Sign in to use Priya" screen appears with a Sign In button — NOT the chat interface.
+**Expected:** A "Sign in to use Betu" screen appears with a Sign In button — NOT the chat interface.
 
 **Pass:** ✅ Sign-in prompt shown | **Fail:** ❌ Chat UI visible without login
 
@@ -34,7 +34,7 @@ Manual step-by-step verification guide for the AI Chatbot Tasker feature.
 
 **Expected:**
 - Chat panel slides up from bottom-right
-- Header shows "Priya — AI Productivity Assistant" with gradient
+- Header shows "Betu — AI Productivity Assistant" with gradient
 - Provider pill(s) appear (e.g. "Gemini Flash") — only providers with configured API keys show
 - 8 sample prompt chips visible in two colours (indigo = task, violet = Q&A)
 
@@ -78,9 +78,9 @@ Manual step-by-step verification guide for the AI Chatbot Tasker feature.
 **Expected:**
 - Chatbot confirms task
 - **ProposedTaskCard** appears showing:
-  - Content: "Read ML research paper someday" (or similar)
-  - Quadrant: 📥 Inbox
-  - Delegate: Self
+- Content: "Read ML research paper someday" (or similar)
+- Quadrant: 📥 Inbox
+- Delegate: Self
 2. Click **"Add 1 Task to Matrix"**
 
 **Expected:** Task appears in your Eisenhower Matrix Inbox. Chat confirms addition.
@@ -240,6 +240,27 @@ Manual step-by-step verification guide for the AI Chatbot Tasker feature.
 
 ---
 
+## Test 16 — Chatbot Renaming
+
+**Steps:**
+1. Open the chatbot
+2. Hover over the header text "Betu"
+3. Click the pencil edit icon that appears next to it
+4. Type a new name (e.g. `MyHelper`) and click the checkmark button or press Enter
+5. Close the chatbot panel and re-open it
+6. Ask the bot: `What is your name?`
+
+**Expected:**
+- Hovering shows the pencil edit icon next to the bot name
+- Clicking the pencil opens an input field allowing up to 24 characters
+- Saving updates the header to "MyHelper" and the input placeholder to "Ask MyHelper anything..."
+- Re-opening preserves "MyHelper" (stored in `localStorage`)
+- The streaming response references "MyHelper" because the name was passed to the system prompt
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
 ## Production Build
 
 > ⚠️ Run this step manually in your terminal — **do NOT let the IDE run it automatically**.
@@ -271,4 +292,5 @@ npm run build
 | 13 | Admin quota settings | |
 | 14 | Quota exceeded + request flow | |
 | 15 | Rate limiting | |
+| 16 | Chatbot Renaming | |
 | — | Production build | |

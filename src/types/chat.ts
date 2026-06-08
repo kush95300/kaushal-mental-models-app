@@ -54,6 +54,7 @@ export interface ChatAPIRequest {
   /** "home" = need to pick workspace; "matrix" = workspace already known */
   context: "home" | "matrix";
   workspaceId?: number;
+  botName?: string;
 }
 
 /**

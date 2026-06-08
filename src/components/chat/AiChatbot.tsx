@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Bot, X, Minimize2, LogIn, Sparkles } from "lucide-react";
+import { Bot, X, LogIn, Sparkles, Pencil, Check } from "lucide-react";
 import { ChatMessage, LLMProvider, ProposedTask, LLMStructuredResponse, QuotaStatus } from "@/types/chat";
 import ChatWindow from "./ChatWindow";
 import ChatInput from "./ChatInput";
@@ -34,6 +34,12 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
   const [quotaExceeded, setQuotaExceeded] = useState(false);
   const [quotaStatus, setQuotaStatus] = useState<QuotaStatus | null>(null);
 
+  // ── Bot name — default "Betu", persisted in localStorage ─────────────────────
+  const [botName, setBotName] = useState("Betu");
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameInput, setRenameInput] = useState("");
+  const renameRef = useRef<HTMLInputElement>(null);
+
   const abortRef = useRef<AbortController | null>(null);
 
   // ── Auth check on mount ──────────────────────────────────────────────────────
@@ -43,6 +49,33 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
       .then((data) => setSession(data?.user ?? null))
       .catch(() => setSession(null));
   }, []);
+
+  // ── Load bot name from localStorage ──────────────────────────────────────────
+  useEffect(() => {
+    const saved = localStorage.getItem("chatbot_name");
+    if (saved && saved.trim()) setBotName(saved.trim());
+  }, []);
+
+  // ── Rename helpers ────────────────────────────────────────────────────────────
+  const startRenaming = () => {
+    setRenameInput(botName);
+    setIsRenaming(true);
+    setTimeout(() => renameRef.current?.select(), 50);
+  };
+
+  const confirmRename = () => {
+    const trimmed = renameInput.trim();
+    if (trimmed) {
+      setBotName(trimmed);
+      localStorage.setItem("chatbot_name", trimmed);
+    }
+    setIsRenaming(false);
+  };
+
+  const handleRenameKey = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") confirmRename();
+    if (e.key === "Escape") setIsRenaming(false);
+  };
 
   // ── Send message ─────────────────────────────────────────────────────────────
   const sendMessage = useCallback(async () => {
@@ -86,6 +119,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
           provider: activeProvider ?? undefined,
           context,
           workspaceId,
+          botName,
         }),
       });
 
@@ -195,7 +229,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
       setIsStreaming(false);
       setMessages((prev) => prev.map((m) => ({ ...m, isStreaming: false })));
     }
-  }, [input, isStreaming, messages, activeProvider, context, workspaceId]);
+  }, [input, isStreaming, messages, activeProvider, context, workspaceId, botName]);
 
   // ── Add tasks to matrix ──────────────────────────────────────────────────────
   const addTasksToMatrix = useCallback(async () => {
@@ -299,16 +333,47 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
 
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-indigo-600 to-violet-600">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                <Bot className="w-4.5 h-4.5 text-white" />
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <div className="w-8 h-8 flex-shrink-0 rounded-full bg-white/20 flex items-center justify-center">
+                <Bot className="w-4 h-4 text-white" />
               </div>
-              <div>
-                <h2 className="text-sm font-black text-white leading-none">Priya</h2>
+              <div className="flex-1 min-w-0">
+                {isRenaming ? (
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      ref={renameRef}
+                      value={renameInput}
+                      onChange={(e) => setRenameInput(e.target.value.slice(0, 24))}
+                      onKeyDown={handleRenameKey}
+                      onBlur={confirmRename}
+                      maxLength={24}
+                      className="bg-white/20 text-white placeholder-white/50 text-sm font-black rounded-lg px-2 py-0.5 w-full max-w-[130px] focus:outline-none focus:ring-2 focus:ring-white/40"
+                      placeholder="Enter name…"
+                    />
+                    <button
+                      onMouseDown={(e) => { e.preventDefault(); confirmRename(); }}
+                      className="p-1 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-colors flex-shrink-0"
+                      title="Save name"
+                    >
+                      <Check className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 group/name">
+                    <h2 className="text-sm font-black text-white leading-none truncate">{botName}</h2>
+                    <button
+                      onClick={startRenaming}
+                      className="opacity-0 group-hover/name:opacity-100 p-1 rounded-lg hover:bg-white/20 text-white/70 hover:text-white transition-all duration-150 flex-shrink-0"
+                      title="Rename chatbot"
+                    >
+                      <Pencil className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+                )}
                 <p className="text-[10px] text-white/70 mt-0.5">AI Productivity Assistant</p>
               </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-shrink-0">
               <Sparkles className="w-3.5 h-3.5 text-white/60" />
               <button
                 onClick={() => setOpen(false)}
@@ -327,7 +392,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
                 <LogIn className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div>
-                <h3 className="font-black text-slate-800 dark:text-slate-100 mb-1">Sign in to use Priya</h3>
+                <h3 className="font-black text-slate-800 dark:text-slate-100 mb-1">Sign in to use {botName}</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
                   The AI Tasker is available after login to keep your data secure.
                 </p>
@@ -359,7 +424,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
                         <Bot className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                       </div>
                       <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                        Hi{session.username ? `, ${session.username}` : ""}! I'm Priya.
+                        Hi{session.username ? `, ${session.username}` : ""}! I'm {botName}.
                       </p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                         Tell me what to do, ask about mental models, or use your mic 🎤
@@ -390,6 +455,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
                 disabled={isStreaming || isSubmittingTasks}
                 silenceTimeoutMs={2500}
                 autoSubmitAfterSilence={false}
+                botName={botName}
               />
             </>
           )}

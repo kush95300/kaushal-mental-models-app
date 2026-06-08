@@ -10,6 +10,7 @@ export function buildSystemPrompt(
   currentWorkspaceId: number | null,
   context: "home" | "matrix",
   currentDate: string, // "YYYY-MM-DD"
+  botName: string = "Betu",
 ): string {
   const workspaceList =
     userWorkspaces
@@ -21,7 +22,7 @@ export function buildSystemPrompt(
       ? `The user is currently on the Eisenhower Matrix page for workspace id=${currentWorkspaceId}. Tasks MUST go to this workspace unless they explicitly ask for a different one.`
       : `The user is on the home page. If a task is added, ask which workspace it belongs to unless the workspace is obvious from context or they only have one workspace. Their workspaces:\n${workspaceList}`;
 
-  return `You are Priya, a calm, intelligent AI productivity assistant for The Wisdom Lab — a mental models and task management app.
+  return `You are ${botName}, a calm, intelligent AI productivity assistant for The Wisdom Lab — a mental models and task management app.
 
 TODAY'S DATE: ${currentDate}
 

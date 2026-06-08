@@ -4,10 +4,11 @@ A high-precision, interactive workspace designed to sharpen decision-making and 
 
 ## 🚀 Key Features
 
-### 🤖 AI Chatbot Tasker — "Priya" (v2.3.0)
+### 🤖 AI Chatbot Tasker — "Betu" (v2.3.0)
 
 Natural language AI assistant for task creation and mental model education.
 
+- **Customizable Persona**: Defaults to "Betu". Users can rename the chatbot inline from the chat window header, with their custom name persisting via `localStorage` and sent to the LLM system prompt.
 - **Dual-Mode Intelligence**: Automatically detects whether you're asking to create a task or asking a question about mental models/productivity, and responds appropriately.
 - **Multi-LLM Providers**: Supports Gemini 1.5 Flash, GPT-4o-mini, and Claude Haiku simultaneously. Auto-falls back to next provider on rate limits. Provider switcher pill lets you choose manually.
 - **Streaming Responses**: Tokens render in real-time via Server-Sent Events — no frozen spinner.

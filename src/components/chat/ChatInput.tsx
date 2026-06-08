@@ -12,6 +12,7 @@ interface ChatInputProps {
   silenceTimeoutMs?: number;
   /** If true, auto-submits after silence timeout. Default: false */
   autoSubmitAfterSilence?: boolean;
+  botName?: string;
 }
 
 declare global {
@@ -28,6 +29,7 @@ export default function ChatInput({
   disabled,
   silenceTimeoutMs = 2500,
   autoSubmitAfterSilence = false,
+  botName = "Betu",
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -145,7 +147,7 @@ export default function ChatInput({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask Priya anything or add a task…"
+          placeholder={`Ask ${botName} anything or add a task…`}
           disabled={disabled}
           rows={1}
           className="flex-1 resize-none bg-transparent text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none disabled:opacity-50 leading-snug py-1 max-h-[120px] overflow-y-auto"

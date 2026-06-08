@@ -4,9 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [v2.3.0] - 2026-06-08
 
-### Added — AI Chatbot Tasker (Priya)
+### Added — AI Chatbot Tasker (Betu)
 
-- **AI Chatbot Tasker — "Priya"**: Introduced a floating AI productivity assistant available on all pages (home + matrix). Supports natural language task creation, mental model Q&A, voice input, and streaming responses.
+- **AI Chatbot Tasker — "Betu"**: Introduced a floating AI productivity assistant available on all pages (home + matrix). Supports natural language task creation, mental model Q&A, voice input, and streaming responses.
+- **Customizable Persona**: Defaults to "Betu". Users can rename the chatbot inline from the chat window header, with their custom name persisting via `localStorage` and sent to the LLM system prompt.
 - **Multi-LLM Provider Support**: Supports Gemini 1.5 Flash, GPT-4o-mini, and Claude Haiku simultaneously. Provider priority: Gemini → OpenAI → Claude. Auto-fallback on rate-limit (HTTP 429) — users can also manually switch via pill selector. API keys are server-side only and never exposed to the browser.
 - **Streaming SSE Responses**: LLM replies stream token-by-token via Server-Sent Events — no frozen spinner. Words appear as they generate.
 - **Auth Guard**: Chatbot shows a sign-in prompt for unauthenticated users. Full chat UI is only accessible after login.

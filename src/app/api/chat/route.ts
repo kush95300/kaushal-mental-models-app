@@ -150,7 +150,7 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 });
   }
 
-  const { messages, provider, context = "home", workspaceId } = body;
+  const { messages, provider, context = "home", workspaceId, botName } = body;
 
   // 4. Quota check
   const quota = await checkAndIncrementQuota(session.id);
@@ -176,6 +176,7 @@ export async function POST(request: Request) {
     workspaceId ?? null,
     context,
     currentDate,
+    botName,
   );
 
   // 6. Normalize messages for LLM (strip client-only fields, keep last 10 pairs)
