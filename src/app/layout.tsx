@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { createInitialAdmin } from "@/actions/auth";
+import AiChatbotWrapper from "@/components/chat/AiChatbotWrapper";
+
 
 const inter = Inter({
   variable: "--font-inter",
@@ -23,7 +25,10 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.variable} suppressHydrationWarning>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+            {children}
+            <AiChatbotWrapper />
+          </ThemeProvider>
       </body>
     </html>
   );

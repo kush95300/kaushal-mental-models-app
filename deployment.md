@@ -18,6 +18,23 @@ The application will be live at: **[http://localhost:3000](http://localhost:3000
 
 ---
 
+## 1b. AI Chat Environment Variables (Required for AI Tasker)
+
+Add at least one LLM API key to your `.env.local` (or `.env`) file:
+
+```env
+# At least one key required — provider auto-fallback handles the rest
+GEMINI_API_KEY=your_gemini_key       # https://aistudio.google.com/app/apikey
+OPENAI_API_KEY=your_openai_key       # https://platform.openai.com/api-keys
+ANTHROPIC_API_KEY=your_claude_key    # https://console.anthropic.com/account/keys
+```
+
+> **Security note**: These keys are read ONLY in server-side API routes. They are never shipped to the browser bundle. In CI/CD (GitHub Actions, Vercel, Docker), inject them as **secret environment variables** — never commit them to git.
+
+Provider priority order: **Gemini → OpenAI → Claude**. The app auto-falls back to the next provider on rate-limit errors (HTTP 429). If no key is configured, the chatbot shows a setup prompt.
+
+---
+
 ## 2. Testing Procedure
 
 ### Step 1: Professional Portal (Home Page)

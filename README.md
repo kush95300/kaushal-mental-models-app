@@ -4,6 +4,22 @@ A high-precision, interactive workspace designed to sharpen decision-making and 
 
 ## 🚀 Key Features
 
+### 🤖 AI Chatbot Tasker — "Priya" (v2.3.0)
+
+Natural language AI assistant for task creation and mental model education.
+
+- **Dual-Mode Intelligence**: Automatically detects whether you're asking to create a task or asking a question about mental models/productivity, and responds appropriately.
+- **Multi-LLM Providers**: Supports Gemini 1.5 Flash, GPT-4o-mini, and Claude Haiku simultaneously. Auto-falls back to next provider on rate limits. Provider switcher pill lets you choose manually.
+- **Streaming Responses**: Tokens render in real-time via Server-Sent Events — no frozen spinner.
+- **Voice Input**: Click the mic, speak naturally. Silence detection countdown ring auto-stops recording after 2.5 seconds of quiet.
+- **Smart Task Parsing**: Assigns Eisenhower quadrant, estimates time, resolves delegate, sets due date — all from natural language.
+- **Task Decomposition**: Tasks >4 hours auto-split into named sub-tasks (e.g. 6-hour report → 3 × 2-hour segments).
+- **Delegation + Follow-up**: Mentioning another person auto-creates a delegation task AND a 2–5 min self follow-up check-in on the same day.
+- **Task Confirmation Table**: Review all proposed tasks (including follow-ups) before anything is saved to the matrix.
+- **Admin-Controlled Quotas**: Admins set default message limits per day/week. Users who exhaust quota can request more — admin approves full or partial amounts.
+- **Auth-Gated**: Chatbot requires login. Unauthenticated users see a sign-in prompt.
+- **API Key Security**: All LLM calls are server-side only. Keys are never exposed to the browser bundle.
+
 ### 📅 The Focus Matrix (Eisenhower Matrix v2.0)
 
 Transform your to-do list into a strategic map by separating the urgent from the essential.

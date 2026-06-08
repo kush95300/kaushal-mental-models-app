@@ -22,8 +22,14 @@ import {
   Clock,
   X,
   AlertTriangle,
+  MessageSquare,
+  Settings2,
+  CheckCheck,
+  XCircle,
+  ChevronDown,
 } from "lucide-react";
 import Link from "next/link";
+
 
 export default function AdminPortal() {
   const [users, setUsers] = useState<any[]>([]);
@@ -40,6 +46,71 @@ export default function AdminPortal() {
 
   const [actionError, setActionError] = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
+
+  // ── AI Chat Quota state ────────────────────────────────────────────────────
+  const [quotaSettings, setQuotaSettings] = useState<{ period: string; defaultLimit: number } | null>(null);
+  const [quotaRequests, setQuotaRequests] = useState<any[]>([]);
+  const [quotaLoading, setQuotaLoading] = useState(false);
+  const [approveModalId, setApproveModalId] = useState<number | null>(null);
+  const [approveAmount, setApproveAmount] = useState("");
+
+  const fetchQuotaData = async () => {
+    try {
+      const [settingsRes, requestsRes] = await Promise.all([
+        fetch("/api/chat/quota-settings"),
+        fetch("/api/chat/quota-request"),
+      ]);
+      if (settingsRes.ok) setQuotaSettings(await settingsRes.json());
+      if (requestsRes.ok) {
+        const d = await requestsRes.json();
+        setQuotaRequests(d.requests ?? []);
+      }
+    } catch {}
+  };
+
+  const handleSaveQuotaSettings = async () => {
+    if (!quotaSettings) return;
+    setQuotaLoading(true);
+    try {
+      await fetch("/api/chat/quota-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(quotaSettings),
+      });
+      setActionSuccess("Quota settings saved.");
+    } catch {
+      setActionError("Failed to save quota settings.");
+    } finally {
+      setQuotaLoading(false);
+    }
+  };
+
+  const handleQuotaAction = async (id: number, action: "approve" | "partially_approve" | "reject") => {
+    setActionError("");
+    setActionSuccess("");
+    try {
+      const res = await fetch("/api/chat/quota-request", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requestId: id,
+          action,
+          approvedAmount: action === "partially_approve" ? parseInt(approveAmount) : undefined,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setActionSuccess(`Request ${action === "reject" ? "rejected" : "approved"} (${data.approvedAmount ?? 0} extra messages).`);
+        setApproveModalId(null);
+        setApproveAmount("");
+        fetchQuotaData();
+      } else {
+        setActionError(data.error ?? "Action failed.");
+      }
+    } catch {
+      setActionError("Network error.");
+    }
+  };
 
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -63,7 +134,9 @@ export default function AdminPortal() {
 
   useEffect(() => {
     fetchData();
+    fetchQuotaData();
   }, []);
+
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -463,6 +536,112 @@ export default function AdminPortal() {
             </div>
           </div>
         )}
+
+        {/* AI Chat Quotas Section */}
+        <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-6 rounded-3xl border border-indigo-200 dark:border-indigo-800/40 shadow-xl">
+          <h2 className="text-xl font-black mb-6 flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-indigo-500" /> AI Chat Quotas
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Global Settings */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-black text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                <Settings2 className="w-4 h-4" /> Global Settings
+              </h3>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">Reset Period</label>
+                <select
+                  value={quotaSettings?.period ?? "DAY"}
+                  onChange={(e) => setQuotaSettings((s) => ({ ...(s ?? { defaultLimit: 20 }), period: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 font-medium"
+                >
+                  <option value="DAY">Per Day</option>
+                  <option value="WEEK">Per Week</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">Default Message Limit</label>
+                <input
+                  type="number" min={1}
+                  value={quotaSettings?.defaultLimit ?? 20}
+                  onChange={(e) => setQuotaSettings((s) => ({ ...(s ?? { period: "DAY" }), defaultLimit: Math.max(1, parseInt(e.target.value) || 1) }))}
+                  className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 font-medium"
+                />
+              </div>
+              <button
+                onClick={handleSaveQuotaSettings} disabled={quotaLoading}
+                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs uppercase tracking-widest transition-colors disabled:opacity-50"
+              >
+                {quotaLoading ? "Saving…" : "Save Settings"}
+              </button>
+            </div>
+
+            {/* Pending Requests */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-black text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                <Clock className="w-4 h-4" /> Pending Requests
+                {quotaRequests.length > 0 && (
+                  <span className="px-2 py-0.5 text-[10px] font-black bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 rounded-full">{quotaRequests.length}</span>
+                )}
+              </h3>
+              {quotaRequests.length === 0 ? (
+                <div className="text-center py-8 text-slate-400 text-sm font-medium border border-dashed border-slate-200 dark:border-slate-700 rounded-2xl">
+                  No pending quota requests
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {quotaRequests.map((req: any) => (
+                    <div key={req.id} className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-800/30 rounded-2xl">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span className="font-bold text-sm">{req.user?.username}</span>
+                          <span className="text-xs text-slate-500 ml-2">wants +{req.requestedExtra} msgs</span>
+                          {req.reason && <p className="text-xs text-slate-500 mt-1 italic">"{req.reason}"</p>}
+                        </div>
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => { setApproveModalId(req.id); setApproveAmount(String(req.requestedExtra)); }}
+                            className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black rounded-lg transition-colors flex items-center gap-1"
+                          >
+                            <CheckCheck className="w-3 h-3" /> Approve
+                          </button>
+                          <button
+                            onClick={() => handleQuotaAction(req.id, "reject")}
+                            className="p-1.5 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 hover:bg-rose-100 rounded-lg transition-colors"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      {approveModalId === req.id && (
+                        <div className="mt-3 pt-3 border-t border-amber-200 dark:border-amber-800/30 space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                            Approve how many? (max {req.requestedExtra})
+                          </label>
+                          <div className="flex gap-2">
+                            <input
+                              type="number" min={1} max={req.requestedExtra} value={approveAmount}
+                              onChange={(e) => setApproveAmount(e.target.value)}
+                              className="flex-1 px-3 py-1.5 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                            />
+                            <button
+                              onClick={() => handleQuotaAction(req.id, parseInt(approveAmount) >= req.requestedExtra ? "approve" : "partially_approve")}
+                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl"
+                            >
+                              Confirm
+                            </button>
+                            <button onClick={() => setApproveModalId(null)} className="px-2 py-1.5 text-slate-400 hover:text-slate-600 text-xs rounded-xl">Cancel</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

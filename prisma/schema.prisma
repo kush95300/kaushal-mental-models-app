@@ -84,4 +84,45 @@ model User {
   analyticsStartDate DateTime?
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
+  chatUsage     UserChatUsage?
+  quotaRequests ChatQuotaRequest[]
+}
+
+// Global AI chat quota settings (single row, managed by admin)
+model ChatQuotaSettings {
+  id           Int      @id @default(autoincrement())
+  period       String   @default("DAY")  // "DAY" | "WEEK"
+  defaultLimit Int      @default(20)     // messages allowed per period
+  updatedAt    DateTime @updatedAt
+}
+
+// Per-user chat usage counters — reset automatically based on period
+model UserChatUsage {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usedToday     Int      @default(0)
+  usedThisWeek  Int      @default(0)
+  extraQuota    Int      @default(0)     // admin-approved bonus messages (does not reset)
+  lastResetDate DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// User-raised requests for additional chat quota
+model ChatQuotaRequest {
+  id             Int       @id @default(autoincrement())
+  userId         Int
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requestedExtra Int                       // number of extra messages requested
+  reason         String?                   // optional justification from user
+  status         String    @default("PENDING") // PENDING | APPROVED | PARTIALLY_APPROVED | REJECTED
+  approvedAmount Int?                      // set by admin on approval
+  adminNote      String?
+  createdAt      DateTime  @default(now())
+  resolvedAt     DateTime?
+
+  @@index([userId])
+  @@index([status])
 }

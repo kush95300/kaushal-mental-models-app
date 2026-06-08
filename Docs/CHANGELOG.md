@@ -2,7 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v2.3.0] - 2026-06-08
+
+### Added — AI Chatbot Tasker (Priya)
+
+- **AI Chatbot Tasker — "Priya"**: Introduced a floating AI productivity assistant available on all pages (home + matrix). Supports natural language task creation, mental model Q&A, voice input, and streaming responses.
+- **Multi-LLM Provider Support**: Supports Gemini 1.5 Flash, GPT-4o-mini, and Claude Haiku simultaneously. Provider priority: Gemini → OpenAI → Claude. Auto-fallback on rate-limit (HTTP 429) — users can also manually switch via pill selector. API keys are server-side only and never exposed to the browser.
+- **Streaming SSE Responses**: LLM replies stream token-by-token via Server-Sent Events — no frozen spinner. Words appear as they generate.
+- **Auth Guard**: Chatbot shows a sign-in prompt for unauthenticated users. Full chat UI is only accessible after login.
+- **Voice Input with Silence Detection**: Microphone button uses `webkitSpeechRecognition`. Silence countdown ring (SVG) appears after speech ends; mic auto-stops after 2.5 seconds of silence.
+- **Dual-Mode LLM**: Mode A parses tasks into the Eisenhower Matrix (including quadrant assignment, task decomposition for >240 min, delegation + auto-follow-up). Mode B answers Q&A about mental models, the Eisenhower Matrix, productivity, and app features.
+- **Task Confirmation Table**: Before inserting tasks, a rich `ProposedTaskCard` shows all proposed tasks (including auto-generated delegation follow-ups) with quadrant, assignee, due date, and time estimate. User confirms or cancels.
+- **Admin-Controlled Message Quota**: Admins set a global default limit (messages per day or week) and period in the Admin Portal. Users who exhaust their quota see a quota request modal. Admin can approve full or partial quota increases — approved extra messages are tracked per-user.
+- **Rate Limiting**: 10 requests per minute per user enforced server-side (in-memory Map). Friendly rate-limit message shown on breach.
+- **Rolling Conversation History**: Last 10 message pairs (~4000 tokens) sent to LLM for multi-turn context ("the one I mentioned earlier" works).
+- **8 Sample Prompts**: Task prompts (indigo) and Q&A prompts (violet) shown when chat is empty.
+- **DB Schema**: Added `ChatQuotaSettings`, `UserChatUsage`, `ChatQuotaRequest` Prisma models with migration `add_ai_chat_quota`.
+- **New API Routes**: `/api/chat`, `/api/chat/providers`, `/api/chat/quota-request`, `/api/chat/quota-settings`, `/api/auth/me`.
+
 ## [v2.2.0] - 2026-06-08
+
 
 ### Added & Fixed
 
