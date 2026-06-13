@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
   - Added case-insensitive text input matching for pending workspace choices, enabling users to type workspace names (e.g., "personal") to transition and submit tasks.
   - Strip client-side UI directive tags (`WORKSPACE_CHOOSER`, `TUTORIAL_LINKS`, `FAQ_LINK`) and workspace prompts from message histories before querying LLM endpoints, preventing Gemini from generating duplicate or echoing prompts.
   - Modified `fetchQuotaStatus` in the chatbot to automatically clear obsolete quota exceeded assistant message bubbles and routing logs from the chat feed and reset the exceeded state once the quota limit has been increased.
+  - Added auto-detection of workspace names (case-insensitive with word boundary checks) directly inside the user's prompt text. If a workspace name is found (e.g. "personal workspace"), it is automatically selected, bypassing the interactive workspace chooser.
 - **UI Contrast & Color Fixes (No more White Boxes)**:
   - Fixed invalid Tailwind CSS color classes across the application (specifically replacing custom classes like `slate-850`, `slate-550`, `slate-505`, `slate-50500`, `slate-9050`, `slate-8050`, and `rose-6050` with standard Tailwind slate/rose classes).
   - Resolved fallback background issues where cards rendered with white backgrounds and light-grey text in dark mode due to compilation failure of invalid dark mode utility classes.

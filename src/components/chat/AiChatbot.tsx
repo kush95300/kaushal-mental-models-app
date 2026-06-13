@@ -714,7 +714,19 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
     }
 
     // It IS a task query! Proceed to workspace context check and Gemini:
-    const wsToUse = wsIdForce ?? selectedWorkspace;
+    let wsToUse = wsIdForce ?? selectedWorkspace;
+
+    if (!wsToUse) {
+      const matchedWs = workspaces.find((w) => {
+        const escapedName = w.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp(`\\b${escapedName}\\b`, "i");
+        return regex.test(text);
+      });
+      if (matchedWs) {
+        wsToUse = matchedWs.id;
+        setSelectedWorkspace(matchedWs.id);
+      }
+    }
 
     if (isTaskQuery && context === "home" && !wsToUse && workspaces.length > 1) {
       setPendingPromptAfterWorkspace(text);
