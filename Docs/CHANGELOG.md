@@ -16,6 +16,10 @@ All notable changes to this project will be documented in this file.
 - **Admin Password Reset Request Deletion**:
   - Added a delete button (trash icon) next to resolved/approved password reset request status badges in the Admin Portal.
   - Implemented the `deletePasswordResetRequest` Server Action to securely purge reset request records from the database.
+- **Chatbot Floating Icon & Invitation Label**:
+  - Restyled the floating chatbot trigger button to allow user-uploaded custom avatar images to fill the circle completely (0 padding/border), resolving the issue where custom images were rendered excessively small.
+  - Added a glassmorphic invitation label ("Ask [botName]") directly below the floating chatbot button on all pages to entice users to interact with the assistant.
+  - Configured the default agent avatar to use a custom image URL (the neural background image) and defaulted the initial avatar type to image.
 
 ## [v2.4.4] - 2026-06-13
 
