@@ -531,6 +531,25 @@ Manual step-by-step verification guide for the AI Chatbot Tasker feature.
 
 ---
 
+## Test 32 — Gemini Multi-Model Fallback Chain
+
+**Steps:**
+1. Open `.env` and set `GEMINI_MODEL=invalid-model-name` to simulate an initial model failure (HTTP 404).
+2. Open the chatbot, type `What is the Eisenhower Matrix?` and click send.
+3. Observe the response.
+4. Check the server console logs.
+
+**Expected:**
+- The request does not fail or throw an error to the user.
+- The server console logs show:
+  `[Gemini] Model invalid-model-name failed with status 404. trying next model...`
+  `[Gemini] Successfully started stream with model: gemini-2.5-flash` (or another fallback model).
+- The chatbot response streams successfully.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
 ## Production Build
 
 > ⚠️ Run this step manually in your terminal — **do NOT let the IDE run it automatically**.
@@ -578,5 +597,7 @@ npm run build
 | 29 | Admin Password Reset Deletion | |
 | 30 | FAQ Redirections & Seeding | |
 | 31 | Trigger Button & Invitation Label | |
+| 32 | Gemini Multi-Model Fallback Chain | |
 | — | Production build | |
+
 

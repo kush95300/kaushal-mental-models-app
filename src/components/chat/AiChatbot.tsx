@@ -1029,6 +1029,88 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
     }
   }, [proposedTasks, selectedWorkspace, workspaceId]);
 
+  const addSingleTaskToMatrix = useCallback(async (task: ProposedTask) => {
+    setIsSubmittingTasks(true);
+
+    try {
+      const wsId = selectedWorkspace ?? workspaceId ?? 1;
+      
+      const tasksToAdd = [
+        task,
+        ...proposedTasks.filter((f) => f.isFollowUp && f.parentTask === task.content)
+      ];
+
+      for (const t of tasksToAdd) {
+        let delegateId: number | null = null;
+
+        if (t.delegateName && t.delegateName.toLowerCase() !== "self") {
+          const existingRes = await fetch(`/api/delegates?workspaceId=${wsId}`);
+          if (existingRes.ok) {
+            const existingList: any[] = await existingRes.json();
+            const found = existingList.find(
+              (d) => d.name.toLowerCase() === t.delegateName.toLowerCase(),
+            );
+            if (found) {
+              delegateId = found.id;
+            } else {
+              const delRes = await fetch("/api/delegates", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: t.delegateName, workspaceId: wsId }),
+              });
+              if (delRes.ok) {
+                const delData = await delRes.json();
+                delegateId = delData.id;
+              }
+            }
+          }
+        }
+
+        await fetch("/api/tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: t.content,
+            isImportant: t.isImportant,
+            isUrgent: t.isUrgent,
+            quadrant: t.quadrant,
+            dueDate: t.dueDate,
+            delegateId,
+            estimatedMinutes: t.estimatedMinutes,
+            workspaceId: wsId,
+          }),
+        });
+      }
+
+      setProposedTasks((prev) =>
+        prev.filter((p) => !tasksToAdd.some((t) => t.content === p.content && t.isFollowUp === p.isFollowUp))
+      );
+
+      const addedCount = tasksToAdd.length;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: uuid(),
+          role: "assistant",
+          content: `✅ Added task "${task.content}" ${addedCount > 1 ? `and its auto-created follow-up ` : ""}to your matrix!`,
+          timestamp: new Date(),
+        },
+      ]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: uuid(),
+          role: "assistant",
+          content: `There was an error adding the task "${task.content}". Please try again.`,
+          timestamp: new Date(),
+        },
+      ]);
+    } finally {
+      setIsSubmittingTasks(false);
+    }
+  }, [proposedTasks, selectedWorkspace, workspaceId]);
+
   const renderAvatar = (className = "w-4 h-4 text-white", forceImageFull = false) => {
     if (avatarType === "image" && avatarImage.trim()) {
       return (
@@ -1431,6 +1513,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
                     proposedTasks={proposedTasks}
                     onConfirmProposed={addTasksToMatrix}
                     onCancelProposed={() => setProposedTasks([])}
+                    onConfirmSingleProposed={addSingleTaskToMatrix}
                     isSubmittingProposed={isSubmittingTasks}
                     avatarType={avatarType}
                     avatarIcon={avatarIcon}
