@@ -876,7 +876,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantMsgId
-                    ? { ...m, content: chunk.error || "Sorry, something went wrong. Please try again.", isStreaming: false }
+                    ? { ...m, content: chunk.error || "Sorry, something went wrong. Please try again.", isStreaming: false, isError: true }
                     : m,
                 ),
               );
@@ -891,7 +891,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantMsgId
-              ? { ...m, content: "Connection error. Please check your network and try again.", isStreaming: false }
+              ? { ...m, content: "Connection error. Please check your network and try again.", isStreaming: false, isError: true }
               : m,
           ),
         );
@@ -911,6 +911,37 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
       setPendingPromptAfterWorkspace(null);
     }
   };
+
+  const handleRetry = useCallback((errorMsgId: string) => {
+    setMessages((prev) => {
+      const idx = prev.findIndex((m) => m.id === errorMsgId);
+      if (idx === -1) return prev;
+
+      let userMsgIdx = -1;
+      for (let i = idx - 1; i >= 0; i--) {
+        if (prev[i].role === "user") {
+          userMsgIdx = i;
+          break;
+        }
+      }
+
+      if (userMsgIdx === -1) return prev;
+
+      const userMsgText = prev[userMsgIdx].content;
+
+      const newMsgs = prev.filter((m, i) => {
+        if (i === userMsgIdx || m.id === errorMsgId) return false;
+        if (i > userMsgIdx && i < idx && m.role === "system") return false;
+        return true;
+      });
+
+      setTimeout(() => {
+        handleUserMessage(userMsgText);
+      }, 50);
+
+      return newMsgs;
+    });
+  }, [handleUserMessage]);
 
   const addTasksToMatrix = useCallback(async () => {
     if (!proposedTasks.length) return;
@@ -1380,6 +1411,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
                     workspaces={workspaces}
                     onSelectWorkspace={handleSelectWorkspace}
                     username={session.username}
+                    onRetry={handleRetry}
                   />
                 )}
               </div>

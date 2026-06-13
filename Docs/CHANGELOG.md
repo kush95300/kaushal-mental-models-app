@@ -23,6 +23,9 @@ All notable changes to this project will be documented in this file.
 - **UI Contrast & Color Fixes (No more White Boxes)**:
   - Fixed invalid Tailwind CSS color classes across the application (specifically replacing custom classes like `slate-850`, `slate-550`, `slate-505`, `slate-50500`, `slate-9050`, `slate-8050`, and `rose-6050` with standard Tailwind slate/rose classes).
   - Resolved fallback background issues where cards rendered with white backgrounds and light-grey text in dark mode due to compilation failure of invalid dark mode utility classes.
+- **Chat Error Retry Option**:
+  - Added a "Retry" button on failed assistant messages (connection errors, LLM errors).
+  - Clicking "Retry" automatically wipes the failed message and any preceding system routing logs, then resubmits the user's last message to continue the flow seamlessly.
 
 ## [v2.4.2] - 2026-06-13
 

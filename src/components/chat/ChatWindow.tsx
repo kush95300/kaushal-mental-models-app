@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { ChatMessage, ProposedTask } from "@/types/chat";
-import { Bot, User, Smile, Sparkles, Heart, Zap } from "lucide-react";
+import { Bot, User, Smile, Sparkles, Heart, Zap, RefreshCw } from "lucide-react";
 import ProposedTaskCard from "./ProposedTaskCard";
 import Link from "next/link";
 
@@ -18,6 +18,7 @@ interface ChatWindowProps {
   workspaces?: any[];
   onSelectWorkspace?: (wsId: number) => void;
   username?: string;
+  onRetry?: (errorMsgId: string) => void;
 }
 
 const AVATAR_ICONS = {
@@ -40,6 +41,7 @@ export default function ChatWindow({
   workspaces = [],
   onSelectWorkspace,
   username = "user",
+  onRetry,
 }: ChatWindowProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -190,6 +192,18 @@ export default function ChatWindow({
                 </span>
               ) : (
                 <span className="whitespace-pre-wrap">{msg.content}</span>
+              )}
+
+              {/* Retry button for failed assistant messages */}
+              {!isUser && msg.isError && onRetry && (
+                <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-700/60 flex justify-end">
+                  <button
+                    onClick={() => onRetry(msg.id)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 border border-indigo-500 hover:bg-indigo-50 dark:border-indigo-400 dark:hover:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 text-xs font-black rounded-xl transition-all duration-200 active:scale-95 flex items-center"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" /> Retry
+                  </button>
+                </div>
               )}
             </div>
           </div>

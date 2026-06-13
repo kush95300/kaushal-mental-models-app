@@ -18,6 +18,7 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
   isStreaming?: boolean;
+  isError?: boolean;
 }
 
 // ─── Task Proposal ────────────────────────────────────────────────────────────
