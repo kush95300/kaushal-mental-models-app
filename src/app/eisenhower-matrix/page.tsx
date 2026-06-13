@@ -173,6 +173,7 @@ function EisenhowerMatrixContent() {
   const [showTutorialCompletionModal, setShowTutorialCompletionModal] = useState(false);
   const router = useRouter();
 
+  // Load current user and state
   useEffect(() => {
     const loadUser = async () => {
       const res = await getCurrentUser();
@@ -181,18 +182,29 @@ function EisenhowerMatrixContent() {
       
       setUser(activeUser);
 
-      const tourDismissed = localStorage.getItem(`tour_dismissed_${username}`);
-      if (!tourDismissed) {
+      const forceVideoTour = searchParams.get("videoTour") === "true";
+      const forceTutorial = searchParams.get("tutorial") === "true";
+      if (forceVideoTour) {
+        localStorage.removeItem(`tour_dismissed_${username}`);
+        setIsManualTour(true);
         setShowVideoTour(true);
+      } else if (forceTutorial) {
+        localStorage.removeItem(`tutorial_dismissed_eisenhower_${username}`);
+        setShowPageTutorial(true);
       } else {
-        const dismissedPage = localStorage.getItem(`tutorial_dismissed_eisenhower_${username}`);
-        if (!dismissedPage) {
-          setShowPageTutorial(true);
+        const tourDismissed = localStorage.getItem(`tour_dismissed_${username}`);
+        if (!tourDismissed) {
+          setShowVideoTour(true);
+        } else {
+          const dismissedPage = localStorage.getItem(`tutorial_dismissed_eisenhower_${username}`);
+          if (!dismissedPage) {
+            setShowPageTutorial(true);
+          }
         }
       }
     };
     loadUser();
-  }, []);
+  }, [searchParams]);
 
   // Show workspace modal on mount if no selection has been made yet
   useEffect(() => {

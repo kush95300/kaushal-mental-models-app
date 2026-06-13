@@ -18,7 +18,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV DATABASE_URL="file:/app/prisma/dev.db"
+ENV DATABASE_URL="file:/app/data/dev.db"
 ENV JWT_SECRET="placeholder-secret-for-building"
 
 # Generate Prisma client and build Next.js
@@ -46,7 +46,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV DATABASE_URL="file:/app/prisma/dev.db"
+ENV DATABASE_URL="file:/app/data/dev.db"
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
@@ -57,8 +57,10 @@ COPY --from=builder /app/public ./public
 
 RUN mkdir .next
 RUN mkdir -p prisma
+RUN mkdir -p /app/data
 RUN chown nextjs:nodejs .next
 RUN chown -R nextjs:nodejs prisma
+RUN chown -R nextjs:nodejs /app/data
 
 # Automatically leverage output traces to reduce image size
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./

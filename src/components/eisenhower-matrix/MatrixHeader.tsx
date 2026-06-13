@@ -322,7 +322,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
           <Tooltip content="Eisenhower Matrix Guide: Learn how to effectively use the 4 quadrants to prioritize your workflow.">
             <button
               onClick={() => setShowHelpModal(true)}
-              className="p-2.5 text-slate-400 dark:text-slate-550 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-white dark:border-slate-800 shadow-sm transition-all hover:shadow-md relative z-10 hover:z-[9999]"
+              className="p-2.5 text-slate-400 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-white dark:border-slate-800 shadow-sm transition-all hover:shadow-md relative z-10 hover:z-[9999]"
             >
               <HelpCircle size={18} />
             </button>
@@ -434,7 +434,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
             >
               <button
                 onClick={() => resetData("today")}
-                className="p-2 px-3 text-slate-400 dark:text-slate-505 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans"
+                className="p-2 px-3 text-slate-400 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans"
               >
                 Reset Today
               </button>
@@ -445,7 +445,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
             >
               <button
                 onClick={() => resetData("all")}
-                className="p-2 px-3 text-slate-400 dark:text-slate-505 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans"
+                className="p-2 px-3 text-slate-400 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans"
               >
                 Reset All
               </button>
@@ -474,7 +474,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
               >
                 <Link
                   href="/login"
-                  className="p-2 px-3 text-slate-505 hover:text-indigo-600 hover:bg-indigo-50 dark:text-slate-400 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans flex items-center gap-1"
+                  className="p-2 px-3 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:text-slate-400 dark:hover:text-indigo-400 dark:hover:bg-indigo-900/20 rounded-xl transition-all font-black text-[9px] uppercase tracking-widest font-sans flex items-center gap-1"
                 >
                   <LogIn size={12} /> Sign In
                 </Link>
@@ -500,7 +500,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                 onClick={() => setShowMobileMenu(false)}
                 className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
               >
-                <X size={20} className="text-slate-400 dark:text-slate-550" />
+                <X size={20} className="text-slate-400 dark:text-slate-400" />
               </button>
             </div>
 
@@ -535,7 +535,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                       setShowDeletedList(true);
                       setShowMobileMenu(false);
                     }}
-                    className="flex flex-col items-start p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-indigo-50 dark:hover:bg-slate-850 rounded-2xl border border-slate-100 dark:border-slate-800/80 text-left transition-all"
+                    className="flex flex-col items-start p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-indigo-50 dark:hover:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800/80 text-left transition-all"
                   >
                     <Trash2 size={16} className="text-rose-500 mb-1" />
                     <span className="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-200">
@@ -559,7 +559,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                       setShowDelegateModal(true);
                       setShowMobileMenu(false);
                     }}
-                    className="w-full flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-850 rounded-2xl border border-slate-100 dark:border-slate-800 transition-all text-left"
+                    className="w-full flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 transition-all text-left"
                   >
                     <div className="flex items-center gap-3">
                       <UserCog size={16} className="text-amber-500" />
@@ -573,7 +573,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                     <Link
                       href={`/analytics?workspaceId=${activeWorkspaceId}`}
                       onClick={() => setShowMobileMenu(false)}
-                      className="w-full flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-850 rounded-2xl border border-slate-100 dark:border-slate-800 transition-all text-left"
+                      className="w-full flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 transition-all text-left"
                     >
                       <div className="flex items-center gap-3">
                         <BarChart3 size={16} className="text-indigo-500" />
@@ -590,7 +590,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                         onWatchTourClick();
                         setShowMobileMenu(false);
                       }}
-                      className="w-full flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-850 rounded-2xl border border-slate-100 dark:border-slate-800 transition-all text-left"
+                      className="w-full flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 transition-all text-left"
                     >
                       <div className="flex items-center gap-3">
                         <Sparkles
@@ -609,7 +609,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                       setShowHelpModal(true);
                       setShowMobileMenu(false);
                     }}
-                    className="w-full flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-850 rounded-2xl border border-slate-100 dark:border-slate-800 transition-all text-left"
+                    className="w-full flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 transition-all text-left"
                   >
                     <div className="flex items-center gap-3">
                       <HelpCircle
@@ -639,7 +639,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                         className={
                           isOverburdened
                             ? "text-rose-500 animate-pulse"
-                            : "text-slate-550"
+                            : "text-slate-400"
                         }
                       />
                       <span
@@ -679,7 +679,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                   </div>
 
                   {/* Refresh Options */}
-                  <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-850 pt-3">
+                  <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3">
                     <button
                       onClick={() => {
                         fetchTasks();
@@ -690,7 +690,7 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                       <RefreshCcw size={12} /> Sync Now
                     </button>
                     <div className="flex items-center gap-2">
-                      <span className="text-[9px] font-bold text-slate-400 dark:text-slate-550 uppercase">
+                      <span className="text-[9px] font-bold text-slate-400 dark:text-slate-400 uppercase">
                         Auto Sync:
                       </span>
                       <select

@@ -53,4 +53,4 @@ persistence:
 config:
   nodeEnv: "production"
   port: "3000"
-  databaseUrl: "file:/app/prisma/dev.db"
+  databaseUrl: "file:/app/data/dev.db"
