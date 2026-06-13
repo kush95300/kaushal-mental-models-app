@@ -2,6 +2,92 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v2.4.4] - 2026-06-13
+
+### Added & Fixed — Priority Routing Logs, Log Mode Toggle, and Custom System Messages
+
+- **Priority Routing Log System**:
+  - Implemented priority-based query routing logs displaying `🔍 Routing Decision: ...` directly in the chat feed when enabled.
+  - Centered system logs in a glassmorphic pill style so they do not resemble standard assistant messages.
+- **Log Mode Toggle**:
+  - Added a new configuration toggle "Enable Routing Logs" in the settings overlay.
+  - Persistent state saved to and reloaded from `localStorage` under `chatbot_routing_logs`.
+- **Refined Priority Engine Routing**:
+  - Categorizes task queries, off-topic requests, and conceptual Q&As, accurately displaying routing decisions (`VIDEO_TUTORIAL`, `FAQ`, or `GEMINI`).
+  - Added distinct button options for the **Video Onboarding Tour** (`🎥 Play Video Onboarding Tour`) and the **Interactive Matrix Walkthrough** (`🎯 Start Interactive Matrix Walkthrough`), ensuring users can select their preferred onboarding path directly.
+- **Workspace Selection & Quota Limits Bug Fixes**:
+  - Resolved a parser bug where the client threw a generic connection error on HTTP 429 status codes instead of streaming the `quota_exceeded` JSON chunk to display the quota exhaustion message and request modal.
+  - Added case-insensitive text input matching for pending workspace choices, enabling users to type workspace names (e.g., "personal") to transition and submit tasks.
+  - Strip client-side UI directive tags (`WORKSPACE_CHOOSER`, `TUTORIAL_LINKS`, `FAQ_LINK`) and workspace prompts from message histories before querying LLM endpoints, preventing Gemini from generating duplicate or echoing prompts.
+  - Modified `fetchQuotaStatus` in the chatbot to automatically clear obsolete quota exceeded assistant message bubbles and routing logs from the chat feed and reset the exceeded state once the quota limit has been increased.
+- **UI Contrast & Color Fixes (No more White Boxes)**:
+  - Fixed invalid Tailwind CSS color classes across the application (specifically replacing custom classes like `slate-850`, `slate-550`, `slate-505`, `slate-50500`, `slate-9050`, `slate-8050`, and `rose-6050` with standard Tailwind slate/rose classes).
+  - Resolved fallback background issues where cards rendered with white backgrounds and light-grey text in dark mode due to compilation failure of invalid dark mode utility classes.
+
+## [v2.4.2] - 2026-06-13
+
+### Added & Fixed — Refined Q&A Routing, Multi-Session Chats (Max 7), and Video Onboarding Tour Redirects
+
+- **Hinglish Language Mode**:
+  - Integrated complete support for Hinglish in the chatbot settings panel overlay.
+  - When selected, conversational replies and spoken daily/weekly briefings are generated in Hinglish (Latin/Roman script) while leaving JSON schema keys and task titles in English for system compatibility.
+- **Refined Q&A Conceptual Routing**:
+  - Reworked local grilling logic to pass general concept and Q&A questions (like "what is the matrix") directly to Gemini rather than intercepting them locally.
+  - Limits local blocks to explicit tutorial tour requests and completely off-topic questions.
+- **Multi-Session Chat History (Max 7)**:
+  - Replaced the simple chat clear feature with a "New Chat" (`Plus` icon) button in the chatbot header to create new conversational sessions.
+  - Keeps up to 7 distinct historical sessions saved in `localStorage` per user.
+  - Displays a "Chat History" selector in the settings panel to easily switch between or delete individual sessions. Automatically purges the oldest sessions when the count exceeds 7.
+- **Forced Video Tour Redirection**:
+  - Updated the matrix tutorial launch button to redirect to `/eisenhower-matrix?videoTour=true` and clear the dismissed flag, forcing the simulated video player tour to start overlaying the matrix.
+
+## [v2.4.1] - 2026-06-13
+
+### Added & Fixed — Security History, Chatbot controls & Heatmap Range Filters
+
+- **Chatbot Clear Chat & Avatar Update**:
+  - Added a "Clear Chat" (`Trash2`) button in the chatbot header to wipe active conversation state.
+  - Replaced the robot icon with a friendly human/avatar smiling face icon (`Smile`) on the trigger button, header, and welcome screen.
+- **Password History & Security Event Log**:
+  - Added `PasswordHistory` database model to log manual password changes, reset request creations, approvals, and rejections.
+  - Created a split-column panel in the Admin Dashboard showing active requests on the left and a scrollable "Security Event Log" timeline on the right.
+- **Auto-Hide Approved Reset Dialogs**:
+  - Configured `changeUserPassword` to automatically transition resolved requests to `"COMPLETED"` status and clear their `tempPassword` when a user updates their password.
+  - Automatically hides the temporary password copy card from the Admin Dashboard.
+- **Heatmap Date Range Toggle & Styled Tooltips**:
+  - Added "Last 1 Year" vs "This Year" pill switcher in the Completed Tasks Heatmap header.
+  - Configured the calendar days generation to dynamically scale between the last 375 days and a full calendar year (Jan 1 - Dec 31).
+  - Replaced the basic browser tooltip with a custom-designed Tailwind CSS hover card detailing task count and medium-styled dates.
+- **Configurable Gemini Model Override**:
+  - Added support for configuring the Gemini model via `GEMINI_MODEL` environment variable, defaulting to `gemini-1.5-flash`. This allows users to easily swap model strings if a specific model identifier is not supported or returns a 404 error.
+
+## [v2.4.0] - 2026-06-13
+
+### Added & Fixed — Security, Chatbot & Analytics Enhancements
+
+- **Password Reset Request Flow**:
+  - Added a "Forgot Password" option to the login page allowing users to submit reset requests to the admin.
+  - Added a "Password Reset Requests" management tab in the Admin Panel to view, approve, or reject requests.
+  - Upon approval, a randomized one-time password is generated, and the user's `tokenVersion` is incremented to invalidate all active session tokens/cookies.
+- **SQLite Database Relocation & Migration Safety**:
+  - Relocated the SQLite database file from `/app/prisma/dev.db` to `/app/data/dev.db` in Dockerfile, docker-compose, Kubernetes config, Helm templates, and Makefiles.
+  - Ensures the Prisma migrations directory `/app/prisma/migrations` is not masked by host-mounted database volumes, securing schema updates during container deployment.
+- **Explicit LLM API Credentials Check**:
+  - Updated the AI router to perform explicit API key configuration checks prior to querying model endpoints.
+  - Bubbles up precise messages (e.g., "Gemini API key is not configured") directly to the chatbot UI instead of showing a generic "Something went wrong" message.
+- **Voice Input Jitter & Continuous Speech Recognition Fix**:
+  - Fixed a voice transcription bug where paused speech caused preceding words/phrases to be wiped or overwritten.
+  - Uses ref-based initial values and segment index offset tracking to preserve accumulated text across pauses.
+- **Yearly Completed Tasks Heatmap**:
+  - Implemented a GitHub-style 375-day completed tasks activity calendar board on the Analytics page.
+  - Visualizes task completion frequency using color-scaled grid tiles with custom hover tooltips showing task count and date.
+  - Integrated into the analytics onboarding guide as an interactive tour step.
+- **Daily Speech Briefing ("AlexaSpeak")**:
+  - Introduced a "Brief My Day" option in the chatbot that summarizes the user's active/completed tasks, compares today's productivity to yesterday, and provides advice on quadrant balance.
+  - Leverages Web Speech Synthesis API with active speech player states (Play, Pause, Resume, Stop) and a custom CSS audio wave visualizer.
+- **Node.js Loader Deprecation Warning Fix**:
+  - Prepend `NODE_OPTIONS='--no-deprecation'` in `package.json` dev, build, and start scripts to suppress `[DEP0205] DeprecationWarning: module.register() is deprecated` warnings originating from Node.js ESM loader internals.
+
 ## [v2.3.0] - 2026-06-08
 
 ### Added — AI Chatbot Tasker (Betu)

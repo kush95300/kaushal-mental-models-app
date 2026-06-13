@@ -41,7 +41,7 @@ export const DelegateModal: React.FC<DelegateModalProps> = ({
           onClick={onClose}
           className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl transition-all"
         >
-          <X size={24} className="text-slate-400 dark:text-slate-550" />
+          <X size={24} className="text-slate-400 dark:text-slate-400" />
         </button>
       </div>
 

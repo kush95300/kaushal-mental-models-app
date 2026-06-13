@@ -41,7 +41,7 @@ spec:
                 name: kaushal-mental-models-config
           volumeMounts:
             - name: sqlite-storage
-              mountPath: /app/prisma
+              mountPath: /app/data
           resources:
             limits:
               cpu: "1"

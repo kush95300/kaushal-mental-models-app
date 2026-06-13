@@ -34,6 +34,7 @@ export default function ChatInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialValueRef = useRef("");
   const [isRecording, setIsRecording] = useState(false);
   const [silenceCountdown, setSilenceCountdown] = useState(0); // 0 = not counting
 
@@ -94,6 +95,8 @@ export default function ChatInput({
     recognition.lang = "en-US";
     recognitionRef.current = recognition;
 
+    initialValueRef.current = value;
+
     recognition.onstart = () => setIsRecording(true);
 
     recognition.onresult = (e: any) => {
@@ -101,15 +104,13 @@ export default function ChatInput({
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
       setSilenceCountdown(0);
 
-      let finalTranscript = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) {
-          finalTranscript += e.results[i][0].transcript;
-        }
+      let accumulated = "";
+      for (let i = 0; i < e.results.length; i++) {
+        accumulated += e.results[i][0].transcript;
       }
-      if (finalTranscript) {
-        onChange(value + (value ? " " : "") + finalTranscript.trim());
-      }
+      
+      const base = initialValueRef.current;
+      onChange(base + (base && accumulated ? " " : "") + accumulated.trim());
     };
 
     recognition.onspeechend = () => {

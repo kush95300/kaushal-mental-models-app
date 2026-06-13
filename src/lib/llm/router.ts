@@ -35,9 +35,21 @@ export class LLMRouter {
     messages: NormalizedMessage[],
     preferredProvider?: LLMProvider,
   ): Promise<{ stream: ReadableStream<string>; usedProvider: LLMProvider }> {
+    if (preferredProvider) {
+      if (preferredProvider === "gemini" && !process.env.GEMINI_API_KEY) {
+        throw new Error("Gemini API key is not configured. Please set GEMINI_API_KEY in your environment variables.");
+      }
+      if (preferredProvider === "openai" && !process.env.OPENAI_API_KEY) {
+        throw new Error("OpenAI API key is not configured. Please set OPENAI_API_KEY in your environment variables.");
+      }
+      if (preferredProvider === "claude" && !process.env.ANTHROPIC_API_KEY) {
+        throw new Error("Claude API key is not configured. Please set ANTHROPIC_API_KEY in your environment variables.");
+      }
+    }
+
     const available = this.getAvailableProviders();
     if (available.length === 0) {
-      throw new Error("No LLM provider configured. Add at least one API key to .env.");
+      throw new Error("No LLM providers are configured. Please add GEMINI_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY to your environment variables.");
     }
 
     // Re-order so preferred is first

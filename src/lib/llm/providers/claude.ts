@@ -15,7 +15,7 @@ export async function streamClaude(
 
   const body = {
     model: CLAUDE_MODEL,
-    max_tokens: 1024,
+    max_tokens: 4096,
     stream: true,
     system: systemPrompt,
     messages,

@@ -55,6 +55,7 @@ export interface ChatAPIRequest {
   context: "home" | "matrix";
   workspaceId?: number;
   botName?: string;
+  language?: "english" | "hinglish";
 }
 
 /**

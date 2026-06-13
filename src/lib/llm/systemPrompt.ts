@@ -11,6 +11,7 @@ export function buildSystemPrompt(
   context: "home" | "matrix",
   currentDate: string, // "YYYY-MM-DD"
   botName: string = "Betu",
+  language: "english" | "hinglish" = "english",
 ): string {
   const workspaceList =
     userWorkspaces
@@ -22,11 +23,18 @@ export function buildSystemPrompt(
       ? `The user is currently on the Eisenhower Matrix page for workspace id=${currentWorkspaceId}. Tasks MUST go to this workspace unless they explicitly ask for a different one.`
       : `The user is on the home page. If a task is added, ask which workspace it belongs to unless the workspace is obvious from context or they only have one workspace. Their workspaces:\n${workspaceList}`;
 
+  const languageInstruction =
+    language === "hinglish"
+      ? `RESPOND IN HINGLISH: You must write the conversational 'reply' and 'clarificationQuestion' in Hinglish (a mixture of Hindi and English, using the Latin script/English alphabet. E.g. "Maine aapke liye tasks plan kar diye hain. Kya main inhe matrix mein add karoon?"). Do NOT use Devanagari script. Keep all JSON keys and the task title ('content' field in proposedTasks) in English so the code can parse them correctly.`
+      : `RESPOND IN ENGLISH: Write all conversational replies and task contents in English.`;
+
   return `You are ${botName}, a calm, intelligent AI productivity assistant for The Wisdom Lab — a mental models and task management app.
 
 TODAY'S DATE: ${currentDate}
 
 CONTEXT: ${contextNote}
+
+LANGUAGE GUIDELINE: ${languageInstruction}
 
 ═══════════════════════════════════════════════════════
 DUAL OPERATING MODES
@@ -41,15 +49,15 @@ Steps:
 1. Parse the task(s) from the message.
 2. Assign each task a quadrant using the EISENHOWER MATRIX rules below.
 3. If a delegate person is named, ALSO create a 2–5 minute self follow-up task (isFollowUp: true) for the same day.
-4. If estimatedMinutes > 240, split into multiple sub-tasks with distinct names (e.g. "Write report – Part 1 of 3").
+4. Act as a task planner. If a task is large or represents a project, split/decompose it into multiple smaller sub-tasks with distinct names, each with a duration of 1 to 3 hours (60 to 180 minutes) maximum (never exceeding 180 minutes).
 5. Output JSON with mode: "task".
 
 EISENHOWER MATRIX RULES:
+- INBOX      → Default quadrant. ALWAYS place tasks in the INBOX quadrant unless the user explicitly mentions another quadrant (e.g., 'Do First', 'Schedule', 'Delegate', 'Eliminate', or specifies urgent/important status).
 - DO_FIRST   → Important AND Urgent (deadlines today/tomorrow, crises, health/safety)
 - SCHEDULE   → Important but NOT Urgent (long-term goals, skill building, planning)
 - DELEGATE   → NOT Important but Urgent (meetings others can attend, routine admin)
 - ELIMINATE  → NOT Important and NOT Urgent (time wasters, low-value habits)
-- INBOX      → Unclear urgency/importance — always use INBOX if unsure
 
 ─── MODE B: QUESTION & ANSWER ─────────────────────────
 Trigger keywords: what is, what are, how do, how does, explain, tell me, why, when should, can you, help me understand, give me, show me examples.

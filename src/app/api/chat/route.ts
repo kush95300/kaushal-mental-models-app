@@ -150,7 +150,7 @@ export async function POST(request: Request) {
     return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400 });
   }
 
-  const { messages, provider, context = "home", workspaceId, botName } = body;
+  const { messages, provider, context = "home", workspaceId, botName, language = "english" } = body;
 
   // 4. Quota check
   const quota = await checkAndIncrementQuota(session.id);
@@ -177,11 +177,19 @@ export async function POST(request: Request) {
     context,
     currentDate,
     botName,
+    language as any,
   );
 
-  // 6. Normalize messages for LLM (strip client-only fields, keep last 10 pairs)
+  // 6. Normalize messages for LLM (strip client-only fields/placeholders, keep last 10 pairs)
+  const UI_PLACEHOLDERS = ["WORKSPACE_CHOOSER", "TUTORIAL_LINKS", "FAQ_LINK"];
   const normalized = messages
-    .filter((m) => m.role === "user" || m.role === "assistant")
+    .filter(
+      (m) =>
+        (m.role === "user" || m.role === "assistant") &&
+        !UI_PLACEHOLDERS.includes(m.content) &&
+        !m.content.startsWith("To add this task") &&
+        !m.content.startsWith("To add these tasks")
+    )
     .slice(-20) // last 10 pairs = 20 messages
     .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
 

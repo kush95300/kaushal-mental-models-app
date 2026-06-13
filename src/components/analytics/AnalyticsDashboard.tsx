@@ -39,12 +39,19 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [showPageTutorial, setShowPageTutorial] = useState(false);
   const [username, setUsername] = useState("guest");
+  const [heatmapRange, setHeatmapRange] = useState<"lastYear" | "thisYear">("lastYear");
 
   const TUTORIAL_STEPS: TutorialStep[] = [
     {
       selector: "#analytics-kpis",
       title: "Key Performance Indicators",
       description: "Review total task completion count, active tasks, average velocity, and efficiency ratios.",
+      position: "bottom"
+    },
+    {
+      selector: "#analytics-heatmap",
+      title: "Task Completion Heatmap",
+      description: "A GitHub-style calendar board tracking your completed tasks per day over the past year.",
       position: "bottom"
     },
     {
@@ -72,9 +79,18 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
     getCurrentUser().then((res) => {
       const activeUser = res.success && res.user ? res.user.username : "guest";
       setUsername(activeUser);
-      const dismissed = localStorage.getItem(`tutorial_dismissed_analytics_${activeUser}`);
-      if (!dismissed) {
+      
+      const params = new URLSearchParams(window.location.search);
+      const forceTutorial = params.get("tutorial") === "true";
+
+      if (forceTutorial) {
+        localStorage.removeItem(`tutorial_dismissed_analytics_${activeUser}`);
         setShowPageTutorial(true);
+      } else {
+        const dismissed = localStorage.getItem(`tutorial_dismissed_analytics_${activeUser}`);
+        if (!dismissed) {
+          setShowPageTutorial(true);
+        }
       }
     });
   }, []);
@@ -90,6 +106,93 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
     }
     fetchData();
   }, [workspaceId]);
+
+  const calendarDays = React.useMemo(() => {
+    if (!data?.contributionCalendar) return [];
+    const days = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let start: Date;
+    let end: Date;
+
+    if (heatmapRange === "thisYear") {
+      const currentYear = today.getFullYear();
+      start = new Date(currentYear, 0, 1);
+      end = new Date(currentYear, 11, 31);
+    } else {
+      start = new Date(today);
+      start.setDate(start.getDate() - 375);
+      end = new Date(today);
+    }
+    
+    const dayOfWeek = start.getDay();
+    start.setDate(start.getDate() - dayOfWeek);
+    
+    const current = new Date(start);
+    while (current <= end) {
+      const yyyy = current.getFullYear();
+      const mm = String(current.getMonth() + 1).padStart(2, "0");
+      const dd = String(current.getDate()).padStart(2, "0");
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+      
+      const match = data.contributionCalendar.find(item => item.date === dateStr);
+      const count = match ? match.count : 0;
+      
+      days.push({
+        date: new Date(current),
+        dateStr,
+        count,
+        dayOfWeek: current.getDay(),
+        month: current.getMonth(),
+      });
+      current.setDate(current.getDate() + 1);
+    }
+    return days;
+  }, [data, heatmapRange]);
+
+  const weeks = React.useMemo(() => {
+    const list: any[][] = [];
+    let currentWeek: any[] = [];
+    calendarDays.forEach((day, index) => {
+      currentWeek.push(day);
+      if (currentWeek.length === 7 || index === calendarDays.length - 1) {
+        while (currentWeek.length < 7) {
+          currentWeek.push(null);
+        }
+        list.push(currentWeek);
+        currentWeek = [];
+      }
+    });
+    return list;
+  }, [calendarDays]);
+
+  const months = React.useMemo(() => {
+    const monthLabels: { label: string; colSpan: number }[] = [];
+    let currentMonth = -1;
+    let colSpan = 0;
+    
+    weeks.forEach((week) => {
+      const firstDay = week.find(d => d !== null);
+      if (firstDay) {
+        const m = firstDay.date.getMonth();
+        if (m !== currentMonth) {
+          if (colSpan > 0 && monthLabels.length > 0) {
+            monthLabels[monthLabels.length - 1].colSpan = colSpan;
+          }
+          const label = firstDay.date.toLocaleDateString("en-US", { month: "short" });
+          monthLabels.push({ label, colSpan: 0 });
+          currentMonth = m;
+          colSpan = 0;
+        }
+      }
+      colSpan++;
+    });
+    if (monthLabels.length > 0 && colSpan > 0) {
+      monthLabels[monthLabels.length - 1].colSpan = colSpan;
+    }
+    return monthLabels;
+  }, [weeks]);
 
   if (loading) {
     return (
@@ -182,6 +285,100 @@ export function AnalyticsDashboard({ workspaceId }: AnalyticsDashboardProps) {
             color="text-amber-600"
             bg="bg-amber-50"
           />
+        </div>
+
+        {/* Contribution Calendar */}
+        <div id="analytics-heatmap" className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] shadow-sm border border-slate-100 dark:border-slate-800 transition-colors mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+              Completed Tasks Heatmap
+            </h3>
+            <div className="inline-flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/55 dark:border-slate-750/60 shadow-inner">
+              <button
+                onClick={() => setHeatmapRange("lastYear")}
+                className={`px-3.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-155 ${
+                  heatmapRange === "lastYear"
+                    ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-sm font-black"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                }`}
+              >
+                Last 1 Year
+              </button>
+              <button
+                onClick={() => setHeatmapRange("thisYear")}
+                className={`px-3.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all duration-155 ${
+                  heatmapRange === "thisYear"
+                    ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-sm font-black"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
+                }`}
+              >
+                This Year
+              </button>
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <div className="min-w-[720px] pr-2">
+              {/* Months */}
+              <div className="flex gap-[3px] text-[9px] text-slate-400 font-black uppercase tracking-wider mb-1.5 select-none font-sans">
+                {months.map((m, idx) => (
+                  <div key={idx} style={{ width: `${m.colSpan * 13}px` }} className="truncate">
+                    {m.label}
+                  </div>
+                ))}
+              </div>
+              
+              {/* Heatmap Grid */}
+              <div className="grid grid-flow-col grid-rows-7 gap-[3px] select-none py-1 relative">
+                {weeks.map((week, wIdx) => 
+                  week.map((day, dIdx) => {
+                    if (!day) return <div key={`empty-${wIdx}-${dIdx}`} className="w-[10px] h-[10px] bg-transparent" />;
+                    
+                    let colorClass = "bg-slate-100 dark:bg-slate-800/80 hover:ring-2 hover:ring-indigo-400";
+                    if (day.count === 1 || day.count === 2) {
+                      colorClass = "bg-indigo-200 dark:bg-indigo-900/40 hover:ring-2 hover:ring-indigo-400";
+                    } else if (day.count === 3 || day.count === 4) {
+                      colorClass = "bg-indigo-400 dark:bg-indigo-600 hover:ring-2 hover:ring-indigo-300";
+                    } else if (day.count >= 5) {
+                      colorClass = "bg-indigo-600 dark:bg-indigo-400 hover:ring-2 hover:ring-indigo-200";
+                    }
+                    
+                    return (
+                      <div key={day.dateStr} className="relative group/day">
+                        <div
+                          className={`w-[10px] h-[10px] rounded-[2px] transition-all duration-150 cursor-pointer ${colorClass}`}
+                        />
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover/day:flex flex-col items-center z-[100] bg-slate-900 dark:bg-slate-800 text-white rounded-lg px-2.5 py-1.5 shadow-xl border border-slate-700/50 pointer-events-none select-none">
+                          <span className="text-[10px] font-black leading-none whitespace-nowrap">
+                            {day.count} task{day.count !== 1 ? 's' : ''} completed
+                          </span>
+                          <span className="text-[8px] font-medium text-slate-400 mt-1.5 whitespace-nowrap">
+                            {day.date.toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                          </span>
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900 dark:border-t-slate-800" />
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              
+              {/* Legend & Details */}
+              <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold mt-4 pt-3 border-t border-slate-50 dark:border-slate-800/60">
+                <div className="flex gap-4 items-center">
+                  <span>Less</span>
+                  <div className="flex gap-[3px]">
+                    <span className="w-2.5 h-2.5 rounded-[2px] bg-slate-100 dark:bg-slate-800" title="0 completed" />
+                    <span className="w-2.5 h-2.5 rounded-[2px] bg-indigo-200 dark:bg-indigo-900/40" title="1-2 completed" />
+                    <span className="w-2.5 h-2.5 rounded-[2px] bg-indigo-400 dark:bg-indigo-600" title="3-4 completed" />
+                    <span className="w-2.5 h-2.5 rounded-[2px] bg-indigo-600 dark:bg-indigo-400" title="5+ completed" />
+                  </div>
+                  <span>More</span>
+                </div>
+                <div>Yearly Activity Tracker</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Charts Grid */}

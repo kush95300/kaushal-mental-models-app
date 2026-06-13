@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Bot, X, LogIn, Sparkles, Pencil, Check } from "lucide-react";
+import { Smile, Trash2, X, LogIn, Sparkles, Pencil, Check, Volume2, VolumeX, Settings, Zap, Bot, Heart, Image as ImageIcon, Minus, HelpCircle, Plus } from "lucide-react";
 import { ChatMessage, LLMProvider, ProposedTask, LLMStructuredResponse, QuotaStatus } from "@/types/chat";
 import ChatWindow from "./ChatWindow";
 import ChatInput from "./ChatInput";
 import LLMSwitcher from "./LLMSwitcher";
 import SuggestedPrompts from "./SuggestedPrompts";
-import ProposedTaskCard from "./ProposedTaskCard";
 import QuotaRequestModal from "./QuotaRequestModal";
+import { getWorkspaces } from "@/actions/workspace";
 
 interface AiChatbotProps {
   context: "home" | "matrix";
@@ -19,11 +19,38 @@ function uuid() {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
+/** Robustly strip JSON strings or formatting blocks from LLM responses */
+function sanitizeReply(text: string): string {
+  if (!text) return "";
+  const trimmed = text.trim();
+  if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+    try {
+      const obj = JSON.parse(trimmed);
+      if (obj.reply) return obj.reply;
+      if (obj.clarificationQuestion) return obj.clarificationQuestion;
+    } catch {}
+  }
+  if (text.includes("```json")) {
+    const clean = text.replace(/```json[\s\S]*?```/g, "").trim();
+    if (clean) return clean;
+  }
+  return text;
+}
+
+interface ChatSession {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  createdAt: string;
+}
+
 export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
   const [open, setOpen] = useState(false);
   const [session, setSession] = useState<{ id: number; username: string } | null | "loading">("loading");
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [activeProvider, setActiveProvider] = useState<LLMProvider | null>(null);
@@ -34,15 +61,38 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
   const [quotaExceeded, setQuotaExceeded] = useState(false);
   const [quotaStatus, setQuotaStatus] = useState<QuotaStatus | null>(null);
 
-  // ── Bot name — default "Betu", persisted in localStorage ─────────────────────
+  // ── Bot customization states ──────────────────────────────────────────────
   const [botName, setBotName] = useState("Betu");
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameInput, setRenameInput] = useState("");
   const renameRef = useRef<HTMLInputElement>(null);
 
+  const [avatarType, setAvatarType] = useState<"icon" | "image">("icon");
+  const [avatarIcon, setAvatarIcon] = useState<string>("Smile");
+  const [avatarImage, setAvatarImage] = useState<string>("");
+  const [showSettings, setShowSettings] = useState(false);
+  const [language, setLanguage] = useState<"english" | "hinglish">("english");
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+  const [logMode, setLogMode] = useState(false);
+
+  // ── Drag & Movement states ──────────────────────────────────────────────────
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+
+  // ── Workspace states ────────────────────────────────────────────────────────
+  const [workspaces, setWorkspaces] = useState<any[]>([]);
+  const [selectedWorkspace, setSelectedWorkspace] = useState<number | null>(workspaceId ?? null);
+  const [pendingPromptAfterWorkspace, setPendingPromptAfterWorkspace] = useState<string | null>(null);
+
   const abortRef = useRef<AbortController | null>(null);
 
-  // ── Auth check on mount ──────────────────────────────────────────────────────
+  // ── Text to Speech states ───────────────────────────────────────────────────
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  // ── Auth & Workspaces check on mount ─────────────────────────────────────────
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => (r.ok ? r.json() : null))
@@ -50,17 +100,307 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
       .catch(() => setSession(null));
   }, []);
 
-  // ── Load bot name from localStorage ──────────────────────────────────────────
+  useEffect(() => {
+    if (session && session !== "loading") {
+      getWorkspaces().then((res) => {
+        if (res.success && res.data) {
+          setWorkspaces(res.data);
+        }
+      });
+    }
+  }, [session]);
+
+  // ── Load custom bot configuration from localStorage ──────────────────────────
   useEffect(() => {
     const saved = localStorage.getItem("chatbot_name");
     if (saved && saved.trim()) setBotName(saved.trim());
+
+    const savedType = localStorage.getItem("chatbot_avatar_type");
+    const savedIcon = localStorage.getItem("chatbot_avatar_icon");
+    const savedImage = localStorage.getItem("chatbot_avatar_image");
+    if (savedType === "icon" || savedType === "image") setAvatarType(savedType);
+    if (savedIcon) setAvatarIcon(savedIcon);
+    if (savedImage) setAvatarImage(savedImage);
+
+    const savedLanguage = localStorage.getItem("chatbot_language");
+    if (savedLanguage === "english" || savedLanguage === "hinglish") {
+      setLanguage(savedLanguage);
+    }
+
+    const savedLogMode = localStorage.getItem("chatbot_routing_logs");
+    setLogMode(savedLogMode === "true");
   }, []);
+
+  // ── Load chat sessions from localStorage once session is ready ───────────────
+  useEffect(() => {
+    if (session && session !== "loading" && session.username) {
+      const savedSessionsStr = localStorage.getItem(`chatbot_sessions_${session.username}`);
+      const savedActiveId = localStorage.getItem(`chatbot_active_session_id_${session.username}`);
+      
+      let loadedSessions: ChatSession[] = [];
+      let activeId = savedActiveId;
+
+      if (savedSessionsStr) {
+        try {
+          loadedSessions = JSON.parse(savedSessionsStr);
+        } catch (e) {
+          console.error("Failed to parse chatbot sessions:", e);
+        }
+      }
+
+      if (loadedSessions.length === 0) {
+        const newSessionId = uuid();
+        const initialSession: ChatSession = {
+          id: newSessionId,
+          title: "New Chat",
+          messages: [],
+          createdAt: new Date().toISOString(),
+        };
+        loadedSessions = [initialSession];
+        activeId = newSessionId;
+        localStorage.setItem(`chatbot_sessions_${session.username}`, JSON.stringify(loadedSessions));
+        localStorage.setItem(`chatbot_active_session_id_${session.username}`, newSessionId);
+      }
+
+      setSessions(loadedSessions);
+
+      const hasActive = loadedSessions.some((s) => s.id === activeId);
+      if (!hasActive) {
+        activeId = loadedSessions[0].id;
+        localStorage.setItem(`chatbot_active_session_id_${session.username}`, activeId);
+      }
+
+      setActiveSessionId(activeId);
+      
+      const activeSessionObj = loadedSessions.find((s) => s.id === activeId);
+      if (activeSessionObj) {
+        const formatted = activeSessionObj.messages.map((m: any) => ({
+          ...m,
+          timestamp: m.timestamp ? new Date(m.timestamp) : new Date(),
+        }));
+        setMessages(formatted);
+      }
+
+      setHistoryLoaded(true);
+    }
+  }, [session]);
+
+  // ── Save active chat messages to current session in sessions list ────────────
+  useEffect(() => {
+    if (!historyLoaded || !session || session === "loading" || !session.username || !activeSessionId) return;
+
+    setSessions((prevSessions) => {
+      const updated = prevSessions.map((s) => {
+        if (s.id === activeSessionId) {
+          let title = s.title;
+          if (title === "New Chat") {
+            const firstUserMsg = messages.find((m) => m.role === "user");
+            if (firstUserMsg) {
+              title = firstUserMsg.content.slice(0, 30) + (firstUserMsg.content.length > 30 ? "..." : "");
+            }
+          }
+          return { ...s, messages, title };
+        }
+        return s;
+      });
+
+      localStorage.setItem(`chatbot_sessions_${session.username}`, JSON.stringify(updated));
+      return updated;
+    });
+  }, [messages, activeSessionId, session, historyLoaded]);
+
+  // ── Chat Session Managers ───────────────────────────────────────────────────
+  const createNewSession = (currentSessions: ChatSession[]) => {
+    const newSessionId = uuid();
+    const newSession: ChatSession = {
+      id: newSessionId,
+      title: "New Chat",
+      messages: [],
+      createdAt: new Date().toISOString(),
+    };
+    
+    let updated = [newSession, ...currentSessions];
+    if (updated.length > 7) {
+      updated = updated.slice(0, 7);
+    }
+    
+    setSessions(updated);
+    setActiveSessionId(newSessionId);
+    setMessages([]);
+    setProposedTasks([]);
+    stopSpeaking();
+    
+    if (session && session !== "loading" && session.username) {
+      localStorage.setItem(`chatbot_sessions_${session.username}`, JSON.stringify(updated));
+      localStorage.setItem(`chatbot_active_session_id_${session.username}`, newSessionId);
+    }
+  };
+
+  const handleSwitchSession = (sessionId: string) => {
+    const targetSession = sessions.find((s) => s.id === sessionId);
+    if (!targetSession || !session || session === "loading") return;
+
+    stopSpeaking();
+    setActiveSessionId(sessionId);
+    localStorage.setItem(`chatbot_active_session_id_${session.username}`, sessionId);
+
+    const formatted = targetSession.messages.map((m: any) => ({
+      ...m,
+      timestamp: m.timestamp ? new Date(m.timestamp) : new Date(),
+    }));
+    setMessages(formatted);
+    setProposedTasks([]);
+  };
+
+  const handleDeleteSession = (sessionId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!session || session === "loading") return;
+
+    const updated = sessions.filter((s) => s.id !== sessionId);
+    
+    let newActiveId = activeSessionId;
+    if (activeSessionId === sessionId) {
+      if (updated.length > 0) {
+        newActiveId = updated[0].id;
+      } else {
+        const newSessionId = uuid();
+        const initialSession: ChatSession = {
+          id: newSessionId,
+          title: "New Chat",
+          messages: [],
+          createdAt: new Date().toISOString(),
+        };
+        updated.push(initialSession);
+        newActiveId = newSessionId;
+      }
+    }
+
+    setSessions(updated);
+    setActiveSessionId(newActiveId);
+    localStorage.setItem(`chatbot_sessions_${session.username}`, JSON.stringify(updated));
+    localStorage.setItem(`chatbot_active_session_id_${session.username}`, newActiveId || "");
+
+    const activeSessionObj = updated.find((s) => s.id === newActiveId);
+    if (activeSessionObj) {
+      const formatted = activeSessionObj.messages.map((m: any) => ({
+        ...m,
+        timestamp: m.timestamp ? new Date(m.timestamp) : new Date(),
+      }));
+      setMessages(formatted);
+    } else {
+      setMessages([]);
+    }
+    setProposedTasks([]);
+  };
+
+  const fetchQuotaStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/chat/quota-status");
+      if (res.ok) {
+        const data = await res.json();
+        setQuotaStatus(data);
+        if (!data.exhausted) {
+          setQuotaExceeded(false);
+          setMessages((prev) => {
+            if (prev.length === 0) return prev;
+            const lastMsg = prev[prev.length - 1];
+            if (
+              lastMsg &&
+              lastMsg.role === "assistant" &&
+              lastMsg.content.includes("message limit") &&
+              lastMsg.content.includes("Request more from your admin")
+            ) {
+              const newMsgs = [...prev];
+              newMsgs.pop();
+              
+              const nextLast = newMsgs[newMsgs.length - 1];
+              if (
+                nextLast &&
+                nextLast.role === "system" &&
+                nextLast.content.startsWith("🔍 Routing Decision")
+              ) {
+                newMsgs.pop();
+              }
+              return newMsgs;
+            }
+            return prev;
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch quota status:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (open && session && session !== "loading") {
+      fetchQuotaStatus();
+    }
+  }, [open, session, fetchQuotaStatus]);
+
+  // ── TTS Cleanup on unmount ───────────────────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  // ── Drag & Movement mouse handlers ──────────────────────────────────────────
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return; // Left click only
+    const target = e.target as HTMLElement;
+    // Don't drag when clicking interactive elements
+    if (target.closest("button") || target.closest("input") || target.closest("textarea") || target.closest("a") || target.closest("select")) {
+      return;
+    }
+    setIsDragging(true);
+    dragStartRef.current = {
+      x: e.clientX - position.x,
+      y: e.clientY - position.y,
+    };
+    e.preventDefault();
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      setPosition({
+        x: e.clientX - dragStartRef.current.x,
+        y: e.clientY - dragStartRef.current.y,
+      });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging]);
+
+  // ── Save Avatar helper ──────────────────────────────────────────────────────
+  const saveAvatarSettings = (type: "icon" | "image", icon: string, image: string) => {
+    setAvatarType(type);
+    setAvatarIcon(icon);
+    setAvatarImage(image);
+    localStorage.setItem("chatbot_avatar_type", type);
+    localStorage.setItem("chatbot_avatar_icon", icon);
+    localStorage.setItem("chatbot_avatar_image", image);
+  };
 
   // ── Rename helpers ────────────────────────────────────────────────────────────
   const startRenaming = () => {
     setRenameInput(botName);
     setIsRenaming(true);
-    setTimeout(() => renameRef.current?.select(), 50);
+    setTimeout(() => renameRef.current?.focus(), 50);
   };
 
   const confirmRename = () => {
@@ -77,17 +417,335 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
     if (e.key === "Escape") setIsRenaming(false);
   };
 
-  // ── Send message ─────────────────────────────────────────────────────────────
-  const sendMessage = useCallback(async () => {
-    if (!input.trim() || isStreaming) return;
+  // ── Text to Speech controllers ──────────────────────────────────────────────
+  const speakText = useCallback((text: string) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      alert("Text-to-speech is not supported in this browser.");
+      return;
+    }
+    window.speechSynthesis.cancel();
+
+    // Remove emoji/markdown characters before speaking for clean speech
+    const cleanText = text.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, "")
+      .replace(/\*+/g, "")
+      .replace(/-+/g, "")
+      .replace(/#+/g, "");
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utteranceRef.current = utterance;
+
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+      setIsPaused(false);
+    };
+
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      setIsPaused(false);
+      utteranceRef.current = null;
+    };
+
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+      setIsPaused(false);
+      utteranceRef.current = null;
+    };
+
+    // Find custom voices if possible
+    const voices = window.speechSynthesis.getVoices();
+    const voice = voices.find(v => v.lang.startsWith("en") && v.name.toLowerCase().includes("google") || v.name.toLowerCase().includes("natural"))
+      || voices.find(v => v.lang.startsWith("en"));
+    if (voice) {
+      utterance.voice = voice;
+    }
+    utterance.rate = 1.05;
+    utterance.pitch = 1.0;
+
+    window.speechSynthesis.speak(utterance);
+  }, []);
+
+  const pauseSpeaking = useCallback(() => {
+    if (typeof window !== "undefined" && window.speechSynthesis && !isPaused) {
+      window.speechSynthesis.pause();
+      setIsPaused(true);
+    }
+  }, [isPaused]);
+
+  const resumeSpeaking = useCallback(() => {
+    if (typeof window !== "undefined" && window.speechSynthesis && isPaused) {
+      window.speechSynthesis.resume();
+      setIsPaused(false);
+    }
+  }, [isPaused]);
+
+  const stopSpeaking = useCallback(() => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      setIsPaused(false);
+      utteranceRef.current = null;
+    }
+  }, []);
+
+  const triggerDailyBriefing = useCallback(async () => {
+    if (isStreaming || isSpeaking) return;
+
+    const loadingId = uuid();
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: loadingId,
+        role: "assistant",
+        content: `Generating your daily briefing script for ${botName}...`,
+        timestamp: new Date(),
+        isStreaming: true,
+      },
+    ]);
+    setIsStreaming(true);
+
+    try {
+      const wsId = selectedWorkspace ?? workspaceId ?? 1;
+      const res = await fetch(`/api/chat/briefing?type=daily&workspaceId=${wsId}&botName=${encodeURIComponent(botName)}&language=${language}`);
+      if (!res.ok) throw new Error("Failed to contact briefing API");
+      const data = await res.json();
+      if (!data.success || !data.briefing) {
+        throw new Error(data.error || "Briefing failed");
+      }
+
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === loadingId ? { ...m, content: data.briefing, isStreaming: false } : m
+        )
+      );
+
+      speakText(data.briefing);
+    } catch (err: any) {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === loadingId ? { ...m, content: `Error: ${err.message || "Failed to fetch briefing."}`, isStreaming: false } : m
+        )
+      );
+    } finally {
+      setIsStreaming(false);
+    }
+  }, [workspaceId, selectedWorkspace, botName, isSpeaking, isStreaming, speakText, language]);
+
+  const triggerWeeklyBriefing = useCallback(async () => {
+    if (isStreaming || isSpeaking) return;
+
+    const loadingId = uuid();
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: loadingId,
+        role: "assistant",
+        content: `Generating your weekly tasks briefing script for ${botName}...`,
+        timestamp: new Date(),
+        isStreaming: true,
+      },
+    ]);
+    setIsStreaming(true);
+
+    try {
+      const wsId = selectedWorkspace ?? workspaceId ?? 1;
+      const res = await fetch(`/api/chat/briefing?type=weekly&workspaceId=${wsId}&botName=${encodeURIComponent(botName)}&language=${language}`);
+      if (!res.ok) throw new Error("Failed to contact briefing API");
+      const data = await res.json();
+      if (!data.success || !data.briefing) {
+        throw new Error(data.error || "Briefing failed");
+      }
+
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === loadingId ? { ...m, content: data.briefing, isStreaming: false } : m
+        )
+      );
+
+      speakText(data.briefing);
+    } catch (err: any) {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === loadingId ? { ...m, content: `Error: ${err.message || "Failed to fetch briefing."}`, isStreaming: false } : m
+        )
+      );
+    } finally {
+      setIsStreaming(false);
+    }
+  }, [workspaceId, selectedWorkspace, botName, isSpeaking, isStreaming, speakText, language]);
+
+  // ── Send message with local grilling pre-filters ────────────────────────────
+  const handleUserMessage = useCallback(async (msgText: string, wsIdForce?: number) => {
+    const text = msgText.trim();
+    if (!text || isStreaming) return;
+
+    // Check if there is a pending prompt after workspace selection, and the user typed the workspace name
+    if (pendingPromptAfterWorkspace && !wsIdForce) {
+      const matchedWs = workspaces.find(
+        (w) => w.name.toLowerCase() === text.toLowerCase()
+      );
+      if (matchedWs) {
+        setMessages((prev) =>
+          prev.filter(
+            (m) =>
+              m.content !== "WORKSPACE_CHOOSER" &&
+              !m.content.startsWith("To add this task") &&
+              !m.content.startsWith("To add these tasks")
+          )
+        );
+        setSelectedWorkspace(matchedWs.id);
+        const promptToRun = pendingPromptAfterWorkspace;
+        setPendingPromptAfterWorkspace(null);
+        handleUserMessage(promptToRun, matchedWs.id);
+        return;
+      }
+    }
 
     const userMsg: ChatMessage = {
       id: uuid(),
       role: "user",
-      content: input.trim(),
+      content: text,
       timestamp: new Date(),
     };
 
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setProposedTasks([]);
+
+    // Check if task query (create, delete, edit, plan, decompose etc.)
+    const isTaskQuery = /add|create|delete|remove|schedule|remind|plan|divide|split|break down|subtask|decompose|book|fix|do|build|write|send|assign|complete|finish|prepare|review/i.test(text);
+
+    // Decide routing
+    let routeDecision: "VIDEO_TUTORIAL" | "FAQ" | "GEMINI" = "GEMINI";
+    const isOffTopic = /recipe|weather|news|movie|song|sports|cooking|chocolate|cake|bake|dinner/i.test(text);
+
+    if (isOffTopic) {
+      routeDecision = "FAQ";
+    } else if (isTaskQuery) {
+      routeDecision = "GEMINI";
+    } else {
+      const isTutorialRequest = /eisenhower|matrix|quadrant|do first|schedule|delegate|eliminate|inbox|priorit|tutorial|tour|walkthrough|guide|analytics|heatmap|statistics|report|productivity/i.test(text);
+      const isFAQRequest = !isTutorialRequest && /workspace|briefing|alexa|audio|speak|voice|delegate|team member/i.test(text);
+
+      if (isTutorialRequest) {
+        routeDecision = "VIDEO_TUTORIAL";
+      } else if (isFAQRequest) {
+        routeDecision = "FAQ";
+      } else {
+        routeDecision = "GEMINI";
+      }
+    }
+
+    // Append routing log message if logMode is enabled
+    if (logMode) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: uuid(),
+          role: "system",
+          content: `🔍 Routing Decision: ${routeDecision}${isOffTopic ? " (OFF_TOPIC)" : ""}`,
+          timestamp: new Date(),
+        },
+      ]);
+    }
+
+    // 1. Video Tutorial Branch
+    if (routeDecision === "VIDEO_TUTORIAL") {
+      setIsStreaming(true);
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: uuid(),
+            role: "assistant",
+            content: "I found a relevant interactive tutorial for this! You can start the guided tour by clicking one of the buttons below:",
+            timestamp: new Date(),
+          },
+          {
+            id: uuid(),
+            role: "assistant",
+            content: "TUTORIAL_LINKS",
+            timestamp: new Date(),
+          },
+        ]);
+        setIsStreaming(false);
+      }, 400);
+      return;
+    }
+
+    // 2. FAQ Branch (includes Off-Topic)
+    if (routeDecision === "FAQ") {
+      setIsStreaming(true);
+      
+      let faqContent = "I can only answer questions related to productivity, the Eisenhower Matrix, mental models, and task management. For other topics, please check our FAQ page or ask the admin.";
+      
+      if (!isOffTopic) {
+        const isWorkspaceFAQ = /workspace|workspaces/i.test(text);
+        const isBriefingFAQ = /briefing|daily briefing|weekly briefing|alexa|audio|speak|voice/i.test(text);
+        const isDelegatesFAQ = /delegate|delegates|team member/i.test(text);
+
+        if (isWorkspaceFAQ) {
+          faqContent = "Workspaces allow you to separate different areas of your life (e.g. Personal, Work, Side Projects). Each workspace has its own independent matrix of tasks and delegates. You can switch or create workspaces from the top-left dropdown on the board.";
+        } else if (isBriefingFAQ) {
+          faqContent = "The chatbot can generate an audio daily or weekly briefing summarizing your tasks, productivity status, and quadrant balance advice. Just click the Brief buttons in the chatbot welcome view!";
+        } else if (isDelegatesFAQ) {
+          faqContent = "Delegates are team members, colleagues, or assistants whom you assign tasks to. In this app, delegating a task automatically schedules a short follow-up task for yourself to verify progress.";
+        }
+      }
+
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: uuid(),
+            role: "assistant",
+            content: faqContent,
+            timestamp: new Date(),
+          },
+          {
+            id: uuid(),
+            role: "assistant",
+            content: "FAQ_LINK",
+            timestamp: new Date(),
+          },
+        ]);
+        setIsStreaming(false);
+      }, 400);
+      return;
+    }
+
+    // It IS a task query! Proceed to workspace context check and Gemini:
+    const wsToUse = wsIdForce ?? selectedWorkspace;
+
+    if (isTaskQuery && context === "home" && !wsToUse && workspaces.length > 1) {
+      setPendingPromptAfterWorkspace(text);
+      setIsStreaming(true);
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: uuid(),
+            role: "assistant",
+            content: "To add this task, please select the target workspace first:",
+            timestamp: new Date(),
+          },
+          {
+            id: uuid(),
+            role: "assistant",
+            content: "WORKSPACE_CHOOSER",
+            timestamp: new Date(),
+          },
+        ]);
+        setIsStreaming(false);
+      }, 400);
+      return;
+    }
+
+    let finalWsId = wsToUse;
+    if (!finalWsId && workspaces.length === 1) {
+      finalWsId = workspaces[0].id;
+    }
+
+    // Setup Gemini Stream
     const assistantMsgId = uuid();
     const assistantMsg: ChatMessage = {
       id: assistantMsgId,
@@ -97,33 +755,44 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
       isStreaming: true,
     };
 
-    setMessages((prev) => [...prev, userMsg, assistantMsg]);
-    setInput("");
+    setMessages((prev) => [...prev, assistantMsg]);
     setIsStreaming(true);
-    setProposedTasks([]);
 
     abortRef.current = new AbortController();
 
     try {
+      // Decompose tasks limit enforcement
+      const isDecompQuery = /plan|divide|split|break down|subtask|decompose/i.test(text);
+      const cleanPrompt = isDecompQuery
+        ? `Act as a task planner. Take this big task: '${text}'. Divide it into smaller sub-tasks, each with a duration of 1 to 3 hours (60 to 180 minutes) maximum. Return the list of tasks.`
+        : text;
+
+      const backendMessages = [...messages, userMsg].map((m) => ({
+        id: m.id,
+        role: m.role,
+        content: m.id === userMsg.id ? cleanPrompt : m.content,
+        timestamp: m.timestamp,
+      }));
+
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: abortRef.current.signal,
         body: JSON.stringify({
-          messages: [...messages, userMsg].map((m) => ({
-            id: m.id,
-            role: m.role,
-            content: m.content,
-            timestamp: m.timestamp,
-          })),
+          messages: backendMessages,
           provider: activeProvider ?? undefined,
           context,
-          workspaceId,
+          workspaceId: finalWsId ?? undefined,
           botName,
+          language,
         }),
       });
 
-      if (!res.ok || !res.body) {
+      if (!res.body) {
+        throw new Error("No response body");
+      }
+
+      if (!res.ok && res.status !== 429) {
         throw new Error(`Server error: ${res.status}`);
       }
 
@@ -175,11 +844,11 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
 
             if (chunk.type === "token" && chunk.token) {
               accumulated += chunk.token;
-              // Show readable text while streaming (strip JSON structure for display)
               const displayText = extractReply(accumulated) || accumulated;
+              const sanitizedText = sanitizeReply(displayText);
               setMessages((prev) =>
                 prev.map((m) =>
-                  m.id === assistantMsgId ? { ...m, content: displayText } : m,
+                  m.id === assistantMsgId ? { ...m, content: sanitizedText } : m,
                 ),
               );
             }
@@ -190,9 +859,11 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
                 ? (result.clarificationQuestion ?? result.reply)
                 : result.reply;
 
+              const sanitizedReply = sanitizeReply(finalReply);
+
               setMessages((prev) =>
                 prev.map((m) =>
-                  m.id === assistantMsgId ? { ...m, content: finalReply, isStreaming: false } : m,
+                  m.id === assistantMsgId ? { ...m, content: sanitizedReply, isStreaming: false } : m,
                 ),
               );
 
@@ -205,13 +876,13 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantMsgId
-                    ? { ...m, content: "Sorry, something went wrong. Please try again.", isStreaming: false }
+                    ? { ...m, content: chunk.error || "Sorry, something went wrong. Please try again.", isStreaming: false }
                     : m,
                 ),
               );
             }
           } catch {
-            // skip malformed SSE chunk
+            // skip malformed chunk
           }
         }
       }
@@ -228,23 +899,30 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
     } finally {
       setIsStreaming(false);
       setMessages((prev) => prev.map((m) => ({ ...m, isStreaming: false })));
+      fetchQuotaStatus();
     }
-  }, [input, isStreaming, messages, activeProvider, context, workspaceId, botName]);
+  }, [messages, activeProvider, context, workspaces, selectedWorkspace, botName, isStreaming, fetchQuotaStatus, language, logMode, pendingPromptAfterWorkspace]);
 
-  // ── Add tasks to matrix ──────────────────────────────────────────────────────
+  const handleSelectWorkspace = (wsId: number) => {
+    setSelectedWorkspace(wsId);
+    setMessages((prev) => prev.filter((m) => m.content !== "WORKSPACE_CHOOSER" && !m.content.startsWith("To add this task")));
+    if (pendingPromptAfterWorkspace) {
+      handleUserMessage(pendingPromptAfterWorkspace, wsId);
+      setPendingPromptAfterWorkspace(null);
+    }
+  };
+
   const addTasksToMatrix = useCallback(async () => {
     if (!proposedTasks.length) return;
     setIsSubmittingTasks(true);
 
     try {
-      // Resolve delegate IDs for each task
-      for (const task of proposedTasks) {
-        const wsId = workspaceId ?? 1;
+      const wsId = selectedWorkspace ?? workspaceId ?? 1;
 
+      for (const task of proposedTasks) {
         let delegateId: number | null = null;
 
         if (task.delegateName && task.delegateName.toLowerCase() !== "self") {
-          // Fetch existing delegates first to avoid duplicate creation
           const existingRes = await fetch(`/api/delegates?workspaceId=${wsId}`);
           if (existingRes.ok) {
             const existingList: any[] = await existingRes.json();
@@ -254,7 +932,6 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
             if (found) {
               delegateId = found.id;
             } else {
-              // Create new delegate
               const delRes = await fetch("/api/delegates", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -307,9 +984,25 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
     } finally {
       setIsSubmittingTasks(false);
     }
-  }, [proposedTasks, workspaceId]);
+  }, [proposedTasks, selectedWorkspace, workspaceId]);
 
-  // ── Unauthenticated state ────────────────────────────────────────────────────
+  const renderAvatar = (className = "w-4 h-4 text-white") => {
+    if (avatarType === "image" && avatarImage.trim()) {
+      return (
+        <img
+          src={avatarImage}
+          alt={botName}
+          className={`${className} object-cover rounded-full`}
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+          }}
+        />
+      );
+    }
+    const IconComponent = ({ Smile, Bot, Sparkles, Heart, Zap }[avatarIcon] || Smile) as any;
+    return <IconComponent className={className} />;
+  };
+
   if (session === "loading") return null;
 
   return (
@@ -319,23 +1012,219 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
         <button
           id="ai-chatbot-trigger"
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-[45000] w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-xl shadow-indigo-500/40 hover:shadow-indigo-500/60 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center group"
-          title="Open AI Tasker"
+          className="fixed bottom-6 right-6 z-[45000] w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-xl shadow-indigo-500/40 hover:shadow-indigo-500/60 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center overflow-hidden group"
+          title={`Open ${botName}`}
         >
-          <Bot className="w-6 h-6 group-hover:scale-110 transition-transform" />
+          {renderAvatar("w-6 h-6 group-hover:scale-110 transition-transform")}
           <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white animate-pulse" />
         </button>
       )}
 
       {/* Chat panel */}
       {open && (
-        <div className="fixed bottom-6 right-6 z-[45000] w-[380px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-3rem)] flex flex-col bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl shadow-slate-900/20 overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-200">
+        <div
+          style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
+          className="fixed bottom-6 right-6 z-[45000] w-[380px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-3rem)] flex flex-col bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl shadow-slate-900/20 overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-200"
+        >
+
+          {/* Settings panel overlay */}
+          {showSettings && (
+            <div className="absolute inset-0 bg-white dark:bg-slate-900 z-[45500] flex flex-col p-5 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 mb-4">
+                <h3 className="font-black text-slate-800 dark:text-white flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-indigo-500" />
+                  Chatbot Settings
+                </h3>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="p-1 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-250 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+                {/* Rename */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5 ml-1">Rename Chatbot</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={renameInput}
+                      onChange={(e) => setRenameInput(e.target.value.slice(0, 24))}
+                      maxLength={24}
+                      className="flex-1 px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800 dark:text-slate-200"
+                      placeholder="e.g. Betu"
+                    />
+                    <button
+                      onClick={() => {
+                        const trimmed = renameInput.trim();
+                        if (trimmed) {
+                          setBotName(trimmed);
+                          localStorage.setItem("chatbot_name", trimmed);
+                        }
+                      }}
+                      className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-sm"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+
+                {/* Language Selection */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5 ml-1">Language (Bhasha)</label>
+                  <div className="flex gap-2">
+                    {(["english", "hinglish"] as const).map((lang) => (
+                      <button
+                        key={lang}
+                        onClick={() => {
+                          setLanguage(lang);
+                          localStorage.setItem("chatbot_language", lang);
+                        }}
+                        className={`flex-1 py-2 text-xs font-black rounded-xl border capitalize transition-all ${
+                          language === lang
+                            ? "bg-indigo-50 dark:bg-indigo-950/20 border-indigo-500 text-indigo-600 dark:text-indigo-400"
+                            : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-700 dark:hover:text-slate-350"
+                        }`}
+                      >
+                        {lang === "english" ? "English" : "Hinglish"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Routing Logs Enable */}
+                <div className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Enable Routing Logs</label>
+                  <input
+                    type="checkbox"
+                    checked={logMode}
+                    onChange={(e) => {
+                      const val = e.target.checked;
+                      setLogMode(val);
+                      localStorage.setItem("chatbot_routing_logs", String(val));
+                    }}
+                    className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 dark:bg-slate-700 dark:border-slate-600 cursor-pointer"
+                  />
+                </div>
+
+                {/* Chat History (Max 7) */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5 ml-1">Chat History (Max 7)</label>
+                  <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1">
+                    {sessions.map((s) => {
+                      const isActive = s.id === activeSessionId;
+                      return (
+                        <div
+                          key={s.id}
+                          onClick={() => {
+                            handleSwitchSession(s.id);
+                            setShowSettings(false);
+                          }}
+                          className={`flex items-center justify-between p-2.5 rounded-xl border text-left cursor-pointer transition-all ${
+                            isActive
+                              ? "bg-indigo-50/50 dark:bg-indigo-950/20 border-indigo-500/50"
+                              : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-750"
+                          }`}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-xs font-black truncate ${isActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-700 dark:text-slate-300"}`}>
+                              {s.title}
+                            </p>
+                            <p className="text-[9px] text-slate-400 font-bold mt-0.5">
+                              {s.messages.length} message{s.messages.length !== 1 ? "s" : ""}
+                            </p>
+                          </div>
+                          {sessions.length > 1 && (
+                            <button
+                              onClick={(e) => handleDeleteSession(s.id, e)}
+                              className="p-1 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-150 dark:hover:bg-slate-700 transition-colors ml-2"
+                              title="Delete Session"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Preset Icons */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5 ml-1">Choose Icon Avatar</label>
+                  <div className="grid grid-cols-5 gap-2">
+                    {(["Smile", "Bot", "Sparkles", "Heart", "Zap"] as const).map((iconName) => {
+                      const IconComp = { Smile, Bot, Sparkles, Heart, Zap }[iconName] as any;
+                      const isSelected = avatarType === "icon" && avatarIcon === iconName;
+                      return (
+                        <button
+                          key={iconName}
+                          onClick={() => saveAvatarSettings("icon", iconName, avatarImage)}
+                          className={`p-2.5 rounded-xl border flex items-center justify-center transition-all ${
+                            isSelected
+                              ? "bg-indigo-50 dark:bg-indigo-950/20 border-indigo-500 text-indigo-600 dark:text-indigo-400"
+                              : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-600"
+                          }`}
+                        >
+                          <IconComp className="w-5 h-5" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Custom Image */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5 ml-1">Use Custom Image URL</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={avatarImage}
+                      onChange={(e) => setAvatarImage(e.target.value)}
+                      className="flex-1 px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800 dark:text-slate-200"
+                      placeholder="https://example.com/avatar.jpg"
+                    />
+                    <button
+                      onClick={() => {
+                        if (avatarImage.trim()) {
+                          saveAvatarSettings("image", avatarIcon, avatarImage.trim());
+                        } else {
+                          saveAvatarSettings("icon", avatarIcon, "");
+                        }
+                      }}
+                      className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black flex items-center gap-1 shadow-sm shrink-0"
+                    >
+                      <ImageIcon className="w-3.5 h-3.5" /> Save
+                    </button>
+                  </div>
+                  {avatarType === "image" && avatarImage.trim() && (
+                    <div className="mt-3 flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
+                      <img src={avatarImage} alt="Preview" className="w-8 h-8 rounded-full object-cover shrink-0" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                      <span className="text-[10px] text-slate-400 font-bold truncate">Avatar URL Active Preview</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowSettings(false)}
+                className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-black uppercase tracking-wider transition-colors mt-4"
+              >
+                Close Settings
+              </button>
+            </div>
+          )}
 
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-indigo-600 to-violet-600">
+          <div
+            onMouseDown={handleMouseDown}
+            className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-indigo-600 to-violet-600 cursor-grab active:cursor-grabbing select-none"
+          >
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="w-8 h-8 flex-shrink-0 rounded-full bg-white/20 flex items-center justify-center">
-                <Bot className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 flex-shrink-0 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
+                {renderAvatar("w-4 h-4 text-white")}
               </div>
               <div className="flex-1 min-w-0">
                 {isRenaming ? (
@@ -373,12 +1262,44 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
                 <p className="text-[10px] text-white/70 mt-0.5">AI Productivity Assistant</p>
               </div>
             </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
+
+            {/* Quota limit badge */}
+            {quotaStatus && (
+              <span className="text-[9px] font-black bg-white/25 text-white px-2 py-0.5 rounded-full whitespace-nowrap mr-2">
+                {quotaStatus.used}/{quotaStatus.limit} msgs
+              </span>
+            )}
+
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <button
+                onClick={() => createNewSession(sessions)}
+                className="p-1.5 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                title="New Chat"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => {
+                  setRenameInput(botName);
+                  setShowSettings(true);
+                }}
+                className="p-1.5 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                title="Settings"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
               <Sparkles className="w-3.5 h-3.5 text-white/60" />
               <button
-                onClick={() => setOpen(false)}
-                className="ml-2 p-1.5 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                onClick={() => { stopSpeaking(); setOpen(false); }}
+                className="p-1.5 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors"
                 title="Minimise"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => { stopSpeaking(); setOpen(false); }}
+                className="p-1.5 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors"
+                title="Close"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -415,13 +1336,13 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
                 />
               </div>
 
-              {/* Messages */}
+              {/* Messages wrapper */}
               <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
                 {messages.length === 0 ? (
                   <div className="flex-1 flex flex-col justify-end">
                     <div className="px-5 py-4 text-center">
-                      <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 dark:from-indigo-900/30 dark:to-violet-900/30 flex items-center justify-center">
-                        <Bot className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                      <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 dark:from-indigo-900/30 dark:to-violet-900/30 flex items-center justify-center overflow-hidden">
+                        {renderAvatar("w-6 h-6 text-indigo-600 dark:text-indigo-400")}
                       </div>
                       <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                         Hi{session.username ? `, ${session.username}` : ""}! I'm {botName}.
@@ -429,29 +1350,86 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                         Tell me what to do, ask about mental models, or use your mic 🎤
                       </p>
+                      <div className="flex flex-col gap-2 mt-4 max-w-[240px] mx-auto">
+                        <button
+                          onClick={triggerDailyBriefing}
+                          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-indigo-500/20 active:scale-95"
+                        >
+                          <Volume2 className="w-3.5 h-3.5" /> Brief My Day (Audio)
+                        </button>
+                        <button
+                          onClick={triggerWeeklyBriefing}
+                          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-violet-500/20 active:scale-95"
+                        >
+                          <Volume2 className="w-3.5 h-3.5" /> Describe Weekly Tasks (Audio)
+                        </button>
+                      </div>
                     </div>
                     <SuggestedPrompts onSelect={(p) => { setInput(p); }} context={context} />
                   </div>
                 ) : (
-                  <ChatWindow messages={messages} />
+                  <ChatWindow
+                    messages={messages}
+                    proposedTasks={proposedTasks}
+                    onConfirmProposed={addTasksToMatrix}
+                    onCancelProposed={() => setProposedTasks([])}
+                    isSubmittingProposed={isSubmittingTasks}
+                    avatarType={avatarType}
+                    avatarIcon={avatarIcon}
+                    avatarImage={avatarImage}
+                    workspaces={workspaces}
+                    onSelectWorkspace={handleSelectWorkspace}
+                    username={session.username}
+                  />
                 )}
               </div>
 
-              {/* Proposed task confirmation */}
-              {proposedTasks.length > 0 && (
-                <ProposedTaskCard
-                  tasks={proposedTasks}
-                  onConfirm={addTasksToMatrix}
-                  onCancel={() => setProposedTasks([])}
-                  isSubmitting={isSubmittingTasks}
-                />
+              {/* Spoken Briefing Active Wave Visualizer */}
+              {isSpeaking && (
+                <div className="px-4 py-3 bg-gradient-to-r from-indigo-500/5 to-violet-500/5 border-t border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    <div className="flex items-end gap-[3px] h-4 w-6 shrink-0 pb-0.5">
+                      <span className={`w-[3px] bg-indigo-500 rounded-full transition-all duration-300 ${isPaused ? 'h-[4px]' : 'h-[14px] animate-bounce'}`} style={{ animationDelay: '0.1s', animationDuration: '0.6s' }} />
+                      <span className={`w-[3px] bg-violet-500 rounded-full transition-all duration-300 ${isPaused ? 'h-[4px]' : 'h-[10px] animate-bounce'}`} style={{ animationDelay: '0.3s', animationDuration: '0.5s' }} />
+                      <span className={`w-[3px] bg-indigo-600 rounded-full transition-all duration-300 ${isPaused ? 'h-[4px]' : 'h-[16px] animate-bounce'}`} style={{ animationDelay: '0.2s', animationDuration: '0.7s' }} />
+                      <span className={`w-[3px] bg-violet-600 rounded-full transition-all duration-300 ${isPaused ? 'h-[4px]' : 'h-[8px] animate-bounce'}`} style={{ animationDelay: '0.4s', animationDuration: '0.4s' }} />
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 truncate animate-pulse">
+                      {isPaused ? "Voice Briefing Paused" : `${botName} is speaking…`}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {isPaused ? (
+                      <button
+                        onClick={resumeSpeaking}
+                        className="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[9px] font-black uppercase tracking-wider transition-all shadow-sm active:scale-95"
+                      >
+                        Play
+                      </button>
+                    ) : (
+                      <button
+                        onClick={pauseSpeaking}
+                        className="px-2.5 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-100 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all"
+                      >
+                        Pause
+                      </button>
+                    )}
+                    <button
+                      onClick={stopSpeaking}
+                      className="px-2.5 py-1.5 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-450 hover:bg-rose-100 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1"
+                    >
+                      <VolumeX className="w-3 h-3" /> Stop
+                    </button>
+                  </div>
+                </div>
               )}
 
               {/* Input */}
               <ChatInput
                 value={input}
                 onChange={setInput}
-                onSend={sendMessage}
+                onSend={() => handleUserMessage(input)}
                 disabled={isStreaming || isSubmittingTasks}
                 silenceTimeoutMs={2500}
                 autoSubmitAfterSilence={false}

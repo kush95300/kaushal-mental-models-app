@@ -9,7 +9,11 @@ import {
   approveUser,
   changeAdminPassword,
   logout,
+  getPasswordResetRequests,
+  resolvePasswordResetRequest,
+  getPasswordHistory,
 } from "@/actions/auth";
+import { getPendingFAQs, resolveFAQ } from "@/actions/faq";
 import {
   UserPlus,
   Trash2,
@@ -27,6 +31,8 @@ import {
   CheckCheck,
   XCircle,
   ChevronDown,
+  History,
+  HelpCircle,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -46,6 +52,42 @@ export default function AdminPortal() {
 
   const [actionError, setActionError] = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
+  const [resetRequests, setResetRequests] = useState<any[]>([]);
+  const [passwordHistory, setPasswordHistory] = useState<any[]>([]);
+  const [copiedPass, setCopiedPass] = useState<string | null>(null);
+
+  // ── FAQ Moderation state ────────────────────────────────────────────────────
+  const [pendingFAQs, setPendingFAQs] = useState<any[]>([]);
+  const [faqAnswers, setFaqAnswers] = useState<Record<number, string>>({});
+  const [faqLoading, setFaqLoading] = useState(false);
+
+  const handleResolveFAQ = async (id: number, approve: boolean) => {
+    setActionError("");
+    setActionSuccess("");
+    const answer = faqAnswers[id] || "";
+    if (approve && !answer.trim()) {
+      setActionError("Answer cannot be empty for approval.");
+      return;
+    }
+
+    setFaqLoading(true);
+    const res = await resolveFAQ(id, answer, approve);
+    if (res.success) {
+      setActionSuccess(approve ? "Question answered and approved successfully." : "Question deleted successfully.");
+      setFaqAnswers((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      const resFAQs = await getPendingFAQs();
+      if (resFAQs.success && resFAQs.data) {
+        setPendingFAQs(resFAQs.data);
+      }
+    } else {
+      setActionError(res.error || "Action failed.");
+    }
+    setFaqLoading(false);
+  };
 
   // ── AI Chat Quota state ────────────────────────────────────────────────────
   const [quotaSettings, setQuotaSettings] = useState<{ period: string; defaultLimit: number } | null>(null);
@@ -129,7 +171,35 @@ export default function AdminPortal() {
     if (resPending.success && resPending.users) {
       setPendingUsers(resPending.users);
     }
+    const resResets = await getPasswordResetRequests();
+    if (resResets.success && resResets.requests) {
+      setResetRequests(resResets.requests);
+    }
+    const resHistory = await getPasswordHistory();
+    if (resHistory.success && resHistory.history) {
+      setPasswordHistory(resHistory.history);
+    }
+    const resFAQs = await getPendingFAQs();
+    if (resFAQs.success && resFAQs.data) {
+      setPendingFAQs(resFAQs.data);
+    }
     setLoading(false);
+  };
+
+  const handleResolveReset = async (id: number, action: "approve" | "reject") => {
+    setActionError("");
+    setActionSuccess("");
+    const res = await resolvePasswordResetRequest(id, action);
+    if (res.success) {
+      if (action === "approve") {
+        setActionSuccess(`Request approved! Temporary password is: ${res.tempPassword}. Please copy and send it to the user.`);
+      } else {
+        setActionSuccess("Password reset request rejected.");
+      }
+      fetchData();
+    } else {
+      setActionError(res.error || "Action failed");
+    }
   };
 
   useEffect(() => {
@@ -425,6 +495,148 @@ export default function AdminPortal() {
               </div>
             )}
 
+            {/* Password Reset Requests & Security Logs */}
+            {(resetRequests.length > 0 || passwordHistory.length > 0) && (
+              <div className="bg-indigo-50/70 dark:bg-indigo-950/20 backdrop-blur-xl p-6 rounded-3xl border border-indigo-200 dark:border-indigo-800/40 shadow-xl">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                  {/* Requests list */}
+                  <div className="space-y-4">
+                    <h2 className="text-xl font-black flex items-center gap-2 text-indigo-900 dark:text-indigo-200">
+                      <KeyRound className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />{" "}
+                      Password Reset Requests ({resetRequests.filter(r => r.status === "PENDING").length} pending)
+                    </h2>
+
+                    {resetRequests.length === 0 ? (
+                      <p className="text-xs font-medium text-slate-400 dark:text-slate-500 py-4 text-center">
+                        No password reset requests pending or resolved.
+                      </p>
+                    ) : (
+                      <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+                        {resetRequests.map((req) => (
+                          <div
+                            key={req.id}
+                            className="p-4 bg-white dark:bg-slate-800 rounded-2xl border border-indigo-100 dark:border-indigo-950/60 shadow-sm space-y-2 text-slate-900 dark:text-slate-100"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="font-bold text-lg text-slate-800 dark:text-slate-200">{req.username}</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
+                                  Requested{" "}
+                                  {new Date(req.createdAt).toLocaleString()}
+                                </div>
+                              </div>
+
+                              {req.status === "PENDING" ? (
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() =>
+                                      handleResolveReset(req.id, "approve")
+                                    }
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold text-xs transition-colors shadow-sm shadow-emerald-500/20"
+                                    title="Approve Reset"
+                                  >
+                                    <CheckCircle className="w-4 h-4" /> Approve
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      handleResolveReset(req.id, "reject")
+                                    }
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold text-xs transition-colors shadow-sm shadow-rose-500/20"
+                                    title="Reject Reset"
+                                  >
+                                    <X className="w-4 h-4" /> Reject
+                                  </button>
+                                </div>
+                              ) : (
+                                <span
+                                  className={`px-2.5 py-1 text-xs font-black uppercase tracking-wider rounded-lg ${
+                                    req.status === "APPROVED"
+                                      ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300"
+                                      : req.status === "COMPLETED"
+                                      ? "bg-indigo-100 dark:bg-indigo-950/45 text-indigo-700 dark:text-indigo-300"
+                                      : "bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300"
+                                  }`}
+                                >
+                                  {req.status}
+                                </span>
+                              )}
+                            </div>
+
+                            {req.status === "APPROVED" && req.tempPassword && (
+                              <div className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 text-xs">
+                                <div className="font-medium text-slate-500 dark:text-slate-400">
+                                  Temp Password: <code className="bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded font-mono font-bold text-slate-800 dark:text-slate-200">{req.tempPassword}</code>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(req.tempPassword);
+                                    setCopiedPass(req.tempPassword);
+                                    setTimeout(() => setCopiedPass(null), 2000);
+                                  }}
+                                  className="text-[10px] font-black uppercase tracking-wider text-indigo-500 hover:text-indigo-600"
+                                >
+                                  {copiedPass === req.tempPassword ? "Copied!" : "Copy"}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Security History */}
+                  <div className="space-y-4 border-t xl:border-t-0 xl:border-l border-indigo-100 dark:border-slate-800/80 xl:pt-0 xl:pl-8 pt-6">
+                    <h2 className="text-xl font-black flex items-center gap-2 text-indigo-900 dark:text-indigo-200">
+                      <History className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />{" "}
+                      Security Event Log
+                    </h2>
+
+                    <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+                      {passwordHistory.length === 0 ? (
+                        <p className="text-xs font-medium text-slate-400 dark:text-slate-500 py-8 text-center">
+                          No password security events logged yet.
+                        </p>
+                      ) : (
+                        passwordHistory.map((log) => {
+                          let actionLabel = log.action;
+                          let colorClass = "text-slate-600 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800/80";
+                          if (log.action === "PASSWORD_CHANGED") {
+                            actionLabel = "Password Updated (Manual)";
+                            colorClass = "text-indigo-700 dark:text-indigo-300 bg-indigo-50/40 dark:bg-indigo-950/20 border-indigo-100/50 dark:border-indigo-900/30";
+                          } else if (log.action === "REQUEST_CREATED") {
+                            actionLabel = "Password Reset Requested";
+                            colorClass = "text-amber-700 dark:text-amber-300 bg-amber-50/40 dark:bg-amber-950/20 border-amber-100/50 dark:border-indigo-900/30";
+                          } else if (log.action === "REQUEST_APPROVED") {
+                            actionLabel = "Reset Request Approved";
+                            colorClass = "text-emerald-700 dark:text-emerald-300 bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-100/50 dark:border-indigo-900/30";
+                          } else if (log.action === "REQUEST_REJECTED") {
+                            actionLabel = "Reset Request Rejected";
+                            colorClass = "text-rose-700 dark:text-rose-300 bg-rose-50/40 dark:bg-rose-950/20 border-rose-100/50 dark:border-indigo-900/30";
+                          }
+
+                          return (
+                            <div
+                              key={log.id}
+                              className={`p-3 rounded-xl border text-xs flex items-center justify-between gap-4 transition-colors ${colorClass}`}
+                            >
+                              <div>
+                                <div className="font-bold text-slate-800 dark:text-slate-200">{log.username}</div>
+                                <div className="text-[10px] font-semibold mt-0.5">{actionLabel}</div>
+                              </div>
+                              <div className="text-[10px] font-medium text-slate-400 shrink-0">
+                                {new Date(log.createdAt).toLocaleString()}
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Managed Users */}
             <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl min-h-[400px]">
               <h2 className="text-xl font-black mb-6 flex items-center gap-2">
@@ -640,6 +852,76 @@ export default function AdminPortal() {
                 </div>
               )}
             </div>
+
+            {/* FAQ Moderation Dashboard */}
+            <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-6 rounded-3xl border border-indigo-200 dark:border-indigo-800/40 shadow-xl mt-8">
+              <h2 className="text-xl font-black mb-6 flex items-center gap-2">
+                <HelpCircle className="w-5 h-5 text-indigo-500" /> FAQ Moderation Dashboard
+                {pendingFAQs.length > 0 && (
+                  <span className="px-2 py-0.5 text-[10px] font-black bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 rounded-full">
+                    {pendingFAQs.length}
+                  </span>
+                )}
+              </h2>
+
+              {pendingFAQs.length === 0 ? (
+                <div className="text-center py-12 text-slate-400 text-sm font-medium border border-dashed border-slate-200 dark:border-slate-700 rounded-2xl">
+                  No pending questions to review or answer.
+                </div>
+              ) : (
+                <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
+                  {pendingFAQs.map((faq) => (
+                    <div
+                      key={faq.id}
+                      className="p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm space-y-3"
+                    >
+                      <div className="flex justify-between items-start gap-4">
+                        <div>
+                          <p className="font-bold text-slate-800 dark:text-slate-100">{faq.question}</p>
+                          <p className="text-[10px] text-slate-400 font-medium mt-1">
+                            Submitted on {new Date(faq.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                        <span className="text-[10px] font-black uppercase bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-md shrink-0">
+                          {faq.answer ? "Awaiting Approval" : "Pending Answer"}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                          Write Answer
+                        </label>
+                        <textarea
+                          value={faqAnswers[faq.id] || faq.answer || ""}
+                          onChange={(e) => setFaqAnswers((prev) => ({ ...prev, [faq.id]: e.target.value }))}
+                          placeholder="Provide clear, concise answer..."
+                          className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800 dark:text-slate-200 resize-none font-medium"
+                          rows={2}
+                        />
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleResolveFAQ(faq.id, true)}
+                          disabled={faqLoading || !(faqAnswers[faq.id] || faq.answer)?.trim()}
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-sm disabled:opacity-50 transition-colors"
+                        >
+                          Approve & Answer
+                        </button>
+                        <button
+                          onClick={() => handleResolveFAQ(faq.id, false)}
+                          disabled={faqLoading}
+                          className="px-4 py-2 bg-rose-50 dark:bg-rose-900/30 hover:bg-rose-100 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-black transition-colors"
+                        >
+                          Delete Question
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       </div>

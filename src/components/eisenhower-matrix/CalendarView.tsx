@@ -146,7 +146,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           >
             <button
               onClick={navigatePrev}
-              className="p-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-2xl text-slate-400 dark:text-slate-550 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all shadow-sm cursor-pointer"
+              className="p-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-2xl text-slate-400 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all shadow-sm cursor-pointer"
             >
               <ChevronLeft size={20} />
             </button>
@@ -168,7 +168,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           >
             <button
               onClick={navigateNext}
-              className="p-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-2xl text-slate-400 dark:text-slate-550 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all shadow-sm cursor-pointer"
+              className="p-3 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-2xl text-slate-400 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all shadow-sm cursor-pointer"
             >
               <ChevronRight size={20} />
             </button>
@@ -182,7 +182,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         {WEEKDAYS.map((day) => (
           <div
             key={day}
-            className="bg-slate-50 dark:bg-slate-900/50 p-2 sm:p-4 text-center text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-550"
+            className="bg-slate-50 dark:bg-slate-900/50 p-2 sm:p-4 text-center text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500"
           >
             {day}
           </div>
@@ -196,13 +196,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           return (
             <div
               key={index}
-              className={`bg-white dark:bg-slate-900 p-2 sm:p-3 hover:bg-slate-50/50 dark:hover:bg-slate-850/50 transition-colors flex flex-col gap-1 sm:gap-2 ${
+              className={`bg-white dark:bg-slate-900 p-2 sm:p-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors flex flex-col gap-1 sm:gap-2 ${
                 viewType === "week"
                   ? "min-h-[100px] sm:min-h-[140px]"
                   : "min-h-[85px] sm:min-h-[140px]"
               } ${
                 !dayObj.isCurrentMonth
-                  ? "bg-slate-50/30 dark:bg-slate-950/20 text-slate-300 dark:text-slate-700"
+                  ? "bg-slate-50/30 dark:bg-slate-950/20 text-slate-400 dark:text-slate-700"
                   : "text-slate-700 dark:text-slate-300"
               }`}
             >

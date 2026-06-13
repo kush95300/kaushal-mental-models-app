@@ -1,4 +1,4 @@
-# 🧪 Feature Test — AI Chatbot Tasker (Betu) v2.3.0
+# 🧪 Feature Test — AI Chatbot Tasker (Betu) v2.4.0
 
 Manual step-by-step verification guide for the AI Chatbot Tasker feature.
 
@@ -261,6 +261,209 @@ Manual step-by-step verification guide for the AI Chatbot Tasker feature.
 
 ---
 
+## Test 17 — Forgot Password Flow & Admin Approval
+
+**Steps:**
+1. Log out of your active session.
+2. At the `/login` screen, click **"Forgot Password?"**.
+3. Type a registered username (e.g. `user1`) and click **"Request Password Reset"**.
+4. Confirm success message is displayed.
+5. Log in as **admin** (`admin`/`admin`).
+6. Navigate to `/admin`. You should see a **Password Reset Requests** panel.
+7. Locate the request for `user1` and click **"Approve"**.
+8. Verify that a card showing a temporary password (e.g. `temp-XXXXXX`) appears with a **"Copy"** button.
+9. Click **"Copy"** and confirm clipboard has the plaintext temporary password.
+10. Log out, go to `/login`, and sign in using `user1` and the copied temporary password.
+
+**Expected:**
+- Password reset request submitted successfully.
+- Request appears in the admin portal list.
+- Approval generates a temporary alphanumeric password and invalidates active user sessions by incrementing the user's `tokenVersion`.
+- User can successfully log in using the temporary credentials.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
+## Test 18 — Missing API Key Validation
+
+**Steps:**
+1. Temporarily clear your `GEMINI_API_KEY` (or the key of whichever provider you want to test) in `.env` and restart the dev server.
+2. Open the chatbot, select that provider (e.g. Gemini), and type a message.
+3. Submit the message.
+
+**Expected:**
+- The chatbot response block displays the specific error: `Gemini API key is not configured. Please set GEMINI_API_KEY in your environment variables.` (or corresponding provider error).
+- The bot does NOT fall back silently, and does NOT show a generic "Sorry, something went wrong" message.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
+## Test 19 — Voice Input Speech Pausing (Jitter Test)
+
+**Steps:**
+1. Open the chatbot.
+2. Click the microphone icon button.
+3. Say: `"Add a task: Design homepage"`
+4. Stop speaking for 1-2 seconds (do NOT click stop, let the mic stay active).
+5. Say: `"by tomorrow"`
+6. Let the silence timeout auto-stop the recording.
+
+**Expected:**
+- The textbox should accumulate the speech segments sequentially: `"Design homepage by tomorrow"`.
+- The second phrase should NOT erase or overwrite the first phrase.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
+## Test 20 — Daily Briefing Playback & Audio Controls
+
+**Steps:**
+1. Open the chatbot.
+2. Click the **"Brief My Day (Audio)"** button in the welcome feed.
+3. Observe the loading state, then watch the text output appear.
+4. Listen to the bot synthesize and read the daily statistics aloud.
+5. Verify that a card with a **sound wave animation** (bouncing lines) and controls (**Pause / Play / Stop**) appears at the bottom.
+6. Click **"Pause"** and verify audio pauses and state switches to "Voice Briefing Paused".
+7. Click **"Play"** (Resume) and verify speech resumes.
+8. Click **"Stop"** and verify speech cancels completely and the wave card disappears.
+
+**Expected:**
+- Stats, daily productivity comparison, and weekly quadrant advice script generated.
+- Web Speech synthesis plays clean speech (no asterisks or list tags read).
+- Sound wave indicator animates during active speech and pauses when audio is paused.
+- All controls function smoothly.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
+## Test 21 — Analytics Contribution Calendar Heatmap
+
+**Steps:**
+1. Navigate to the **Analytics** page (`/analytics?workspaceId=1`).
+2. Verify the **Completed Tasks Heatmap** card is rendered.
+3. Confirm that it displays 53 columns representing the last 375 days.
+4. Confirm month labels are aligned dynamically above their starting columns.
+5. Hover over a cell representing a day where tasks were completed. Verify the custom tooltip displays the exact count and date.
+6. Complete 3 tasks today in your matrix, then return to Analytics. Confirm today's cell turns medium indigo (3-4 tasks).
+
+**Expected:**
+- Calendar grid displayed with correct cells and legend.
+- Color coding scales properly (0 = grey, 1-2 = light purple, 3-4 = medium, 5+ = dark).
+- Tooltips display on hover.
+- Today's completed tasks increment today's cell immediately.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
+## Test 22 — Hinglish Chat Mode
+
+**Steps:**
+1. Open the chatbot settings panel (gear icon).
+2. Locate the **Language (Bhasha)** setting and select **Hinglish**.
+3. Close settings, and send a message: `Plan a task to fix login bugs tomorrow`
+4. Verify the response.
+
+**Expected:**
+- The chatbot's conversational replies and questions are written in Hinglish (using Latin script, e.g. "Maine aapke login bug task ko matrix mein add kar diya hai").
+- The proposed tasks list is STILL generated with task contents in English (e.g. "Fix login bugs") and correct dates/estimation details.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
+## Test 23 — Hinglish Audio Briefings
+
+**Steps:**
+1. While in **Hinglish** mode, click **"Brief My Day (Audio)"** or **"Describe Weekly Tasks (Audio)"**.
+2. Listen to the spoken voice.
+
+**Expected:**
+- The generated briefing text is in Hinglish (Roman script, e.g. "Namaste! Main hoon aapka assistant...").
+- The text-to-speech engine speaks out the Hinglish sentences correctly.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
+## Test 24 — Persistent Multi-Session Chat History
+
+**Steps:**
+1. Open the chatbot and send 3-4 messages.
+2. Click the **New Chat** (`Plus` icon) button in the header. Verify the chat panel is cleared.
+3. Send a message in the new session.
+4. Click the gear icon to open settings. Verify you can see both sessions listed under **Chat History (Max 7)**.
+5. Click the first session. Verify it restores the message history.
+6. Create 6 more chat sessions (total of 8). Verify the oldest session is automatically deleted (retaining exactly 7).
+7. In settings, click the trash icon next to a session. Verify it is deleted.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
+## Test 25 — Forced Video Tour and Interactive Walkthrough Redirects
+
+**Steps:**
+1. Open the chatbot settings, and make sure **English** is selected.
+2. Ask the bot: `show matrix tutorial`.
+3. In the interactive buttons that appear, click **"🎥 Play Video Onboarding Tour"**.
+4. Observe the page redirection and load state.
+5. Go back to chatbot and click **"🎯 Start Interactive Matrix Walkthrough"**.
+6. Observe the page redirection and load state.
+
+**Expected:**
+- Clicking "🎥 Play Video Onboarding Tour" redirects to `/eisenhower-matrix?videoTour=true` and launches the Video Tour Player overlaying the workspace.
+- Clicking "🎯 Start Interactive Matrix Walkthrough" redirects to `/eisenhower-matrix?tutorial=true` and launches the step-by-step focus highlighting page walkthrough.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
+## Test 26 — Refined Q&A Conceptual Routing
+
+**Steps:**
+1. Open the chatbot.
+2. Type: `what is the heisenhower matrix` -> Send.
+3. Observe the response.
+
+**Expected:**
+- The response streams conversationally from Gemini, explaining the matrix concept.
+- It is NOT blocked or intercepted locally.
+4. Type: `show matrix guide` -> Send.
+5. Verify it intercepts locally, showing the three tutorial buttons (Video Onboarding, Matrix Walkthrough, Analytics Walkthrough).
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
+## Test 27 — Priority Routing Engine & Enable Routing Logs Toggle
+
+**Steps:**
+1. Open the chatbot settings panel (gear icon).
+2. Toggle the **"Enable Routing Logs"** checkbox (check it).
+3. Close settings.
+4. Type: `what is the eisenhower matrix` -> Send.
+5. Observe the log pill at the top of the message stream.
+6. Type: `make cake recipes` -> Send.
+7. Observe the log pill.
+8. Type: `Add a task: write code` -> Send.
+9. Observe the log pill.
+
+**Expected:**
+- The toggle checkbox is persisted in `localStorage`.
+- Enabling the toggle displays center-aligned system logs in the chat history.
+- For `what is the eisenhower matrix` (or guide request), the log pill displays: `🔍 Routing Decision: VIDEO_TUTORIAL`.
+- For `make cake recipes` (off-topic query), the log pill displays: `🔍 Routing Decision: FAQ (OFF_TOPIC)`.
+- For `Add a task: write code` (task manipulation query), the log pill displays: `🔍 Routing Decision: GEMINI`.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
 ## Production Build
 
 > ⚠️ Run this step manually in your terminal — **do NOT let the IDE run it automatically**.
@@ -293,4 +496,15 @@ npm run build
 | 14 | Quota exceeded + request flow | |
 | 15 | Rate limiting | |
 | 16 | Chatbot Renaming | |
+| 17 | Forgot Password & Admin Approve | |
+| 18 | Explicit API Key Missing Errors | |
+| 19 | Voice Pause Concatenation Jitter | |
+| 20 | Daily Spoken Briefing Playback | |
+| 21 | Analytics Activity Heatmap Grid | |
+| 22 | Hinglish Chat Mode | |
+| 23 | Hinglish Audio Briefings | |
+| 24 | Persistent Multi-Session Chat History | |
+| 25 | Forced Video Tour Redirect | |
+| 26 | Refined Q&A Conceptual Routing | |
+| 27 | Priority Routing Engine & Logs | |
 | — | Production build | |

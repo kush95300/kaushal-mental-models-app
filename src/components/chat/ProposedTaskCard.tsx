@@ -51,7 +51,7 @@ export default function ProposedTaskCard({
       </div>
 
       {/* Tasks table */}
-      <div className="divide-y divide-indigo-100/60 dark:divide-indigo-800/30">
+      <div className="divide-y divide-indigo-100/60 dark:divide-indigo-800/30 max-h-[180px] overflow-y-auto">
         {mainTasks.map((task, i) => {
           const q = QUADRANT_META[task.quadrant] ?? QUADRANT_META.INBOX;
           return (

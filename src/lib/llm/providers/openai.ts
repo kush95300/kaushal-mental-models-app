@@ -16,7 +16,7 @@ export async function streamOpenAI(
     model: "gpt-4o-mini",
     stream: true,
     temperature: 0.4,
-    max_tokens: 1024,
+    max_tokens: 4096,
     response_format: { type: "json_object" },
     messages: [
       { role: "system", content: systemPrompt },

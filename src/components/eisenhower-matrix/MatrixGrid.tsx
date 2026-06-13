@@ -102,7 +102,7 @@ export const MatrixGrid: React.FC<MatrixGridProps> = ({
       id: "ELIMINATE",
       label: "Eliminate",
       color: "bg-slate-400",
-      textColor: "text-slate-550 dark:text-slate-400",
+      textColor: "text-slate-500 dark:text-slate-400",
     },
   ];
 
@@ -113,7 +113,7 @@ export const MatrixGrid: React.FC<MatrixGridProps> = ({
     >
       <div className="flex justify-between items-center mb-6 px-2">
         <div>
-          <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-slate-550">
+          <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
             Draft Queue
           </h3>
           <div className="flex items-center gap-2">
@@ -130,7 +130,7 @@ export const MatrixGrid: React.FC<MatrixGridProps> = ({
           position="top"
           align="right"
         >
-          <div className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-550 rounded-2xl relative z-10 hover:z-[9999]">
+          <div className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-2xl relative z-10 hover:z-[9999]">
             <PlusCircle className="w-5 h-5" />
           </div>
         </Tooltip>

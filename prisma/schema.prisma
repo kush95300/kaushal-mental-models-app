@@ -126,3 +126,36 @@ model ChatQuotaRequest {
   @@index([userId])
   @@index([status])
 }
+
+// User-raised password reset requests
+model PasswordResetRequest {
+  id           Int       @id @default(autoincrement())
+  username     String
+  status       String    @default("PENDING") // PENDING | APPROVED | REJECTED | COMPLETED
+  tempPassword String?   // Generated plaintext temporary password for the admin to copy
+  createdAt    DateTime  @default(now())
+  resolvedAt   DateTime?
+
+  @@index([status])
+}
+
+model PasswordHistory {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  username  String
+  action    String   // "REQUEST_CREATED" | "REQUEST_APPROVED" | "REQUEST_REJECTED" | "PASSWORD_CHANGED"
+  createdAt DateTime @default(now())
+
+  @@index([username])
+}
+
+model FAQ {
+  id         Int      @id @default(autoincrement())
+  question   String
+  answer     String?  // null represents pending answer from admin
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+

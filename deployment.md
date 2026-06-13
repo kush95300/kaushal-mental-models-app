@@ -200,7 +200,7 @@ This option maps the application service to port `3001` on your host and mounts 
 graph TD
     subgraph Host System
         HostPort[Host Port: 3001] -->|Maps to| ContPort[Container Port: 3000]
-        Vol[(Named Volume: kaushal_mental_models_sqlite_data)] -->|Mounts to| ContDbPath[/app/prisma]
+        Vol[(Named Volume: kaushal_mental_models_sqlite_data)] -->|Mounts to| ContDbPath[/app/data]
     end
 
     subgraph Docker Compose Service: web
@@ -252,7 +252,7 @@ make app-update
 ```
 
 > [!NOTE]
-> `make app-update` executes `docker cp kaushal-mental-models-app:/app/prisma/dev.db ./dev_db_backup_before_update.db` to back up your database to the host directory before pulling the registry updates and starting the new container.
+> `make app-update` executes `docker cp kaushal-mental-models-app:/app/data/dev.db ./dev_db_backup_before_update.db` to back up your database to the host directory before pulling the registry updates and starting the new container.
 
 **Step 5: Monitor Logs & Container Status**
 Check if the service started correctly, ran migrations, seeded the database, and is listening:
