@@ -177,6 +177,14 @@ export default function Home() {
             </Link>
           )}
 
+          <Link
+            href="/faq"
+            className="p-2 sm:p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-white dark:border-slate-800 shadow-lg text-slate-500 dark:text-slate-400 hover:scale-110 hover:text-indigo-500 dark:hover:text-indigo-400 active:scale-95 transition-all flex items-center justify-center"
+            title="FAQ & Help Center"
+          >
+            <HelpCircle size={20} />
+          </Link>
+
           <button
             onClick={toggleTheme}
             className="p-2 sm:p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-white dark:border-slate-800 shadow-lg text-slate-500 dark:text-amber-400 hover:scale-110 active:scale-95 transition-all group"

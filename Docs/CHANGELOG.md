@@ -4,11 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [v2.4.5] - 2026-06-13
 
-### Fixed — Mobile Voice Recognition Duplication and Stuttering
+### Fixed & Added — Mobile Voice, FAQ Redirection, and Reset Request Deletion
 
 - **Mobile Web Speech API Duplication & Overlap Fix**:
   - Resolved an issue where Chrome and Safari on mobile devices (Android/iOS) produced duplicate or stuttering text transcription (e.g., "addaddaddadad" or "add a task of add a task of washing clothes") due to native SpeechRecognition returning overlapping/cumulative results.
   - Implemented an overlap-aware word alignment algorithm inside `onresult` that dynamically computes prefix and suffix word overlaps across all event result segments. This deduplicates overlapping/cumulative speech data seamlessly, ensuring clean, continuous transcription on both mobile and desktop browsers.
+- **FAQ Navigation Redirection & Seeding**:
+  - Added a navigation link (Help icon) to the FAQ page on the main landing/home page header.
+  - Added an FAQ button (MessageSquare icon) in the Eisenhower Matrix desktop header and a "FAQ & Help Center" list option in the mobile menu drawer to make FAQ accessibility universally available.
+  - Expanded default FAQs to include questions on voice input, completed tasks, and Test Mode, seeding a total of 7 useful, pre-populated Q&As into the database.
 - **Admin Password Reset Request Deletion**:
   - Added a delete button (trash icon) next to resolved/approved password reset request status badges in the Admin Portal.
   - Implemented the `deletePasswordResetRequest` Server Action to securely purge reset request records from the database.

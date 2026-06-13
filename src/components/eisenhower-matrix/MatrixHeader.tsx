@@ -24,6 +24,7 @@ import {
   Menu,
   Sliders,
   X,
+  MessageSquare,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { Task, Workspace, User } from "@/types/eisenhower";
@@ -327,6 +328,14 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
               <HelpCircle size={18} />
             </button>
           </Tooltip>
+          <Tooltip content="FAQ & Help Center: View answers to common questions or submit a new question.">
+            <Link
+              href="/faq"
+              className="p-2.5 text-slate-400 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 rounded-2xl border border-white dark:border-slate-800 shadow-sm transition-all hover:shadow-md relative z-10 hover:z-[9999] hover:text-indigo-500 dark:hover:text-indigo-400 flex items-center justify-center"
+            >
+              <MessageSquare size={18} />
+            </Link>
+          </Tooltip>
           <Tooltip content="Settings Menu: Configure time management, daily workload limits, and matrix preferences.">
             <button
               onClick={onSettingsClick}
@@ -621,6 +630,22 @@ export const MatrixHeader: React.FC<MatrixHeaderProps> = ({
                       </span>
                     </div>
                   </button>
+
+                  <Link
+                    href="/faq"
+                    onClick={() => setShowMobileMenu(false)}
+                    className="w-full flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-800 transition-all text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <MessageSquare
+                        size={16}
+                        className="text-slate-500 dark:text-slate-400"
+                      />
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                        FAQ & Help Center
+                      </span>
+                    </div>
+                  </Link>
 
                   <button
                     onClick={() => {
