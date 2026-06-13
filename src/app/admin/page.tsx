@@ -12,6 +12,7 @@ import {
   getPasswordResetRequests,
   resolvePasswordResetRequest,
   getPasswordHistory,
+  deletePasswordResetRequest,
 } from "@/actions/auth";
 import { getPendingFAQs, resolveFAQ } from "@/actions/faq";
 import {
@@ -199,6 +200,18 @@ export default function AdminPortal() {
       fetchData();
     } else {
       setActionError(res.error || "Action failed");
+    }
+  };
+
+  const handleDeleteReset = async (id: number) => {
+    setActionError("");
+    setActionSuccess("");
+    const res = await deletePasswordResetRequest(id);
+    if (res.success) {
+      setActionSuccess("Password reset request record removed successfully.");
+      fetchData();
+    } else {
+      setActionError(res.error || "Failed to remove request record.");
     }
   };
 
@@ -548,17 +561,26 @@ export default function AdminPortal() {
                                   </button>
                                 </div>
                               ) : (
-                                <span
-                                  className={`px-2.5 py-1 text-xs font-black uppercase tracking-wider rounded-lg ${
-                                    req.status === "APPROVED"
-                                      ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300"
-                                      : req.status === "COMPLETED"
-                                      ? "bg-indigo-100 dark:bg-indigo-950/45 text-indigo-700 dark:text-indigo-300"
-                                      : "bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300"
-                                  }`}
-                                >
-                                  {req.status}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className={`px-2.5 py-1 text-xs font-black uppercase tracking-wider rounded-lg ${
+                                      req.status === "APPROVED"
+                                        ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300"
+                                        : req.status === "COMPLETED"
+                                        ? "bg-indigo-100 dark:bg-indigo-950/45 text-indigo-700 dark:text-indigo-300"
+                                        : "bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300"
+                                    }`}
+                                  >
+                                    {req.status}
+                                  </span>
+                                  <button
+                                    onClick={() => handleDeleteReset(req.id)}
+                                    className="p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors"
+                                    title="Delete Request Record"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
                               )}
                             </div>
 

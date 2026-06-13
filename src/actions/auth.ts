@@ -590,3 +590,26 @@ export async function getPasswordHistory() {
   }
 }
 
+export async function deletePasswordResetRequest(id: number) {
+  try {
+    const cookieStore = await cookies();
+    const session = cookieStore.get("session")?.value;
+    if (!session) return { success: false, error: "Unauthorized" };
+
+    const payload = await decrypt(session);
+    if (!payload || !payload.isAdmin) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    await prisma.passwordResetRequest.delete({
+      where: { id },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Delete password reset request error:", error);
+    return { success: false, error: "Failed to delete reset request" };
+  }
+}
+
+

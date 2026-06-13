@@ -9,6 +9,9 @@ All notable changes to this project will be documented in this file.
 - **Mobile Web Speech API Duplication & Overlap Fix**:
   - Resolved an issue where Chrome and Safari on mobile devices (Android/iOS) produced duplicate or stuttering text transcription (e.g., "addaddaddadad" or "add a task of add a task of washing clothes") due to native SpeechRecognition returning overlapping/cumulative results.
   - Implemented an overlap-aware word alignment algorithm inside `onresult` that dynamically computes prefix and suffix word overlaps across all event result segments. This deduplicates overlapping/cumulative speech data seamlessly, ensuring clean, continuous transcription on both mobile and desktop browsers.
+- **Admin Password Reset Request Deletion**:
+  - Added a delete button (trash icon) next to resolved/approved password reset request status badges in the Admin Portal.
+  - Implemented the `deletePasswordResetRequest` Server Action to securely purge reset request records from the database.
 
 ## [v2.4.4] - 2026-06-13
 
