@@ -29,8 +29,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xl animate-in fade-in duration-300">
-      <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 max-w-md w-full shadow-2xl border border-white/50 dark:border-slate-800 transition-colors animate-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 z-[50200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xl animate-in fade-in duration-300">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl sm:rounded-[2rem] p-6 sm:p-8 w-[calc(100%-2rem)] max-w-md shadow-2xl border border-white/50 dark:border-slate-800 transition-colors animate-in zoom-in-95 duration-300">
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-400">

@@ -2,6 +2,164 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v2.4.5] - 2026-06-13
+
+### Fixed & Added — Mobile Voice, FAQ Redirection, and Reset Request Deletion
+
+- **Mobile Web Speech API Duplication & Overlap Fix**:
+  - Resolved an issue where Chrome and Safari on mobile devices (Android/iOS) produced duplicate or stuttering text transcription (e.g., "addaddaddadad" or "add a task of add a task of washing clothes") due to native SpeechRecognition returning overlapping/cumulative results.
+  - Implemented an overlap-aware word alignment algorithm inside `onresult` that dynamically computes prefix and suffix word overlaps across all event result segments. This deduplicates overlapping/cumulative speech data seamlessly, ensuring clean, continuous transcription on both mobile and desktop browsers.
+- **FAQ Navigation Redirection & Seeding**:
+  - Added a navigation link (Help icon) to the FAQ page on the main landing/home page header.
+  - Added an FAQ button (MessageSquare icon) in the Eisenhower Matrix desktop header and a "FAQ & Help Center" list option in the mobile menu drawer to make FAQ accessibility universally available.
+  - Expanded default FAQs to include questions on voice input, completed tasks, and Test Mode, seeding a total of 7 useful, pre-populated Q&As into the database.
+- **Admin Password Reset Request Deletion**:
+  - Added a delete button (trash icon) next to resolved/approved password reset request status badges in the Admin Portal.
+  - Implemented the `deletePasswordResetRequest` Server Action to securely purge reset request records from the database.
+- **Chatbot Floating Icon & Invitation Label**:
+  - Restyled the floating chatbot trigger button to allow user-uploaded custom avatar images to fill the circle completely (0 padding/border), resolving the issue where custom images were rendered excessively small.
+  - Added a glassmorphic invitation label ("Ask [botName]") directly below the floating chatbot button on all pages to entice users to interact with the assistant.
+  - Configured the default agent avatar to use a custom image URL (the neural background image) and defaulted the initial avatar type to image.
+
+## [v2.4.4] - 2026-06-13
+
+### Added & Fixed — Priority Routing Logs, Log Mode Toggle, and Custom System Messages
+
+- **Priority Routing Log System**:
+  - Implemented priority-based query routing logs displaying `🔍 Routing Decision: ...` directly in the chat feed when enabled.
+  - Centered system logs in a glassmorphic pill style so they do not resemble standard assistant messages.
+- **Log Mode Toggle**:
+  - Added a new configuration toggle "Enable Routing Logs" in the settings overlay.
+  - Persistent state saved to and reloaded from `localStorage` under `chatbot_routing_logs`.
+- **Refined Priority Engine Routing**:
+  - Categorizes task queries, off-topic requests, and conceptual Q&As, accurately displaying routing decisions (`VIDEO_TUTORIAL`, `FAQ`, or `GEMINI`).
+  - Added distinct button options for the **Video Onboarding Tour** (`🎥 Play Video Onboarding Tour`) and the **Interactive Matrix Walkthrough** (`🎯 Start Interactive Matrix Walkthrough`), ensuring users can select their preferred onboarding path directly.
+- **Workspace Selection & Quota Limits Bug Fixes**:
+  - Resolved a parser bug where the client threw a generic connection error on HTTP 429 status codes instead of streaming the `quota_exceeded` JSON chunk to display the quota exhaustion message and request modal.
+  - Added case-insensitive text input matching for pending workspace choices, enabling users to type workspace names (e.g., "personal") to transition and submit tasks.
+  - Strip client-side UI directive tags (`WORKSPACE_CHOOSER`, `TUTORIAL_LINKS`, `FAQ_LINK`) and workspace prompts from message histories before querying LLM endpoints, preventing Gemini from generating duplicate or echoing prompts.
+  - Modified `fetchQuotaStatus` in the chatbot to automatically clear obsolete quota exceeded assistant message bubbles and routing logs from the chat feed and reset the exceeded state once the quota limit has been increased.
+  - Added auto-detection of workspace names (case-insensitive with word boundary checks) directly inside the user's prompt text. If a workspace name is found (e.g. "personal workspace"), it is automatically selected, bypassing the interactive workspace chooser.
+- **UI Contrast & Color Fixes (No more White Boxes)**:
+  - Fixed invalid Tailwind CSS color classes across the application (specifically replacing custom classes like `slate-850`, `slate-550`, `slate-505`, `slate-50500`, `slate-9050`, `slate-8050`, and `rose-6050` with standard Tailwind slate/rose classes).
+  - Resolved fallback background issues where cards rendered with white backgrounds and light-grey text in dark mode due to compilation failure of invalid dark mode utility classes.
+- **Chat Error Retry Option**:
+  - Added a "Retry" button on failed assistant messages (connection errors, LLM errors).
+  - Clicking "Retry" automatically wipes the failed message and any preceding system routing logs, then resubmits the user's last message to continue the flow seamlessly.
+
+## [v2.4.2] - 2026-06-13
+
+### Added & Fixed — Refined Q&A Routing, Multi-Session Chats (Max 7), and Video Onboarding Tour Redirects
+
+- **Hinglish Language Mode**:
+  - Integrated complete support for Hinglish in the chatbot settings panel overlay.
+  - When selected, conversational replies and spoken daily/weekly briefings are generated in Hinglish (Latin/Roman script) while leaving JSON schema keys and task titles in English for system compatibility.
+- **Refined Q&A Conceptual Routing**:
+  - Reworked local grilling logic to pass general concept and Q&A questions (like "what is the matrix") directly to Gemini rather than intercepting them locally.
+  - Limits local blocks to explicit tutorial tour requests and completely off-topic questions.
+- **Multi-Session Chat History (Max 7)**:
+  - Replaced the simple chat clear feature with a "New Chat" (`Plus` icon) button in the chatbot header to create new conversational sessions.
+  - Keeps up to 7 distinct historical sessions saved in `localStorage` per user.
+  - Displays a "Chat History" selector in the settings panel to easily switch between or delete individual sessions. Automatically purges the oldest sessions when the count exceeds 7.
+- **Forced Video Tour Redirection**:
+  - Updated the matrix tutorial launch button to redirect to `/eisenhower-matrix?videoTour=true` and clear the dismissed flag, forcing the simulated video player tour to start overlaying the matrix.
+
+## [v2.4.1] - 2026-06-13
+
+### Added & Fixed — Security History, Chatbot controls & Heatmap Range Filters
+
+- **Chatbot Clear Chat & Avatar Update**:
+  - Added a "Clear Chat" (`Trash2`) button in the chatbot header to wipe active conversation state.
+  - Replaced the robot icon with a friendly human/avatar smiling face icon (`Smile`) on the trigger button, header, and welcome screen.
+- **Password History & Security Event Log**:
+  - Added `PasswordHistory` database model to log manual password changes, reset request creations, approvals, and rejections.
+  - Created a split-column panel in the Admin Dashboard showing active requests on the left and a scrollable "Security Event Log" timeline on the right.
+- **Auto-Hide Approved Reset Dialogs**:
+  - Configured `changeUserPassword` to automatically transition resolved requests to `"COMPLETED"` status and clear their `tempPassword` when a user updates their password.
+  - Automatically hides the temporary password copy card from the Admin Dashboard.
+- **Heatmap Date Range Toggle & Styled Tooltips**:
+  - Added "Last 1 Year" vs "This Year" pill switcher in the Completed Tasks Heatmap header.
+  - Configured the calendar days generation to dynamically scale between the last 375 days and a full calendar year (Jan 1 - Dec 31).
+  - Replaced the basic browser tooltip with a custom-designed Tailwind CSS hover card detailing task count and medium-styled dates.
+- **Configurable Gemini Model Override**:
+  - Added support for configuring the Gemini model via `GEMINI_MODEL` environment variable, defaulting to `gemini-1.5-flash`. This allows users to easily swap model strings if a specific model identifier is not supported or returns a 404 error.
+
+## [v2.4.0] - 2026-06-13
+
+### Added & Fixed — Security, Chatbot & Analytics Enhancements
+
+- **Password Reset Request Flow**:
+  - Added a "Forgot Password" option to the login page allowing users to submit reset requests to the admin.
+  - Added a "Password Reset Requests" management tab in the Admin Panel to view, approve, or reject requests.
+  - Upon approval, a randomized one-time password is generated, and the user's `tokenVersion` is incremented to invalidate all active session tokens/cookies.
+- **SQLite Database Relocation & Migration Safety**:
+  - Relocated the SQLite database file from `/app/prisma/dev.db` to `/app/data/dev.db` in Dockerfile, docker-compose, Kubernetes config, Helm templates, and Makefiles.
+  - Ensures the Prisma migrations directory `/app/prisma/migrations` is not masked by host-mounted database volumes, securing schema updates during container deployment.
+- **Explicit LLM API Credentials Check**:
+  - Updated the AI router to perform explicit API key configuration checks prior to querying model endpoints.
+  - Bubbles up precise messages (e.g., "Gemini API key is not configured") directly to the chatbot UI instead of showing a generic "Something went wrong" message.
+- **Voice Input Jitter & Continuous Speech Recognition Fix**:
+  - Fixed a voice transcription bug where paused speech caused preceding words/phrases to be wiped or overwritten.
+  - Uses ref-based initial values and segment index offset tracking to preserve accumulated text across pauses.
+- **Yearly Completed Tasks Heatmap**:
+  - Implemented a GitHub-style 375-day completed tasks activity calendar board on the Analytics page.
+  - Visualizes task completion frequency using color-scaled grid tiles with custom hover tooltips showing task count and date.
+  - Integrated into the analytics onboarding guide as an interactive tour step.
+- **Daily Speech Briefing ("AlexaSpeak")**:
+  - Introduced a "Brief My Day" option in the chatbot that summarizes the user's active/completed tasks, compares today's productivity to yesterday, and provides advice on quadrant balance.
+  - Leverages Web Speech Synthesis API with active speech player states (Play, Pause, Resume, Stop) and a custom CSS audio wave visualizer.
+- **Node.js Loader Deprecation Warning Fix**:
+  - Prepend `NODE_OPTIONS='--no-deprecation'` in `package.json` dev, build, and start scripts to suppress `[DEP0205] DeprecationWarning: module.register() is deprecated` warnings originating from Node.js ESM loader internals.
+
+## [v2.3.0] - 2026-06-08
+
+### Added — AI Chatbot Tasker (Betu)
+
+- **AI Chatbot Tasker — "Betu"**: Introduced a floating AI productivity assistant available on all pages (home + matrix). Supports natural language task creation, mental model Q&A, voice input, and streaming responses.
+- **Customizable Persona**: Defaults to "Betu". Users can rename the chatbot inline from the chat window header, with their custom name persisting via `localStorage` and sent to the LLM system prompt.
+- **Multi-LLM Provider Support**: Supports Gemini 1.5 Flash, GPT-4o-mini, and Claude Haiku simultaneously. Provider priority: Gemini → OpenAI → Claude. Auto-fallback on rate-limit (HTTP 429) — users can also manually switch via pill selector. API keys are server-side only and never exposed to the browser.
+- **Streaming SSE Responses**: LLM replies stream token-by-token via Server-Sent Events — no frozen spinner. Words appear as they generate.
+- **Auth Guard**: Chatbot shows a sign-in prompt for unauthenticated users. Full chat UI is only accessible after login.
+- **Voice Input with Silence Detection**: Microphone button uses `webkitSpeechRecognition`. Silence countdown ring (SVG) appears after speech ends; mic auto-stops after 2.5 seconds of silence.
+- **Dual-Mode LLM**: Mode A parses tasks into the Eisenhower Matrix (including quadrant assignment, task decomposition for >240 min, delegation + auto-follow-up). Mode B answers Q&A about mental models, the Eisenhower Matrix, productivity, and app features.
+- **Task Confirmation Table**: Before inserting tasks, a rich `ProposedTaskCard` shows all proposed tasks (including auto-generated delegation follow-ups) with quadrant, assignee, due date, and time estimate. User confirms or cancels.
+- **Admin-Controlled Message Quota**: Admins set a global default limit (messages per day or week) and period in the Admin Portal. Users who exhaust their quota see a quota request modal. Admin can approve full or partial quota increases — approved extra messages are tracked per-user.
+- **Rate Limiting**: 10 requests per minute per user enforced server-side (in-memory Map). Friendly rate-limit message shown on breach.
+- **Rolling Conversation History**: Last 10 message pairs (~4000 tokens) sent to LLM for multi-turn context ("the one I mentioned earlier" works).
+- **8 Sample Prompts**: Task prompts (indigo) and Q&A prompts (violet) shown when chat is empty.
+- **DB Schema**: Added `ChatQuotaSettings`, `UserChatUsage`, `ChatQuotaRequest` Prisma models with migration `add_ai_chat_quota`.
+- **New API Routes**: `/api/chat`, `/api/chat/providers`, `/api/chat/quota-request`, `/api/chat/quota-settings`, `/api/auth/me`.
+
+## [v2.2.0] - 2026-06-08
+
+
+### Added & Fixed
+
+- **Video Tour Controls Auto-Hide**: Video tour player controls (header, tab bar, footer controls) now automatically fade out after 2.5 seconds of inactivity while the tour is playing — identical to YouTube/video player behaviour. Any mouse movement, click, or touch instantly restores them with a smooth transition. Controls always remain visible while paused.
+- **Show/Hide Captions Toggle**: Added a CC button to the video player controls footer, allowing users to toggle closed captions on or off dynamically during the tour.
+- **Mobile/Tablet Chapter Selector Dropdown**: Replaced the cramped horizontally scrolling "Video 1", "Video 2" buttons on mobile/tablet viewports with a beautifully styled select dropdown showing proper video chapter titles (e.g. "What is Mental Models?", "What is the Eisenhower Matrix?"), allowing users to select and watch any chapter in any order without sequential restrictions.
+- **Tour Skip/Close Redirect**: When a user dismisses or skips the intro tour before selecting a workspace or entering Test Mode, they are now redirected back to the landing page (`/`) instead of being dropped into the workspace selection modal with no context.
+- **Responsive Homepage Header**: Condensed top navigation bar on small screens — the logo text "The Wisdom Lab" is hidden (icon only), action button labels ("User Management", "Change Password") collapse to icon-only, and paddings/gaps scale down on `< sm` viewports, preventing icon overflow and clipping.
+- **Calendar Week View on Mobile**: Calendar now defaults to a 7-day week view on screens narrower than 768 px, with a Month/Week toggle in the header. Prev/Next navigation steps by 7 days in week mode and by 1 month in month mode.
+- **Drag-to-Switch Quadrant Tabs**: Dragging a task card and hovering over any mobile tab switcher button now immediately switches to that quadrant, and tabs also act as drop zones — tasks dropped directly onto a tab are moved to that quadrant.
+- **Fluid Modal Sizing**: All modals (Edit Content, Settings, Date Picker, Reset Confirm, Completion, Done List, Deleted List, Help, Onboarding, Workspace Selection) now use fluid widths (`w-[calc(100%-2rem)]`), responsive paddings, and corner radii that scale between mobile and desktop breakpoints.
+- **Absolute Page Navigation Header**: Switched the homepage header from fixed to absolute on mobile screens to prevent scrolling jitter and layout clashing.
+- **True Fullscreen Video Tour Player**: Integrated HTML5 Fullscreen API capability to allow users to toggle the simulated video tour to full screen, and refactored controls using a responsive layout with abbreviated language selector tags (EN/HI/HING) on narrow viewports to prevent controls from disappearing.
+- **Compact Mobile Stats Grid**: Restructured stats display cards to render in a 3-column layout on mobile viewports rather than a 2-column configuration, using tighter padding and smaller text to save vertical space.
+- **Topmost Modal Layering**: Standardized modal overlays and the page tutorial completion panel to use elevated z-index values (starting at `z-[50000]`), preventing z-index layering bugs from rendering modals behind hover-highlighted elements (`hover:z-[9999]`).
+- **Centered Notifications Panel**: Replaced relative positioning on the notifications popover with a viewport-relative `fixed` layout on mobile, keeping notifications centered and readable without flowing off-screen.
+- **Stackable Delegate Modal Form**: Configured the add teammate form container to stack inputs vertically on mobile screen widths, resolving horizontal button clipping.
+- **Interactive Move Handle UI & Helper Tip**: Styled the task cards' touch-reassignment `🎯` button with a clear background/border and added a mobile-only tip banner in the matrix grid to guide touch screen users.
+
+## [v2.1.0] - 2026-06-07
+
+### Added & Fixed
+
+- **Mobile Tabbed Grid Navigation**: Integrated a horizontally scrollable mobile switcher (Inbox, Do First, Schedule, Delegate, Eliminate tabs) to show one quadrant at a time, avoiding long vertical stacks on small viewports.
+- **Collapsible More Settings Menu**: Compressed secondary settings and action items in `MatrixHeader` into a slide-up "More Settings" drawer sheet on mobile, preserving header whitespace.
+- **Stacked Quick-Add Task Form**: Form inputs and buttons stack cleanly in column orientation on smaller screen widths, preventing layout overflow.
+- **Touch-Friendly "Move/Prioritize" Option**: Added a visible target action trigger on task cards for mobile touch devices, integrating with `AssignmentModal` for quick quadrant relocations without drag-and-drop.
+
 ## [v2.0.9] - 2026-06-07
 
 ### Added & Fixed

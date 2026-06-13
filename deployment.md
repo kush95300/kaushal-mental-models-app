@@ -18,6 +18,23 @@ The application will be live at: **[http://localhost:3000](http://localhost:3000
 
 ---
 
+## 1b. AI Chat Environment Variables (Required for AI Tasker)
+
+Add at least one LLM API key to your `.env.local` (or `.env`) file:
+
+```env
+# At least one key required — provider auto-fallback handles the rest
+GEMINI_API_KEY=your_gemini_key       # https://aistudio.google.com/app/apikey
+OPENAI_API_KEY=your_openai_key       # https://platform.openai.com/api-keys
+ANTHROPIC_API_KEY=your_claude_key    # https://console.anthropic.com/account/keys
+```
+
+> **Security note**: These keys are read ONLY in server-side API routes. They are never shipped to the browser bundle. In CI/CD (GitHub Actions, Vercel, Docker), inject them as **secret environment variables** — never commit them to git.
+
+Provider priority order: **Gemini → OpenAI → Claude**. The app auto-falls back to the next provider on rate-limit errors (HTTP 429). If no key is configured, the chatbot shows a setup prompt.
+
+---
+
 ## 2. Testing Procedure
 
 ### Step 1: Professional Portal (Home Page)
@@ -70,6 +87,17 @@ The application will be live at: **[http://localhost:3000](http://localhost:3000
   - Verify Step 3 highlights the "Add Team Member" button, asking to type the name and add it.
   - Click Next. Confirm the dialog automatically closes and Step 4 highlights the matrix grid, confirming the delegate is now ready for task assignment.
 
+### Step 7: Mobile Responsiveness & Touch Controls (v2.2.0)
+
+- **Viewport Emulation**: Emulate a mobile device viewport (e.g., iPhone 12 Pro, 390px width) in Chrome DevTools or test on a physical mobile device.
+- **Header Jitter Test**: Scroll up and down on the homepage. Confirm that the top navigation bar (Wisdom Lab logo, sign in, theme button) moves/scrolls absolute and does not jitter or overlap.
+- **Video Controls, CC & Fullscreen Test**: Open the Video Tour on mobile. Verify the controls wrap correctly, the language selector buttons use abbreviated labels (EN, HI, HING) to fit the viewport, the CC (Closed Captions) button toggles the subtitles, the mobile chapter selector dropdown functions correctly with proper titles, and clicking the fullscreen button expands the player to full screen.
+- **Compact Stats Grid Test**: Check that the workload statistics cards render in a 3-column layout on mobile viewports rather than a 2-column configuration, using tighter padding and smaller text.
+- **Topmost Layering Verification**: Open any modal (Manage Delegates, Done, Settings). Verify that hovering or tapping header controls does not push the modal background underneath them. Modals must always render on the topmost layer (`z-[50000]+`).
+- **Centered Notifications Test**: Click the Notification button on mobile. Verify that the notification alert panel centers perfectly on the screen using viewport-relative fixed positioning and does not overflow the screen margins.
+- **Delegate Form Stacking**: Open "Manage Delegates" and verify the teammate name input and "Add Team Member" button stack vertically and fit without side clipping.
+- **Tab Switcher & Touch Move Action**: Verify the horizontal tab bar functions correctly. Verify the task cards display a prominent target button (`🎯`) with background styling, and verify the tip banner appears below the tabs switcher instructing mobile users on relocations.
+
 ---
 
 ## 🐳 Containerization & Orchestration (4 Deployment Options)
@@ -126,20 +154,24 @@ graph TD
 
 **Step 1: Create a Persistent Docker Volume**
 Create a dedicated named Docker volume to store the SQLite database file:
+
 ```bash
 docker volume create kaushal-db-volume
 ```
 
 **Step 2: Build the Docker Image**
 Build the optimized production image using the multi-stage Dockerfile:
+
 ```bash
 docker build -t kaushal-mental-models:latest -f deployment/docker/Dockerfile .
 ```
+
 > [!NOTE]
 > The root-level `.dockerignore` prevents your local database (`prisma/dev.db`) from being copied into the image. This guarantees a clean database initialization inside the container.
 
 **Step 3: Run the Container**
 Start the container by mapping the host port `3000` to the container port `3000`, mounting the persistent volume, and setting the required `JWT_SECRET`:
+
 ```bash
 docker run -d \
   -p 3000:3000 \
@@ -150,14 +182,15 @@ docker run -d \
 ```
 
 > [!IMPORTANT]
-> * **Persistence**: The volume mounts to `/app/prisma` in the container where `dev.db` is stored. Deleting or recreating the container will **not** lose your database.
-> * **Seeding**: On startup, the container automatically runs migrations and seeds the default admin credentials:
->   * **Username:** `admin`
->   * **Password:** `admin`
+>
+> - **Persistence**: The volume mounts to `/app/prisma` in the container where `dev.db` is stored. Deleting or recreating the container will **not** lose your database.
+> - **Seeding**: On startup, the container automatically runs migrations and seeds the default admin credentials:
+>   - **Username:** `admin`
+>   - **Password:** `admin`
 
 ### Option 2: Docker Compose (Recommended for Single-Host Production)
 
-Deploy the application with automated multi-stage image building, automated database migration, seeding on boot, and automated persistent volume management. 
+Deploy the application with automated multi-stage image building, automated database migration, seeding on boot, and automated persistent volume management.
 
 This option maps the application service to port `3001` on your host and mounts a named volume `kaushal_mental_models_sqlite_data` to ensure data persists across container recreations.
 
@@ -167,7 +200,7 @@ This option maps the application service to port `3001` on your host and mounts 
 graph TD
     subgraph Host System
         HostPort[Host Port: 3001] -->|Maps to| ContPort[Container Port: 3000]
-        Vol[(Named Volume: kaushal_mental_models_sqlite_data)] -->|Mounts to| ContDbPath[/app/prisma]
+        Vol[(Named Volume: kaushal_mental_models_sqlite_data)] -->|Mounts to| ContDbPath[/app/data]
     end
 
     subgraph Docker Compose Service: web
@@ -188,6 +221,7 @@ graph TD
 
 **Step 2: Package, Tag, and Push the Docker Image**
 Build the Next.js standalone image, tag it with `latest` and `v1.2` labels, and push both tags to your Docker Hub repository:
+
 ```bash
 # 1. Build the standalone image
 docker build -t kaushal95300/kaushal-mental-models:latest -f deployment/docker/Dockerfile .
@@ -202,6 +236,7 @@ docker push kaushal95300/kaushal-mental-models:v1.2
 
 **Step 3: Pull & Start the Application**
 Pull the registry image and launch the container in detached mode:
+
 ```bash
 make compose
 # or
@@ -211,14 +246,17 @@ docker compose -f deployment/docker-compose/docker-compose.yml up -d
 
 **Step 4: Update the App & Hot-Reload with Database Backups**
 Whenever a new update is pushed to Docker Hub, pull the fresh image layers and hot-recreate the container without losing data. This command also creates a database copy on the host:
+
 ```bash
 make app-update
 ```
+
 > [!NOTE]
-> `make app-update` executes `docker cp kaushal-mental-models-app:/app/prisma/dev.db ./dev_db_backup_before_update.db` to back up your database to the host directory before pulling the registry updates and starting the new container.
+> `make app-update` executes `docker cp kaushal-mental-models-app:/app/data/dev.db ./dev_db_backup_before_update.db` to back up your database to the host directory before pulling the registry updates and starting the new container.
 
 **Step 5: Monitor Logs & Container Status**
 Check if the service started correctly, ran migrations, seeded the database, and is listening:
+
 ```bash
 # View container status
 docker compose -f deployment/docker-compose/docker-compose.yml ps
@@ -229,267 +267,15 @@ docker compose -f deployment/docker-compose/docker-compose.yml logs -f
 
 **Step 6: Stop / Tear Down the Service**
 To stop the application, remove the container, and clean up the internal networks (while keeping your database volume intact):
+
 ```bash
 docker compose -f deployment/docker-compose/docker-compose.yml down
 ```
 
 > [!IMPORTANT]
-> * **Host Access URL**: The application is exposed on host port `3001`: **[http://localhost:3001](http://localhost:3001)**
-> * **Database Persistence**: The SQLite data is stored securely in the named volume `kaushal_mental_models_sqlite_data`. Recreating the container will **not** delete your data. To clean up the database completely, append the `-v` flag: `docker compose down -v`.
-
-### Option 3: Vanilla Kubernetes (K8s) Manifests
-
-Deploy to any standard Kubernetes cluster using native declarative manifests:
-
-```bash
-# Apply ConfigMap, PVC, Deployment, Service, and Ingress
-kubectl apply -f deployment/k8s/configmap.yaml
-kubectl apply -f deployment/k8s/deployment.yaml
-kubectl apply -f deployment/k8s/service.yaml
-kubectl apply -f deployment/k8s/ingress.yaml
-
-# Verify pod status
-kubectl get pods -l app=kaushal-mental-models
-```
-
-### Option 4: Helm Chart (Recommended for Enterprise K8s)
-
-Deploy using our fully templated, dynamic Helm package manager:
-
-```bash
-# Install or upgrade the Helm chart
-helm upgrade --install mental-models-app ./deployment/helm/kaushal-mental-models --namespace production --create-namespace
-
-# Check Helm release status
-helm status mental-models-app -n production
-```
-
----
-
-## 🐳 Containerization & Orchestration (4 Deployment Options)
-
-We provide four complete, production-ready methods to deploy the application using the configurations located in the `deployment/` directory.
-
-### 🌟 Interactive Deployment Menu (Recommended)
-
-You can launch our interactive deployment helper script to automatically guide you through building, configuring, and deploying to any of the 4 targets (or starting local dev):
-
-```bash
-# Using Make shortcut
-make deploy
-
-# Or using npm script
-npm run deploy
-
-# Or executing directly
-bash scripts/deploy.sh
-```
-
-### Option 1: Standalone Docker Container
-
-Build and run the multi-stage, optimized Next.js standalone container. This option mounts a persistent Docker volume to store the SQLite database so that tasks, workspaces, and user accounts are preserved across container updates and restarts.
-
-#### 🏗️ Architecture & Initialization Flow
-
-```mermaid
-graph TD
-    subgraph Build Phase
-        A[Local Repository] -->|Filters out dev.db/node_modules| B[.dockerignore]
-        B --> C[docker build]
-        C --> D[Multi-Stage Dockerfile]
-        D -->|Builds Next.js Standalone| E(Docker Image: kaushal-mental-models:latest)
-    end
-
-    subgraph Runtime Deployment
-        E -->|Run Container| F(Docker Container: mental-models-app)
-        G[(Docker Volume: kaushal-db-volume)] -->|Mounts to /app/prisma| F
-        H[Env: JWT_SECRET] --> F
-    end
-
-    subgraph Container Startup Lifecycle
-        F -->|1. Run CMD| I[npx prisma@6 migrate deploy]
-        I -->|Applies migrations to dev.db in volume| J[Database Migrated]
-        J -->|2. Run CMD| K[node prisma/seed.js]
-        K -->|Seeds admin user & default workspaces| L[Database Seeded]
-        L -->|3. Run CMD| M[node server.js]
-        M -->|Exposes App| N[Serving on Port 3000]
-    end
-```
-
-#### 🚀 Deployment Steps
-
-**Step 1: Create a Persistent Docker Volume**
-Create a dedicated named Docker volume to store the SQLite database file:
-```bash
-docker volume create kaushal-db-volume
-```
-
-**Step 2: Build the Docker Image**
-Build the optimized production image using the multi-stage Dockerfile:
-```bash
-docker build -t kaushal-mental-models:latest -f deployment/docker/Dockerfile .
-```
-> [!NOTE]
-> The root-level `.dockerignore` prevents your local database (`prisma/dev.db`) from being copied into the image. This guarantees a clean database initialization inside the container.
-
-**Step 3: Run the Container**
-Start the container by mapping the host port `3000` to the container port `3000`, mounting the persistent volume, and setting the required `JWT_SECRET`:
-```bash
-docker run -d \
-  -p 3000:3000 \
-  --name mental-models-app \
-  -v kaushal-db-volume:/app/prisma \
-  -e JWT_SECRET=super-secret-production-key-change-me \
-  kaushal-mental-models:latest
-```
-
-> [!IMPORTANT]
-> * **Persistence**: The volume mounts to `/app/prisma` in the container where `dev.db` is stored. Deleting or recreating the container will **not** lose your database.
-> * **Seeding**: On startup, the container automatically runs migrations and seeds the default admin credentials:
->   * **Username:** `admin`
->   * **Password:** `admin`
-
-### Option 2: Docker Compose (Recommended for Single-Host Production)
-
-Deploy the application with automated multi-stage image building, automated database migration, seeding on boot, and automated persistent volume management. 
-
-This option maps the application service to port `3001` on your host and mounts a named volume `kaushal_mental_models_sqlite_data` to ensure data persists across container recreations.
-
-#### 🏗️ Architecture & Orchestration Flow
-
-```mermaid
-graph TD
-    subgraph Host System
-        HostPort[Host Port: 3001] -->|Maps to| ContPort[Container Port: 3000]
-        Vol[(Named Volume: kaushal_mental_models_sqlite_data)] -->|Mounts to| ContDbPath[/app/prisma]
-    end
-
-    subgraph Docker Compose Service: web
-        Image[Builds deployment/docker/Dockerfile] --> Cont(Container: kaushal-mental-models-app)
-        ContDbPath --- Cont
-        ContPort --- Cont
-        Env[Env: JWT_SECRET / PORT / DATABASE_URL] --> Cont
-    end
-
-    subgraph Startup lifecycle
-        Cont -->|1. Applies migrations| Mig[npx prisma@6 migrate deploy]
-        Mig -->|2. Seeds admin credentials| Seed[node prisma/seed.js]
-        Seed -->|3. Starts server| Run[node server.js]
-    end
-```
-
-#### 🚀 Deployment Steps
-
-**Step 1: Verify the Configuration**
-Review the configuration file at [deployment/docker-compose/docker-compose.yml](file:///Users/kaushalsoni/Desktop/WS/kaushal-mental-models/deployment/docker-compose/docker-compose.yml). Ensure the `JWT_SECRET` environment variable is configured:
-```yaml
-environment:
-  - NODE_ENV=production
-  - PORT=3000
-  - DATABASE_URL=file:/app/prisma/dev.db
-  - JWT_SECRET=super-secret-production-key-change-me
-```
-
-**Step 2: Build & Start the Application**
-Launch the multi-container environment in detached mode:
-```bash
-docker compose -f deployment/docker-compose/docker-compose.yml up -d --build
-```
-> [!NOTE]
-> Docker Compose will automatically build the production Next.js image using the root context and compile the standalone server.
-
-**Step 3: Monitor Logs & Container Status**
-Check if the service started correctly, ran migrations, seeded the database, and is listening:
-```bash
-# View container status
-docker compose -f deployment/docker-compose/docker-compose.yml ps
-
-# View live container startup logs
-docker compose -f deployment/docker-compose/docker-compose.yml logs -f
-```
-
-**Step 4: Stop / Tear Down the Service**
-To stop the application, remove the container, and clean up the internal networks (while keeping your database volume intact):
-```bash
-docker compose -f deployment/docker-compose/docker-compose.yml down
-```
-
-> [!IMPORTANT]
-> * **Host Access URL**: The application is exposed on host port `3001`: **[http://localhost:3001](http://localhost:3001)**
-> * **Database Persistence**: The SQLite data is stored securely in the named volume `kaushal_mental_models_sqlite_data`. Running `docker compose down` will **not** delete your data. To clean up the database completely, append the `-v` flag: `docker compose down -v`.
-
-### Option 3: Vanilla Kubernetes (K8s) Manifests
-
-Deploy to any standard Kubernetes cluster using native declarative manifests:
-
-```bash
-# Apply ConfigMap, PVC, Deployment, Service, and Ingress
-kubectl apply -f deployment/k8s/configmap.yaml
-kubectl apply -f deployment/k8s/deployment.yaml
-kubectl apply -f deployment/k8s/service.yaml
-kubectl apply -f deployment/k8s/ingress.yaml
-
-# Verify pod status
-kubectl get pods -l app=kaushal-mental-models
-```
-
-### Option 4: Helm Chart (Recommended for Enterprise K8s)
-
-Deploy using our fully templated, dynamic Helm package manager:
-
-```bash
-# Install or upgrade the Helm chart
-helm upgrade --install mental-models-app ./deployment/helm/kaushal-mental-models --namespace production --create-namespace
-
-# Check Helm release status
-helm status mental-models-app -n production
-```
-
----
-
-## 🐳 Containerization & Orchestration (4 Deployment Options)
-
-We provide four complete, production-ready methods to deploy the application using the configurations located in the `deployment/` directory.
-
-### 🌟 Interactive Deployment Menu (Recommended)
-
-You can launch our interactive deployment helper script to automatically guide you through building, configuring, and deploying to any of the 4 targets (or starting local dev):
-
-```bash
-# Using Make shortcut
-make deploy
-
-# Or using npm script
-npm run deploy
-
-# Or executing directly
-bash scripts/deploy.sh
-```
-
-### Option 1: Standalone Docker Container
-
-Build and run the multi-stage, optimized Next.js standalone container. Database migrations are applied automatically at container startup.
-
-```bash
-# Build the Docker image
-docker build -t kaushal-mental-models:latest -f deployment/docker/Dockerfile .
-
-# Run the container on port 3000 (Note: JWT_SECRET is required in production)
-docker run -d -p 3000:3000 -e JWT_SECRET=your-strong-production-key-here --name mental-models-app kaushal-mental-models:latest
-```
-
-### Option 2: Docker Compose (Recommended for Single-Host Production)
-
-Deploy the application with automated persistent SQLite volume management and schema updates.
-
-```bash
-# Start the multi-container environment
-# Be sure to customize JWT_SECRET in deployment/docker-compose/docker-compose.yml
-docker compose -f deployment/docker-compose/docker-compose.yml up -d --build
-
-# View real-time logs
-# docker compose -f deployment/docker-compose/docker-compose.yml logs -f
-```
+>
+> - **Host Access URL**: The application is exposed on host port `3001`: **[http://localhost:3001](http://localhost:3001)**
+> - **Database Persistence**: The SQLite data is stored securely in the named volume `kaushal_mental_models_sqlite_data`. Recreating the container will **not** delete your data. To clean up the database completely, append the `-v` flag: `docker compose down -v`.
 
 ### Option 3: Vanilla Kubernetes (K8s) Manifests
 
@@ -564,3 +350,4 @@ npm start
 - [ ] Contextual step-by-step PageTutorials run successfully on Focus Matrix and Analytics Dashboard
 - [ ] Persistent "Don't show again" preference is respected and stored in local storage
 - [ ] Audio synthesis for ticks, swooshes, and chimes plays successfully via Web Audio API context
+- [ ] Horizontal tabbed layout, collapsible drawer sheet, stacked form, and touch target actions are fully functional and responsive on mobile devices

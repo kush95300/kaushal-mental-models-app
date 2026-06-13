@@ -64,7 +64,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
   ];
 
   return (
-    <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6 mb-6 md:mb-12">
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm border border-white/80 dark:border-slate-800/80 text-indigo-600 dark:text-indigo-400 text-[10px] font-black uppercase tracking-[0.2em] shadow-sm">
@@ -74,7 +74,7 @@ export const StatsView: React.FC<StatsViewProps> = ({
             Focus Matrix
           </div>
         </div>
-        <h1 className="text-5xl md:text-7xl font-black text-slate-900 dark:text-white tracking-tight">
+        <h1 className="text-3xl sm:text-5xl md:text-7xl font-black text-slate-900 dark:text-white tracking-tight">
           Master Your{" "}
           <span className="text-indigo-600 dark:text-indigo-400">
             Productivity
@@ -82,20 +82,20 @@ export const StatsView: React.FC<StatsViewProps> = ({
         </h1>
       </div>
 
-      <div className="flex flex-col items-end gap-3">
+      <div className="flex flex-col items-end gap-3 w-full md:w-auto">
         <div className="text-slate-400/60 dark:text-slate-500 font-black uppercase tracking-[0.2em] text-sm hidden md:block">
           {currentDateDisplay}
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-2 sm:gap-4 w-full md:w-auto">
           {statItems.map((stat) => (
             <div
               key={stat.label}
-              className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-4 rounded-3xl border border-white dark:border-slate-800 shadow-sm"
+              className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-2.5 sm:p-4 rounded-2xl sm:rounded-3xl border border-white dark:border-slate-800 shadow-sm flex flex-col justify-center items-center text-center"
             >
-              <div className={`text-2xl font-black ${stat.color}`}>
+              <div className={`text-lg sm:text-2xl font-black ${stat.color}`}>
                 {stat.value}
               </div>
-              <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+              <div className="text-[8px] sm:text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                 {stat.label}
               </div>
             </div>

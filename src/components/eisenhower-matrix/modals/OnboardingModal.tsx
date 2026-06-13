@@ -14,8 +14,8 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
   setIsTestMode,
   setShowOnboarding,
 }) => (
-  <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xl animate-in fade-in duration-500">
-    <div className="bg-white dark:bg-slate-900 rounded-[3rem] p-10 max-w-lg w-full shadow-2xl border border-white dark:border-slate-800 animate-in zoom-in-95 duration-500 text-center transition-colors">
+  <div className="fixed inset-0 z-[50600] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xl animate-in fade-in duration-500">
+    <div className="bg-white dark:bg-slate-900 rounded-3xl sm:rounded-[3rem] p-6 sm:p-10 w-[calc(100%-2rem)] max-w-lg shadow-2xl border border-white dark:border-slate-800 animate-in zoom-in-95 duration-500 text-center transition-colors">
       <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center mx-auto mb-8 text-indigo-600 dark:text-indigo-400 ring-8 ring-indigo-50/50 dark:ring-indigo-900/10">
         <Target size={40} className="animate-pulse" />
       </div>

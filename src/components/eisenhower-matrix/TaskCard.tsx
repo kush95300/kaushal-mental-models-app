@@ -10,6 +10,7 @@ import {
   UserCog,
   Trash2,
   Clock,
+  Target,
 } from "lucide-react";
 import { Task } from "@/types/eisenhower";
 import { formatMinutes } from "@/lib/formatTime";
@@ -147,7 +148,28 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       )}
     </div>
 
-    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+    <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
+      <Tooltip
+        content="Prioritize / Move Task: Assign this task to a quadrant or category."
+        position="top"
+        align="right"
+      >
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setAssignmentModal({ taskId: task.id, quadrant: "MOVE" });
+          }}
+          onDragStart={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="p-1.5 relative z-20 text-indigo-600 dark:text-indigo-400 md:text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:text-indigo-400 dark:hover:bg-slate-700/50 rounded-lg transition-colors duration-200 bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100/50 dark:border-indigo-900/30 md:bg-transparent md:border-none shadow-sm md:shadow-none"
+        >
+          <Target className="w-4 h-4 animate-pulse md:animate-none" />
+        </button>
+      </Tooltip>
       <Tooltip
         content="Edit Task Content: Modify the text description and estimated duration."
         position="top"

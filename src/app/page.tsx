@@ -117,17 +117,17 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#f8fafc] dark:bg-slate-950 relative overflow-hidden text-slate-900 dark:text-slate-100 font-sans p-4 md:p-8 flex flex-col transition-colors">
       {/* Top Navigation Bar */}
-      <div className="fixed top-6 left-6 right-6 z-50 flex items-center justify-between max-w-7xl mx-auto pointer-events-none">
-        <div className="pointer-events-auto flex items-center gap-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-5 py-2.5 rounded-2xl border border-white dark:border-slate-800 shadow-lg">
+      <div className="absolute md:fixed top-3 left-3 right-3 sm:top-6 sm:left-6 sm:right-6 z-50 flex items-center justify-between max-w-7xl mx-auto pointer-events-none">
+        <div className="pointer-events-auto flex items-center gap-2 sm:gap-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-3 sm:px-5 py-2 sm:py-2.5 rounded-2xl border border-white dark:border-slate-800 shadow-lg">
           <Sparkles className="w-5 h-5 text-indigo-500 animate-spin-slow" />
-          <span className="font-black text-sm tracking-wider uppercase text-slate-800 dark:text-white">
+          <span className="hidden sm:inline font-black text-sm tracking-wider uppercase text-slate-800 dark:text-white">
             The Wisdom Lab
           </span>
         </div>
 
-        <div className="pointer-events-auto flex items-center gap-3">
+        <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-3">
           {currentUser ? (
-            <div className="flex items-center gap-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-1.5 pl-4 rounded-2xl border border-white dark:border-slate-800 shadow-lg">
+            <div className="flex items-center gap-1.5 sm:gap-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-1.5 pl-3 sm:pl-4 rounded-2xl border border-white dark:border-slate-800 shadow-lg">
               <div className="flex items-center gap-2 mr-1">
                 <UserIcon className="w-4 h-4 text-indigo-500" />
                 <span className="font-bold text-xs text-slate-700 dark:text-slate-200">
@@ -143,18 +143,21 @@ export default function Home() {
               {currentUser.isAdmin && (
                 <Link
                   href="/admin"
-                  className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-md shadow-indigo-500/20"
+                  className="px-2 sm:px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-md shadow-indigo-500/20"
+                  title="User Management"
                 >
-                  <UserCog className="w-3.5 h-3.5" /> User Management
+                  <UserCog className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">User Management</span>
                 </Link>
               )}
 
               <button
                 onClick={() => setShowPassModal(true)}
-                className="px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5"
+                className="px-2 sm:px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1.5"
                 title="Change Password"
               >
-                <KeyRound className="w-3.5 h-3.5" /> Change Password
+                <KeyRound className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Change Password</span>
               </button>
 
               <button
@@ -174,9 +177,17 @@ export default function Home() {
             </Link>
           )}
 
+          <Link
+            href="/faq"
+            className="p-2 sm:p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-white dark:border-slate-800 shadow-lg text-slate-500 dark:text-slate-400 hover:scale-110 hover:text-indigo-500 dark:hover:text-indigo-400 active:scale-95 transition-all flex items-center justify-center"
+            title="FAQ & Help Center"
+          >
+            <HelpCircle size={20} />
+          </Link>
+
           <button
             onClick={toggleTheme}
-            className="p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-white dark:border-slate-800 shadow-lg text-slate-500 dark:text-amber-400 hover:scale-110 active:scale-95 transition-all group"
+            className="p-2 sm:p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-white dark:border-slate-800 shadow-lg text-slate-500 dark:text-amber-400 hover:scale-110 active:scale-95 transition-all group"
             title="Toggle Theme"
           >
             {mounted && theme === "dark" ? (

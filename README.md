@@ -4,6 +4,24 @@ A high-precision, interactive workspace designed to sharpen decision-making and 
 
 ## 🚀 Key Features
 
+### 🤖 AI Chatbot Tasker — "Betu" (v2.4.2)
+
+Natural language AI assistant for task creation and mental model education.
+
+- **Customizable Persona & Avatars**: Defaults to "Betu". Users can rename the chatbot and customize its avatar (selecting from preset icons like `Smile`, `Bot`, `Sparkles`, `Heart`, `Zap` or entering a custom image URL) via a settings panel, persisting in `localStorage`.
+- **Quota Tracking & Transparency**: Displays the current used message count and active limits (e.g., "Used 2/20 msgs today") directly in the chatbot header.
+- **Spoken Daily & Weekly Briefings**: Generates spoken briefings for both daily agendas and weekly reviews. The new "Brief My Week (Audio)" action summarizes weekly completions, upcoming tasks, and quadrant balance advice.
+- **Local Grilling & Router Intercepts**: Prefilters prompts locally before hitting the LLM:
+  - Intercepts tutorial help queries and renders quick links to restart matrix or analytics guided tours.
+  - Intercepts off-topic queries (recipes, weather, sports) with a friendly notification and a "Go to FAQ Page" button.
+  - Intercepts home page task additions, prompting the user to select the destination workspace.
+- **JSON Output Sanitizer**: Automatically cleans up and parses response streams to prevent raw JSON syntax or Markdown wrapping from escaping to the user.
+- **Task Decomposition**: Large tasks are split into sub-tasks with a strict duration limit of 1 to 3 hours (60 to 180 minutes) maximum.
+- **Dual-Mode Intelligence**: Automatically detects whether you're asking to create a task or asking a question about mental models/productivity.
+- **Multi-LLM Providers**: Supports Gemini 1.5 Flash, GPT-4o-mini, and Claude Haiku. Auto-falls back on failures.
+- **Voice Input**: Click the mic, speak naturally. Jitter-free sequential compilation compiled in real-time.
+- **Interactive FAQ & Admin Forum**: Public `/faq` page with accordion-style Q&As and a question submission form. Administrators can type answers, approve pending questions, and delete entries via the Admin Portal dashboard.
+
 ### 📅 The Focus Matrix (Eisenhower Matrix v2.0)
 
 Transform your to-do list into a strategic map by separating the urgent from the essential.
@@ -21,7 +39,7 @@ Transform your to-do list into a strategic map by separating the urgent from the
   - **Eliminated (Soft-Delete)**: Moving tasks to the **Eliminate** quadrant automatically archives them. View all removed items in the **Eliminated** list at the top.
   - **Data Resets**: Quickly wipe _Today's Data_ or _All Data_ for a clean slate.
 - **Onboarding & Interactive Tutorials (v2.0.0)**:
-  - **Interactive 4-Track Video Tour**: Built-in React-animated simulated video player with play/pause, scrubbing, speeds, and subtitles. Explains: (1) what mental models are, (2) what the Eisenhower Matrix is (20-minute masterclass simulation), (3) adding, moving, and completing tasks, and (4) key platform features (Workspaces, Analytics, Delegates, Database Cleanup). Launches automatically upon first-time user login, enforces a strictly sequential progression (chapters unlock one by one, persisting in local storage), and features a calmer, slowed-down pre-recorded neural conversational voiceover narration.
+  - **Interactive 4-Track Video Tour**: Built-in React-animated simulated video player with play/pause, scrubbing, speeds, toggleable subtitles (CC), and a mobile-optimized chapter selector dropdown. Explains: (1) what mental models are, (2) what the Eisenhower Matrix is (20-minute masterclass simulation), (3) adding, moving, and completing tasks, and (4) key platform features (Workspaces, Analytics, Delegates, Database Cleanup). Launches automatically upon first-time user login, allows users to choose any chapter to watch at any time, and features a calmer, slowed-down pre-recorded neural conversational voiceover narration.
   - **Contextual In-App Tutorials**: Floating step-by-step onboarding walkthrough pointers with focus highlights, tethered dynamically using viewport-relative `fixed` overlay coordinates to target UI elements on both the Eisenhower Matrix page and the Analytics Dashboard. Recalculates on page scroll/resize to follow UI elements smoothly without hijacking user scrolls.
   - **Interactive Walkthrough Sub-Guides**: Complete interactive guides selectable from a post-walkthrough dialog modal:
     - **How to Add a Task**: 3-step guide covering (1) entering a sample task ("Learn Eisenhower Matrix") and estimate ("45 min") in the form, (2) tracking its appearance in the Draft Queue (Inbox), and (3) dragging it to the appropriate matrix quadrant.
@@ -31,6 +49,15 @@ Transform your to-do list into a strategic map by separating the urgent from the
   - **Zero-Asset Synthesized Audio**: Utilizes the native browser Web Audio API `AudioContext` to synthesize premium click ticks, chime success sweeps, and swoosh transitions dynamically, removing the need for external audio assets.
   - **Smart Onboarding**: Prompt for analytics start date on first visit.
   - **Test Mode**: Explore the full matrix feature set without persisting any data to the database.
+- **Mobile & Cross-Device Responsiveness (v2.2.0)**:
+  - **Horizontal scrollable tab bar** on mobile viewports to toggle selectively between Inbox and each matrix quadrant, preventing long layout stacking.
+  - **Stacked forms** and touch-friendly controls with comfortable pad tap areas on screens `< 768px`.
+  - **Collapsible settings drawer**: Slide-up settings sheet in the matrix view to clean up header space.
+  - **Touch-Friendly "Move/Prioritize" Quick Selector**: Target icon on task cards with prominent background and helper tip banner for easy mobile relocation.
+  - **Fluid text & compact stats grid**: Dynamically scaling header fonts, smaller paddings, and a compact 3-column stats view to prevent vertical screen takeover on mobile.
+  - **Responsive video controls & Fullscreen**: Custom Video Tour Player control panel wrapping dynamically with abbreviated labels, toggleable closed captions (CC), and native HTML5 Fullscreen API toggle.
+  - **Robust layering**: Standardized topmost modal z-indices (`z-[50000]+`) to avoid clashes with hover-highlighted elements.
+  - **Centered popover notifications**: Centered fixed layouts for alerts to guarantee readability on narrow screens.
 - **Server Actions Architecture (v1.2)**:
   - **Unified Operations**: All task and delegate management moved to high-performance **Server Actions**.
   - **Optimistic UI**: Instant visual feedback for task creation, movement, and deletion before server confirmation.
@@ -44,17 +71,19 @@ Transform your to-do list into a strategic map by separating the urgent from the
   - **Browser Notifications**: Integrated browser push notifications.
   - **Workspace Alerts**: Option to set daily notification times for specific workspaces.
   - **Task Reminders**: Ability to set reminder alerts minutes before task due dates.
-- **User Authentication & Admin Portal (v1.9.0 / v1.9.1)**:
+- **User Authentication, Admin Portal & Password Resets (v2.4.0)**:
   - **Secure Login System**: Password hashing via `bcryptjs` and secure JWT cookie sessions via `jose`.
-  - **Admin Management Portal**: Dedicated portal (`/admin`) for administrators to manage user accounts, review pending account requests, create new credentials, and revoke access.
+  - **Password Reset Requests**: Active users can submit password reset requests from the login panel if credentials are forgotten. Admins approve requests in `/admin` by generating random alphanumeric temporary credentials, invalidating active sessions.
+  - **Admin Management Portal**: Dedicated portal (`/admin`) for administrators to manage user accounts, review pending account requests, approve password resets, create new credentials, and revoke access.
   - **Multi-Tenant Isolation**: Workspaces are securely scoped to individual users or globally accessible for team collaboration.
   - **Universal Password Management**: Global "Change Password" modal accessible from the start page for all authenticated users.
   - **Admin Portal Hardening**: Relocated User Management strictly to the start page for administrators. Protected root `admin` account from deletion.
-  - **Dynamic Credential Banner**: Programmatic check to automatically hide default credentials banner once the default password is changed.
   - **Custom Confirmation Modal**: Replaced native `window.confirm` dialogs with a premium custom React confirmation modal in the Admin Portal to resolve webview popup dismissal bugs during user deletion and rejection.
   - **CLI Admin Recovery Tool**: Dedicated Node.js command-line script (`npm run admin:recovery -- <new_password>`) for server administrators to securely recover or reset the root admin password directly in the SQLite database without web UI intervention.
   - **Security Vulnerability Remediation**: Added in-memory rate limiting to auth actions against brute-force attacks, implemented `tokenVersion` session invalidation upon password changes to prevent replay attacks, enforced strict SameSite cookie attributes, and added session authorization checks across all custom API routes (`/api/tasks`, `api/delegates`, `api/config`).
   - **IDOR & Security Header Hardening**: Configured comprehensive Next.js security headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy) and implemented strict multi-tenant Insecure Direct Object Reference (IDOR) workspace ownership verification across all Server Actions (`task.ts`, `delegate.ts`, `analytics.ts`) and REST API routes (`/api/tasks`, `/api/delegates`).
+  - **Database Migration Isolation**: Moved database storage to `/app/data/dev.db` mounted separate from the migrations directory `/app/prisma`, allowing database schema changes and migrations without losing active data.
+- **Completed Tasks Heatmap**: GitHub-style activity grid visualizer on the Analytics dashboard showing completed tasks per day over the last 375 days. Colors cells from grey (0 tasks) to deep indigo (5+ tasks) with tooltips showing specific counts on hover.
 
 ### 🍱 The Models Library
 

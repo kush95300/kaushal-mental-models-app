@@ -329,10 +329,31 @@ export async function changeUserPassword(
       return { success: false, error: "Incorrect current password" };
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await prisma.user.update({
-      where: { id: payload.id },
-      data: { password: hashedPassword, tokenVersion: { increment: 1 } },
-    });
+    
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: payload.id },
+        data: { password: hashedPassword, tokenVersion: { increment: 1 } },
+      }),
+      prisma.passwordHistory.create({
+        data: {
+          userId: payload.id,
+          username: user.username,
+          action: "PASSWORD_CHANGED",
+        },
+      }),
+      prisma.passwordResetRequest.updateMany({
+        where: {
+          username: user.username,
+          status: "APPROVED",
+        },
+        data: {
+          tempPassword: null,
+          status: "COMPLETED",
+          resolvedAt: new Date(),
+        },
+      }),
+    ]);
 
     return { success: true };
   } catch (error) {
@@ -372,3 +393,223 @@ export async function getCurrentUser() {
     return { success: false };
   }
 }
+
+export async function requestPasswordReset(username: string) {
+  try {
+    if (!checkRateLimit(`reset_${username}`, 3, 300000)) {
+      return {
+        success: false,
+        error: "Too many reset attempts. Please try again in 5 minutes.",
+      };
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { username },
+    });
+
+    if (!user) {
+      return { success: false, error: "Username not found" };
+    }
+
+    if (user.status !== "APPROVED") {
+      return { success: false, error: "Account is not active/approved" };
+    }
+
+    const existingRequest = await prisma.passwordResetRequest.findFirst({
+      where: { username, status: "PENDING" },
+    });
+
+    if (existingRequest) {
+      return {
+        success: false,
+        error: "A password reset request is already pending for this account.",
+      };
+    }
+
+    await prisma.$transaction([
+      prisma.passwordResetRequest.create({
+        data: {
+          username,
+          status: "PENDING",
+        },
+      }),
+      prisma.passwordHistory.create({
+        data: {
+          userId: user.id,
+          username: user.username,
+          action: "REQUEST_CREATED",
+        },
+      }),
+    ]);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Request password reset error:", error);
+    return { success: false, error: "Failed to submit reset request" };
+  }
+}
+
+export async function getPasswordResetRequests() {
+  try {
+    const cookieStore = await cookies();
+    const session = cookieStore.get("session")?.value;
+    if (!session) return { success: false, error: "Unauthorized" };
+
+    const payload = await decrypt(session);
+    if (!payload || !payload.isAdmin) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const requests = await prisma.passwordResetRequest.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+
+    return { success: true, requests };
+  } catch (error) {
+    console.error("Get password reset requests error:", error);
+    return { success: false, error: "Failed to get reset requests" };
+  }
+}
+
+export async function resolvePasswordResetRequest(
+  id: number,
+  action: "approve" | "reject",
+) {
+  try {
+    const cookieStore = await cookies();
+    const session = cookieStore.get("session")?.value;
+    if (!session) return { success: false, error: "Unauthorized" };
+
+    const payload = await decrypt(session);
+    if (!payload || !payload.isAdmin) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const request = await prisma.passwordResetRequest.findUnique({
+      where: { id },
+    });
+
+    if (!request) {
+      return { success: false, error: "Reset request not found" };
+    }
+
+    if (request.status !== "PENDING") {
+      return { success: false, error: "Request is already resolved" };
+    }
+
+    const targetUser = await prisma.user.findUnique({
+      where: { username: request.username },
+    });
+
+    const targetUserId = targetUser ? targetUser.id : 0;
+
+    if (action === "reject") {
+      await prisma.$transaction([
+        prisma.passwordResetRequest.update({
+          where: { id },
+          data: {
+            status: "REJECTED",
+            resolvedAt: new Date(),
+          },
+        }),
+        prisma.passwordHistory.create({
+          data: {
+            userId: targetUserId,
+            username: request.username,
+            action: "REQUEST_REJECTED",
+          },
+        }),
+      ]);
+      return { success: true };
+    }
+
+    if (!targetUser) {
+      return { success: false, error: "Target user not found" };
+    }
+
+    // Generate random password
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let tempPass = "temp-";
+    for (let i = 0; i < 6; i++) {
+      tempPass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    const hashedPassword = await bcrypt.hash(tempPass, 10);
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { username: request.username },
+        data: {
+          password: hashedPassword,
+          tokenVersion: { increment: 1 }, // Invalidate sessions
+        },
+      }),
+      prisma.passwordResetRequest.update({
+        where: { id },
+        data: {
+          status: "APPROVED",
+          tempPassword: tempPass,
+          resolvedAt: new Date(),
+        },
+      }),
+      prisma.passwordHistory.create({
+        data: {
+          userId: targetUser.id,
+          username: request.username,
+          action: "REQUEST_APPROVED",
+        },
+      }),
+    ]);
+
+    return { success: true, tempPassword: tempPass };
+  } catch (error) {
+    console.error("Resolve password reset request error:", error);
+    return { success: false, error: "Failed to resolve reset request" };
+  }
+}
+
+export async function getPasswordHistory() {
+  try {
+    const cookieStore = await cookies();
+    const session = cookieStore.get("session")?.value;
+    if (!session) return { success: false, error: "Unauthorized" };
+
+    const payload = await decrypt(session);
+    if (!payload || !payload.isAdmin) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const history = await prisma.passwordHistory.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+
+    return { success: true, history };
+  } catch (error) {
+    console.error("Get password history error:", error);
+    return { success: false, error: "Failed to fetch password history" };
+  }
+}
+
+export async function deletePasswordResetRequest(id: number) {
+  try {
+    const cookieStore = await cookies();
+    const session = cookieStore.get("session")?.value;
+    if (!session) return { success: false, error: "Unauthorized" };
+
+    const payload = await decrypt(session);
+    if (!payload || !payload.isAdmin) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    await prisma.passwordResetRequest.delete({
+      where: { id },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error("Delete password reset request error:", error);
+    return { success: false, error: "Failed to delete reset request" };
+  }
+}
+
+
