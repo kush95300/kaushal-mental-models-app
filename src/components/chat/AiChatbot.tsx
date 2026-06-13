@@ -67,9 +67,9 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
   const [renameInput, setRenameInput] = useState("");
   const renameRef = useRef<HTMLInputElement>(null);
 
-  const [avatarType, setAvatarType] = useState<"icon" | "image">("icon");
+  const [avatarType, setAvatarType] = useState<"icon" | "image">("image");
   const [avatarIcon, setAvatarIcon] = useState<string>("Smile");
-  const [avatarImage, setAvatarImage] = useState<string>("");
+  const [avatarImage, setAvatarImage] = useState<string>("https://miro.medium.com/v2/resize:fit:2400/1*wqbW85G-0PYtTiJyRCWeMw.jpeg");
   const [showSettings, setShowSettings] = useState(false);
   const [language, setLanguage] = useState<"english" | "hinglish">("english");
   const [historyLoaded, setHistoryLoaded] = useState(false);
@@ -115,9 +115,9 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
     const saved = localStorage.getItem("chatbot_name");
     if (saved && saved.trim()) setBotName(saved.trim());
 
-    const savedType = localStorage.getItem("chatbot_avatar_type");
-    const savedIcon = localStorage.getItem("chatbot_avatar_icon");
-    const savedImage = localStorage.getItem("chatbot_avatar_image");
+    const savedType = localStorage.getItem("chatbot_avatar_type") || "image";
+    const savedIcon = localStorage.getItem("chatbot_avatar_icon") || "Smile";
+    const savedImage = localStorage.getItem("chatbot_avatar_image") || "https://miro.medium.com/v2/resize:fit:2400/1*wqbW85G-0PYtTiJyRCWeMw.jpeg";
     if (savedType === "icon" || savedType === "image") setAvatarType(savedType);
     if (savedIcon) setAvatarIcon(savedIcon);
     if (savedImage) setAvatarImage(savedImage);
@@ -1029,13 +1029,13 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
     }
   }, [proposedTasks, selectedWorkspace, workspaceId]);
 
-  const renderAvatar = (className = "w-4 h-4 text-white") => {
+  const renderAvatar = (className = "w-4 h-4 text-white", forceImageFull = false) => {
     if (avatarType === "image" && avatarImage.trim()) {
       return (
         <img
           src={avatarImage}
           alt={botName}
-          className={`${className} object-cover rounded-full`}
+          className={`${forceImageFull ? "w-full h-full" : className} object-cover rounded-full`}
           onError={(e) => {
             e.currentTarget.style.display = "none";
           }}
@@ -1052,15 +1052,30 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
     <>
       {/* Floating trigger button */}
       {!open && (
-        <button
-          id="ai-chatbot-trigger"
-          onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-[45000] w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-xl shadow-indigo-500/40 hover:shadow-indigo-500/60 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center overflow-hidden group"
-          title={`Open ${botName}`}
-        >
-          {renderAvatar("w-6 h-6 group-hover:scale-110 transition-transform")}
-          <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white animate-pulse" />
-        </button>
+        <div className="fixed bottom-6 right-6 z-[45000] flex flex-col items-center gap-1.5 pointer-events-none select-none">
+          <button
+            id="ai-chatbot-trigger"
+            onClick={() => setOpen(true)}
+            className={`
+              pointer-events-auto w-14 h-14 rounded-full text-white shadow-xl transition-all duration-200 
+              flex items-center justify-center overflow-hidden group hover:scale-105 active:scale-95 relative
+              ${avatarType === "image" && avatarImage.trim() 
+                ? "bg-transparent shadow-indigo-500/20 hover:shadow-indigo-500/40 border border-slate-200 dark:border-slate-800" 
+                : "bg-gradient-to-br from-indigo-500 to-violet-600 shadow-indigo-500/40 hover:shadow-indigo-500/60"
+              }
+            `}
+            title={`Open ${botName}`}
+          >
+            {renderAvatar("w-6 h-6 group-hover:scale-110 transition-transform", true)}
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white animate-pulse" />
+          </button>
+          <span 
+            onClick={() => setOpen(true)}
+            className="pointer-events-auto cursor-pointer text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-300 bg-white/95 dark:bg-slate-900/95 px-2.5 py-1 rounded-full border border-slate-200/50 dark:border-slate-800/40 shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:text-indigo-500 active:scale-95"
+          >
+            Ask {botName}
+          </span>
+        </div>
       )}
 
       {/* Chat panel */}

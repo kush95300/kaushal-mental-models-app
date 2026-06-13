@@ -167,12 +167,13 @@ Manual step-by-step verification guide for the AI Chatbot Tasker feature.
 1. Click the **mic button** (red animated state)
 2. Say: "Add task review the weekly report"
 3. Stop talking and wait
+4. (Mobile Devices) Verify that saying single words (e.g., "add") does not cause duplicate text transcription (such as "addaddadd").
 
 **Expected:**
-- Transcript appears in the text input
+- Transcript appears in the text input without duplication or stuttering.
 - After ~2.5 seconds of silence: a **countdown ring** shrinks around the mic icon
 - Mic **auto-stops** (icon returns to grey)
-- Text field shows transcript (you can review/edit before sending)
+- Text field shows clean transcript (you can review/edit before sending)
 
 **Pass:** ✅ | **Fail:** ❌
 
@@ -464,6 +465,72 @@ Manual step-by-step verification guide for the AI Chatbot Tasker feature.
 
 ---
 
+## Test 28 — Mobile Voice Web Speech API Duplication & Overlap Fix
+
+**Steps:**
+1. Open the app on a mobile device (or simulate mobile in Chrome DevTools using touch mode).
+2. Open the chatbot, click the microphone button, and start speaking.
+3. Pause for a second or speak words in quick succession, then pause again.
+4. Observe the compiled text in the input box.
+
+**Expected:**
+- The words appear sequentially without stuttering or duplication (e.g. no repeating words like "addaddaddadad" or "add a task of add a task of").
+- Pausing and resuming speech results in clean, correctly-spaced words compiled sequentially.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
+## Test 29 — Admin Password Reset Request Deletion
+
+**Steps:**
+1. Log in as administrator and navigate to `/admin`.
+2. Find the **Password Reset Requests** table.
+3. For any resolved (e.g., approved/completed) request, look for the Trash (delete) icon next to the status badge.
+4. Click the Trash icon.
+
+**Expected:**
+- The reset request is immediately removed from the UI.
+- Refreshing the page confirms the request has been deleted from the database.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
+## Test 30 — FAQ Redirections & Default Seed Verification
+
+**Steps:**
+1. Navigate to the landing page `/`. Verify there is a **Help (QuestionMark)** icon in the header. Click it.
+2. Navigate to the Eisenhower Matrix workspace page. Verify there is a **FAQ (MessageSquare)** icon in the desktop header, and an **FAQ & Help Center** list option in the mobile menu drawer.
+3. Click any of the FAQ entry points.
+4. Scroll through the `/faq` page.
+
+**Expected:**
+- The redirection links to `/faq` successfully.
+- The `/faq` page lists at least 7 default, pre-populated questions and answers (including Test Mode, voice input, and data security questions).
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
+## Test 31 — Floating Chatbot Button & Invitation Label
+
+**Steps:**
+1. Open any page.
+2. Inspect the floating chatbot button in the bottom-right corner.
+3. Observe the avatar image and the text label below it.
+4. Click settings (gear icon) in the chatbot and change the avatar to a custom image URL.
+5. Save settings and observe the floating chatbot trigger button again.
+
+**Expected:**
+- The default trigger button shows the custom neural image filling the circle completely with zero border/padding.
+- Directly underneath the floating trigger button, a glassmorphic text label `"Ask Betu"` (or the bot's custom name) is rendered centered.
+- When a custom avatar image URL is saved, it also fills the trigger button circle completely.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
 ## Production Build
 
 > ⚠️ Run this step manually in your terminal — **do NOT let the IDE run it automatically**.
@@ -507,4 +574,9 @@ npm run build
 | 25 | Forced Video Tour Redirect | |
 | 26 | Refined Q&A Conceptual Routing | |
 | 27 | Priority Routing Engine & Logs | |
+| 28 | Mobile Voice Transcription Fix | |
+| 29 | Admin Password Reset Deletion | |
+| 30 | FAQ Redirections & Seeding | |
+| 31 | Trigger Button & Invitation Label | |
 | — | Production build | |
+

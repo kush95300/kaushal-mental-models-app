@@ -25,6 +25,21 @@ const DEFAULT_FAQS = [
     answer: "The chatbot can generate an audio daily or weekly briefing summarizing your tasks, productivity status, and quadrant balance advice. Just click the Brief buttons in the chatbot welcome view!",
     isApproved: true,
   },
+  {
+    question: "How does the voice input feature work?",
+    answer: "Click the microphone icon in the chat input, speak naturally, and wait for silence. The app uses an advanced overlap-aware word alignment algorithm to compile your speech, ensuring a clean transcription on both mobile and desktop browsers.",
+    isApproved: true,
+  },
+  {
+    question: "What is the difference between Test Mode and Normal Mode?",
+    answer: "Test Mode lets you explore all functions of the Eisenhower Matrix without persisting any tasks or data to the database, which is perfect for training or testing onboarding flows without cluttering your workspace.",
+    isApproved: true,
+  },
+  {
+    question: "What happens to completed and eliminated tasks?",
+    answer: "Completed tasks go to the Done list, and eliminated tasks are placed in the Eliminated list. You can access both archives via the buttons at the top of the Eisenhower Matrix page to restore or inspect them.",
+    isApproved: true,
+  },
 ];
 
 export async function getFAQs() {
