@@ -167,12 +167,13 @@ Manual step-by-step verification guide for the AI Chatbot Tasker feature.
 1. Click the **mic button** (red animated state)
 2. Say: "Add task review the weekly report"
 3. Stop talking and wait
+4. (Mobile Devices) Verify that saying single words (e.g., "add") does not cause duplicate text transcription (such as "addaddadd").
 
 **Expected:**
-- Transcript appears in the text input
+- Transcript appears in the text input without duplication or stuttering.
 - After ~2.5 seconds of silence: a **countdown ring** shrinks around the mic icon
 - Mic **auto-stops** (icon returns to grey)
-- Text field shows transcript (you can review/edit before sending)
+- Text field shows clean transcript (you can review/edit before sending)
 
 **Pass:** ✅ | **Fail:** ❌
 

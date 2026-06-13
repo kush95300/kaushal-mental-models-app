@@ -104,13 +104,41 @@ export default function ChatInput({
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
       setSilenceCountdown(0);
 
-      let accumulated = "";
+      let A: string[] = [];
       for (let i = 0; i < e.results.length; i++) {
-        accumulated += e.results[i][0].transcript;
+        const transcript = e.results[i][0].transcript.trim();
+        if (!transcript) continue;
+
+        const words = transcript.split(/\s+/).filter(Boolean);
+        if (A.length === 0) {
+          A = words;
+          continue;
+        }
+
+        // Find the maximum overlap between the end of A and the start of words
+        let overlap = 0;
+        const maxLen = Math.min(A.length, words.length);
+        for (let len = maxLen; len > 0; len--) {
+          let match = true;
+          for (let j = 0; j < len; j++) {
+            if (A[A.length - len + j].toLowerCase() !== words[j].toLowerCase()) {
+              match = false;
+              break;
+            }
+          }
+          if (match) {
+            overlap = len;
+            break;
+          }
+        }
+
+        // Append only the non-overlapping words
+        A = A.concat(words.slice(overlap));
       }
-      
+
+      const currentSpeech = A.join(" ");
       const base = initialValueRef.current;
-      onChange(base + (base && accumulated ? " " : "") + accumulated.trim());
+      onChange(base + (base && currentSpeech ? " " : "") + currentSpeech);
     };
 
     recognition.onspeechend = () => {
