@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v2.4.6] - 2026-06-13
+
+### Fixed — Gemini Multi-Model Fallback Chain
+
+- **Gemini Multi-Model Fallback**:
+  - Implemented an automatic model cascading chain in `src/lib/llm/providers/gemini.ts` to query alternative models if the primary model encounters rate limit exhaustion (HTTP 429), model unavailability/support issues (HTTP 404), or server-side failures (HTTP 5xx).
+  - Chain checks candidate models: `process.env.GEMINI_MODEL`, `gemini-3.5-flash`, `gemini-3-flash`, `gemini-3.1-flash-lite`, `gemini-2.5-pro`, `gemini-2.5-flash`, `gemini-1.5-flash`, and `gemini-1.5-pro`.
+  - Non-retriable exceptions (like authentication failures or malformed inputs) are bubbled up immediately to prevent unnecessary retries.
+
 ## [v2.4.5] - 2026-06-13
 
 ### Fixed & Added — Mobile Voice, FAQ Redirection, and Reset Request Deletion

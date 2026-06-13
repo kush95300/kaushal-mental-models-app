@@ -11,6 +11,7 @@ interface ChatWindowProps {
   proposedTasks?: ProposedTask[];
   onConfirmProposed?: () => void;
   onCancelProposed?: () => void;
+  onConfirmSingleProposed?: (task: ProposedTask) => void;
   isSubmittingProposed?: boolean;
   avatarType?: "icon" | "image";
   avatarIcon?: string;
@@ -34,6 +35,7 @@ export default function ChatWindow({
   proposedTasks,
   onConfirmProposed,
   onCancelProposed,
+  onConfirmSingleProposed,
   isSubmittingProposed,
   avatarType = "icon",
   avatarIcon = "Smile",
@@ -216,6 +218,7 @@ export default function ChatWindow({
             tasks={proposedTasks}
             onConfirm={onConfirmProposed!}
             onCancel={onCancelProposed!}
+            onConfirmSingle={onConfirmSingleProposed}
             isSubmitting={isSubmittingProposed!}
           />
         </div>
