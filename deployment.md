@@ -235,7 +235,7 @@ docker push kaushal95300/kaushal-mental-models:v1.2
 ```
 
 **Step 3: Pull & Start the Application**
-Pull the registry image and launch the container in detached mode:
+Pull the registry image and launch the container in detached mode. Ensure you have your environment variables (like API keys) defined in a `.env` file at the repository root, as it is loaded via `env_file` config:
 
 ```bash
 make compose

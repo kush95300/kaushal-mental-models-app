@@ -4,6 +4,8 @@ services:
   web:
     image: kaushal95300/kaushal-mental-models:latest
     container_name: kaushal-mental-models-app
+    env_file:
+      - ../../.env
     restart: unless-stopped
     ports:
       - "3001:3000"
