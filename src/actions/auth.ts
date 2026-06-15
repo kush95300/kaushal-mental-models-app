@@ -31,7 +31,7 @@ function checkRateLimit(identifier: string, limit = 5, windowMs = 60000) {
 export async function ensureDefaultWorkspaces(userId: number) {
   const count = await prisma.workspace.count({ where: { userId } });
   if (count === 0) {
-    await prisma.workspace.create({
+    const personal = await prisma.workspace.create({
       data: {
         name: "Personal",
         description: "Personal tasks and goals",
@@ -40,13 +40,28 @@ export async function ensureDefaultWorkspaces(userId: number) {
         userId,
       },
     });
-    await prisma.workspace.create({
+    await prisma.delegate.create({
+      data: {
+        name: "Self",
+        email: "me@example.com",
+        workspaceId: personal.id,
+      },
+    });
+
+    const work = await prisma.workspace.create({
       data: {
         name: "Work",
         description: "Professional projects and deadlines",
         color: "bg-amber-500",
         icon: "Briefcase",
         userId,
+      },
+    });
+    await prisma.delegate.create({
+      data: {
+        name: "Self",
+        email: "me@example.com",
+        workspaceId: work.id,
       },
     });
   }

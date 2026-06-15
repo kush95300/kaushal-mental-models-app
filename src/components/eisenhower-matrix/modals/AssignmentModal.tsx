@@ -28,6 +28,7 @@ interface AssignmentModalProps {
   setAssignmentModal?: (
     data: { taskId: number; quadrant: string } | null,
   ) => void;
+  workspaces?: any[];
 }
 
 export const AssignmentModal: React.FC<AssignmentModalProps> = ({
@@ -38,6 +39,7 @@ export const AssignmentModal: React.FC<AssignmentModalProps> = ({
   updateTaskQuadrant,
   setShowDelegateModal,
   setAssignmentModal,
+  workspaces = [],
 }) => {
   if (!assignmentModal) return null;
 
@@ -353,6 +355,37 @@ export const AssignmentModal: React.FC<AssignmentModalProps> = ({
                   </span>
                 </div>
               </button>
+
+              {workspaces && workspaces.length > 1 && currentTask && (
+                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/80">
+                  <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">
+                    Transfer to Workspace
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {workspaces
+                      .filter((ws) => ws.id !== currentTask.workspaceId)
+                      .map((ws) => (
+                        <button
+                          key={ws.id}
+                          onClick={() => {
+                            updateTaskQuadrant(assignmentModal.taskId, currentTask.quadrant, {
+                              workspaceId: ws.id,
+                            });
+                            onClose();
+                          }}
+                          className="flex items-center gap-2 p-3 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/20 border-2 border-indigo-50 dark:border-indigo-950/30 hover:border-indigo-500 dark:hover:border-indigo-600 hover:bg-white dark:hover:bg-slate-800 transition-all text-left font-sans"
+                        >
+                          <div className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0 text-xs font-black">
+                            {ws.name[0].toUpperCase()}
+                          </div>
+                          <span className="font-black text-[11px] uppercase tracking-wide text-slate-700 dark:text-slate-200 truncate">
+                            {ws.name}
+                          </span>
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

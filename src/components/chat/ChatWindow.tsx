@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { ChatMessage, ProposedTask } from "@/types/chat";
+import { ChatMessage, ProposedTask, ProposedMove } from "@/types/chat";
 import { Bot, User, Smile, Sparkles, Heart, Zap, RefreshCw } from "lucide-react";
 import ProposedTaskCard from "./ProposedTaskCard";
+import ProposedMoveCard from "./ProposedMoveCard";
 import Link from "next/link";
 
 interface ChatWindowProps {
@@ -13,6 +14,9 @@ interface ChatWindowProps {
   onCancelProposed?: () => void;
   onConfirmSingleProposed?: (task: ProposedTask) => void;
   isSubmittingProposed?: boolean;
+  proposedMoves?: ProposedMove[];
+  onConfirmMoves?: () => void;
+  onCancelMoves?: () => void;
   avatarType?: "icon" | "image";
   avatarIcon?: string;
   avatarImage?: string;
@@ -37,6 +41,9 @@ export default function ChatWindow({
   onCancelProposed,
   onConfirmSingleProposed,
   isSubmittingProposed,
+  proposedMoves,
+  onConfirmMoves,
+  onCancelMoves,
   avatarType = "icon",
   avatarIcon = "Smile",
   avatarImage = "",
@@ -47,10 +54,10 @@ export default function ChatWindow({
 }: ChatWindowProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom on new messages or when proposed tasks arrive
+  // Auto-scroll to bottom on new messages or when proposed tasks/moves arrive
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, proposedTasks]);
+  }, [messages, proposedTasks, proposedMoves]);
 
   if (messages.length === 0) return null;
 
@@ -219,6 +226,17 @@ export default function ChatWindow({
             onConfirm={onConfirmProposed!}
             onCancel={onCancelProposed!}
             onConfirmSingle={onConfirmSingleProposed}
+            isSubmitting={isSubmittingProposed!}
+          />
+        </div>
+      )}
+
+      {proposedMoves && proposedMoves.length > 0 && (
+        <div className="mt-2">
+          <ProposedMoveCard
+            moves={proposedMoves}
+            onConfirm={onConfirmMoves!}
+            onCancel={onCancelMoves!}
             isSubmitting={isSubmittingProposed!}
           />
         </div>

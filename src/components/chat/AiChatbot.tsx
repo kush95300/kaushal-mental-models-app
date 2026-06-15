@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Smile, Trash2, X, LogIn, Sparkles, Pencil, Check, Volume2, VolumeX, Settings, Zap, Bot, Heart, Image as ImageIcon, Minus, HelpCircle, Plus } from "lucide-react";
-import { ChatMessage, LLMProvider, ProposedTask, LLMStructuredResponse, QuotaStatus } from "@/types/chat";
+import { ChatMessage, LLMProvider, ProposedTask, ProposedMove, LLMStructuredResponse, QuotaStatus } from "@/types/chat";
 import ChatWindow from "./ChatWindow";
 import ChatInput from "./ChatInput";
 import LLMSwitcher from "./LLMSwitcher";
@@ -37,6 +37,39 @@ function sanitizeReply(text: string): string {
   return text;
 }
 
+/** Helper to prioritize high-quality, premium TTS voices and deprioritize robotic ones */
+function scoreVoice(voice: SpeechSynthesisVoice): number {
+  const name = voice.name.toLowerCase();
+
+  // Robotic/bad voices to deprioritize heavily
+  const badVoiceKeywords = [
+    "albert", "bad news", "bells", "boing", "bubbles", "cellos", 
+    "deranged", "good news", "hysterical", "jester", "organ", 
+    "pipe organ", "trinoids", "whisper", "zarvox"
+  ];
+  if (badVoiceKeywords.some(kw => name.includes(kw))) {
+    return -100;
+  }
+
+  let score = 0;
+  // Prioritize Google / Natural / Premium voices
+  if (name.includes("google") || name.includes("natural") || name.includes("premium")) {
+    score += 50;
+  }
+  // Prioritize well-known built-in smooth voices on macOS & Windows
+  const premiumNames = [
+    "samantha", "alex", "daniel", "rishi", "heera", "veena", 
+    "neerja", "lekha", "serena", "karen", "moira", "fiona", 
+    "tessa", "veena", "ravi", "zoe", "susan", "hazel", 
+    "zira", "david", "mark", "george"
+  ];
+  if (premiumNames.some(pn => name.includes(pn))) {
+    score += 30;
+  }
+  
+  return score;
+}
+
 interface ChatSession {
   id: string;
   title: string;
@@ -56,6 +89,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
   const [activeProvider, setActiveProvider] = useState<LLMProvider | null>(null);
 
   const [proposedTasks, setProposedTasks] = useState<ProposedTask[]>([]);
+  const [proposedMoves, setProposedMoves] = useState<ProposedMove[]>([]);
   const [isSubmittingTasks, setIsSubmittingTasks] = useState(false);
 
   const [quotaExceeded, setQuotaExceeded] = useState(false);
@@ -69,7 +103,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
 
   const [avatarType, setAvatarType] = useState<"icon" | "image">("image");
   const [avatarIcon, setAvatarIcon] = useState<string>("Smile");
-  const [avatarImage, setAvatarImage] = useState<string>("https://miro.medium.com/v2/resize:fit:2400/1*wqbW85G-0PYtTiJyRCWeMw.jpeg");
+  const [avatarImage, setAvatarImage] = useState<string>("/assets/cute_robot_one.png");
   const [showSettings, setShowSettings] = useState(false);
   const [language, setLanguage] = useState<"english" | "hinglish">("english");
   const [historyLoaded, setHistoryLoaded] = useState(false);
@@ -90,7 +124,107 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
   // ── Text to Speech states ───────────────────────────────────────────────────
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoiceName, setSelectedVoiceName] = useState("");
+  const [isTtsEnabled, setIsTtsEnabled] = useState(false);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  // ── Text to Speech controllers ──────────────────────────────────────────────
+  const speakText = useCallback((text: string, speechText?: string) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      alert("Text-to-speech is not supported in this browser.");
+      return;
+    }
+    window.speechSynthesis.cancel();
+
+    // Find custom voices if possible
+    const voicesList = window.speechSynthesis.getVoices();
+    
+    // Sort voicesList by premium score so we find the best ones first
+    const sortedVoices = [...voicesList].map(v => ({
+      voice: v,
+      score: scoreVoice(v)
+    })).sort((a, b) => b.score - a.score).map(x => x.voice);
+    
+    let voice = sortedVoices.find(v => v.name === selectedVoiceName);
+
+    if (!voice) {
+      if (language === "hinglish") {
+        // Try to automatically find an Indian accent (en-IN) or Hindi (hi-IN) voice
+        voice = sortedVoices.find(v => {
+          const l = v.lang.toLowerCase().replace("_", "-");
+          return l.startsWith("en-in") || l.startsWith("hi-in");
+        }) || sortedVoices.find(v => v.lang.toLowerCase().replace("_", "-").startsWith("en"))
+          || sortedVoices[0];
+      } else {
+        // Try to automatically find a Google/Natural English voice
+        voice = sortedVoices.find(v => v.lang.startsWith("en") && (v.name.toLowerCase().includes("google") || v.name.toLowerCase().includes("natural")))
+          || sortedVoices.find(v => v.lang.startsWith("en"))
+          || sortedVoices[0];
+      }
+    }
+
+    const isHindiVoice = voice && voice.lang.toLowerCase().replace("_", "-").startsWith("hi");
+    const targetText = (isHindiVoice && speechText) ? speechText : text;
+
+    // Remove emoji/markdown characters before speaking for clean speech
+    const cleanText = targetText.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, "")
+      .replace(/\*+/g, "")
+      .replace(/^\s*-\s+/gm, "")  // remove list bullet points at start of line
+      .replace(/-{2,}/g, " ")     // replace multiple dashes with space, but keep single dashes (like in dates or hyphenated words)
+      .replace(/#+/g, "");
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utteranceRef.current = utterance;
+
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+      setIsPaused(false);
+    };
+
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      setIsPaused(false);
+      utteranceRef.current = null;
+    };
+
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+      setIsPaused(false);
+      utteranceRef.current = null;
+    };
+
+    if (voice) {
+      utterance.voice = voice;
+    }
+    utterance.rate = 1.05;
+    utterance.pitch = 1.0;
+
+    window.speechSynthesis.speak(utterance);
+  }, [selectedVoiceName, language]);
+
+  const pauseSpeaking = useCallback(() => {
+    if (typeof window !== "undefined" && window.speechSynthesis && !isPaused) {
+      window.speechSynthesis.pause();
+      setIsPaused(true);
+    }
+  }, [isPaused]);
+
+  const resumeSpeaking = useCallback(() => {
+    if (typeof window !== "undefined" && window.speechSynthesis && isPaused) {
+      window.speechSynthesis.resume();
+      setIsPaused(false);
+    }
+  }, [isPaused]);
+
+  const stopSpeaking = useCallback(() => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      setIsPaused(false);
+      utteranceRef.current = null;
+    }
+  }, []);
 
   // ── Auth & Workspaces check on mount ─────────────────────────────────────────
   useEffect(() => {
@@ -117,7 +251,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
 
     const savedType = localStorage.getItem("chatbot_avatar_type") || "image";
     const savedIcon = localStorage.getItem("chatbot_avatar_icon") || "Smile";
-    const savedImage = localStorage.getItem("chatbot_avatar_image") || "https://miro.medium.com/v2/resize:fit:2400/1*wqbW85G-0PYtTiJyRCWeMw.jpeg";
+    const savedImage = localStorage.getItem("chatbot_avatar_image") || "/assets/cute_robot_one.png";
     if (savedType === "icon" || savedType === "image") setAvatarType(savedType);
     if (savedIcon) setAvatarIcon(savedIcon);
     if (savedImage) setAvatarImage(savedImage);
@@ -127,8 +261,40 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
       setLanguage(savedLanguage);
     }
 
+    const savedVoice = localStorage.getItem("chatbot_voice_name") || "";
+    setSelectedVoiceName(savedVoice);
+
     const savedLogMode = localStorage.getItem("chatbot_routing_logs");
     setLogMode(savedLogMode === "true");
+
+    const savedTts = localStorage.getItem("chatbot_tts_enabled");
+    setIsTtsEnabled(savedTts === "true");
+  }, []);
+
+  // ── Sync TTS enabled state to localStorage and cancel voice when turned off ──
+  useEffect(() => {
+    localStorage.setItem("chatbot_tts_enabled", String(isTtsEnabled));
+    if (!isTtsEnabled) {
+      stopSpeaking();
+    }
+  }, [isTtsEnabled, stopSpeaking]);
+
+  // ── Load SpeechSynthesis voices list ─────────────────────────────────────────
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+
+    const loadVoices = () => {
+      const allVoices = window.speechSynthesis.getVoices();
+      setVoices(allVoices);
+    };
+
+    loadVoices();
+    if (window.speechSynthesis.addEventListener) {
+      window.speechSynthesis.addEventListener("voiceschanged", loadVoices);
+      return () => {
+        window.speechSynthesis.removeEventListener("voiceschanged", loadVoices);
+      };
+    }
   }, []);
 
   // ── Load chat sessions from localStorage once session is ready ───────────────
@@ -228,6 +394,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
     setActiveSessionId(newSessionId);
     setMessages([]);
     setProposedTasks([]);
+    setProposedMoves([]);
     stopSpeaking();
     
     if (session && session !== "loading" && session.username) {
@@ -250,6 +417,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
     }));
     setMessages(formatted);
     setProposedTasks([]);
+    setProposedMoves([]);
   };
 
   const handleDeleteSession = (sessionId: string, e: React.MouseEvent) => {
@@ -291,6 +459,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
       setMessages([]);
     }
     setProposedTasks([]);
+    setProposedMoves([]);
   };
 
   const fetchQuotaStatus = useCallback(async () => {
@@ -417,75 +586,33 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
     if (e.key === "Escape") setIsRenaming(false);
   };
 
-  // ── Text to Speech controllers ──────────────────────────────────────────────
-  const speakText = useCallback((text: string) => {
-    if (typeof window === "undefined" || !window.speechSynthesis) {
-      alert("Text-to-speech is not supported in this browser.");
-      return;
+  // Filter voices based on language
+  const currentLanguageVoices = useMemo(() => {
+    const scored = voices.map(v => ({
+      voice: v,
+      langNorm: v.lang.toLowerCase().replace("_", "-"),
+      score: scoreVoice(v)
+    }));
+    
+    // Sort by score descending, then by name alphabetically
+    scored.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.voice.name.localeCompare(b.voice.name);
+    });
+    
+    if (language === "hinglish") {
+      // Prioritize en-in and hi-in voices for Hinglish pronunciation
+      const primary = scored.filter(v => v.langNorm.startsWith("en-in") || v.langNorm.startsWith("hi-in"));
+      if (primary.length > 0) return primary.map(x => x.voice);
+      // Fallback: any English voice
+      return scored.filter(v => v.langNorm.startsWith("en")).map(x => x.voice);
+    } else {
+      // English: any en voice
+      return scored.filter(v => v.langNorm.startsWith("en")).map(x => x.voice);
     }
-    window.speechSynthesis.cancel();
+  }, [voices, language]);
 
-    // Remove emoji/markdown characters before speaking for clean speech
-    const cleanText = text.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF]/g, "")
-      .replace(/\*+/g, "")
-      .replace(/-+/g, "")
-      .replace(/#+/g, "");
 
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utteranceRef.current = utterance;
-
-    utterance.onstart = () => {
-      setIsSpeaking(true);
-      setIsPaused(false);
-    };
-
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      setIsPaused(false);
-      utteranceRef.current = null;
-    };
-
-    utterance.onerror = () => {
-      setIsSpeaking(false);
-      setIsPaused(false);
-      utteranceRef.current = null;
-    };
-
-    // Find custom voices if possible
-    const voices = window.speechSynthesis.getVoices();
-    const voice = voices.find(v => v.lang.startsWith("en") && v.name.toLowerCase().includes("google") || v.name.toLowerCase().includes("natural"))
-      || voices.find(v => v.lang.startsWith("en"));
-    if (voice) {
-      utterance.voice = voice;
-    }
-    utterance.rate = 1.05;
-    utterance.pitch = 1.0;
-
-    window.speechSynthesis.speak(utterance);
-  }, []);
-
-  const pauseSpeaking = useCallback(() => {
-    if (typeof window !== "undefined" && window.speechSynthesis && !isPaused) {
-      window.speechSynthesis.pause();
-      setIsPaused(true);
-    }
-  }, [isPaused]);
-
-  const resumeSpeaking = useCallback(() => {
-    if (typeof window !== "undefined" && window.speechSynthesis && isPaused) {
-      window.speechSynthesis.resume();
-      setIsPaused(false);
-    }
-  }, [isPaused]);
-
-  const stopSpeaking = useCallback(() => {
-    if (typeof window !== "undefined" && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
-      setIsPaused(false);
-      utteranceRef.current = null;
-    }
-  }, []);
 
   const triggerDailyBriefing = useCallback(async () => {
     if (isStreaming || isSpeaking) return;
@@ -518,7 +645,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
         )
       );
 
-      speakText(data.briefing);
+      speakText(data.briefing, data.speechBriefing);
     } catch (err: any) {
       setMessages((prev) =>
         prev.map((m) =>
@@ -561,7 +688,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
         )
       );
 
-      speakText(data.briefing);
+      speakText(data.briefing, data.speechBriefing);
     } catch (err: any) {
       setMessages((prev) =>
         prev.map((m) =>
@@ -578,11 +705,38 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
     const text = msgText.trim();
     if (!text || isStreaming) return;
 
+    // Local briefing API routing
+    const isWeeklyBriefingQuery = /brief.*(week|weekly)|describe.*week/i.test(text);
+    const isDailyBriefingQuery = !isWeeklyBriefingQuery && /brief|describe.*(day|daily|today|task|tasks)/i.test(text);
+
+    if (isWeeklyBriefingQuery || isDailyBriefingQuery) {
+      const userMsg: ChatMessage = {
+        id: uuid(),
+        role: "user",
+        content: text,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, userMsg]);
+      setInput("");
+      setProposedTasks([]);
+      setProposedMoves([]);
+
+      if (isWeeklyBriefingQuery) {
+        await triggerWeeklyBriefing();
+      } else {
+        await triggerDailyBriefing();
+      }
+      return;
+    }
+
     // Check if there is a pending prompt after workspace selection, and the user typed the workspace name
     if (pendingPromptAfterWorkspace && !wsIdForce) {
-      const matchedWs = workspaces.find(
-        (w) => w.name.toLowerCase() === text.toLowerCase()
-      );
+      const matchedWs = workspaces.find((w) => {
+        const escapedName = w.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp(`\\b${escapedName}\\b`, "i");
+        return regex.test(text);
+      });
+
       if (matchedWs) {
         setMessages((prev) =>
           prev.filter(
@@ -597,6 +751,32 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
         setPendingPromptAfterWorkspace(null);
         handleUserMessage(promptToRun, matchedWs.id);
         return;
+      } else {
+        // Did not match workspace name during selection phase: show warning and re-render workspace chooser
+        const userMsg: ChatMessage = {
+          id: uuid(),
+          role: "user",
+          content: text,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [
+          ...prev,
+          userMsg,
+          {
+            id: uuid(),
+            role: "assistant",
+            content: `I couldn't find a workspace matching "${text}". Please select one of the available workspaces:`,
+            timestamp: new Date(),
+          },
+          {
+            id: uuid(),
+            role: "assistant",
+            content: "WORKSPACE_CHOOSER",
+            timestamp: new Date(),
+          },
+        ]);
+        setInput("");
+        return;
       }
     }
 
@@ -610,9 +790,10 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setProposedTasks([]);
+    setProposedMoves([]);
 
     // Check if task query (create, delete, edit, plan, decompose etc.)
-    const isTaskQuery = /add|create|delete|remove|schedule|remind|plan|divide|split|break down|subtask|decompose|book|fix|do|build|write|send|assign|complete|finish|prepare|review/i.test(text);
+    const isTaskQuery = /add|create|delete|remove|schedule|remind|plan|divide|split|break down|subtask|decompose|book|fix|do|build|write|send|assign|complete|finish|prepare|review|study|meeting|call|wash|buy|clean|read|email|go to|attend/i.test(text);
 
     // Decide routing
     let routeDecision: "VIDEO_TUTORIAL" | "FAQ" | "GEMINI" = "GEMINI";
@@ -714,7 +895,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
     }
 
     // It IS a task query! Proceed to workspace context check and Gemini:
-    let wsToUse = wsIdForce ?? selectedWorkspace;
+    let wsToUse = wsIdForce;
 
     if (!wsToUse) {
       const matchedWs = workspaces.find((w) => {
@@ -726,6 +907,10 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
         wsToUse = matchedWs.id;
         setSelectedWorkspace(matchedWs.id);
       }
+    }
+
+    if (!wsToUse) {
+      wsToUse = selectedWorkspace;
     }
 
     if (isTaskQuery && context === "home" && !wsToUse && workspaces.length > 1) {
@@ -882,6 +1067,14 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
               if (result.proposedTasks?.length > 0) {
                 setProposedTasks(result.proposedTasks);
               }
+
+              if (result.proposedMoves && result.proposedMoves.length > 0) {
+                setProposedMoves(result.proposedMoves);
+              }
+
+              if (isTtsEnabled) {
+                speakText(sanitizedReply);
+              }
             }
 
             if (chunk.type === "error") {
@@ -913,7 +1106,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
       setMessages((prev) => prev.map((m) => ({ ...m, isStreaming: false })));
       fetchQuotaStatus();
     }
-  }, [messages, activeProvider, context, workspaces, selectedWorkspace, botName, isStreaming, fetchQuotaStatus, language, logMode, pendingPromptAfterWorkspace]);
+  }, [messages, activeProvider, context, workspaces, selectedWorkspace, botName, isStreaming, fetchQuotaStatus, language, logMode, pendingPromptAfterWorkspace, triggerDailyBriefing, triggerWeeklyBriefing, isTtsEnabled, speakText]);
 
   const handleSelectWorkspace = (wsId: number) => {
     setSelectedWorkspace(wsId);
@@ -960,9 +1153,17 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
     setIsSubmittingTasks(true);
 
     try {
-      const wsId = selectedWorkspace ?? workspaceId ?? 1;
-
       for (const task of proposedTasks) {
+        let wsId = selectedWorkspace ?? workspaceId ?? 1;
+        if (task.targetWorkspace) {
+          const found = workspaces.find(
+            (w) => w.name.toLowerCase() === task.targetWorkspace!.toLowerCase()
+          );
+          if (found) {
+            wsId = found.id;
+          }
+        }
+
         let delegateId: number | null = null;
 
         if (task.delegateName && task.delegateName.toLowerCase() !== "self") {
@@ -970,7 +1171,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
           if (existingRes.ok) {
             const existingList: any[] = await existingRes.json();
             const found = existingList.find(
-              (d) => d.name.toLowerCase() === task.delegateName.toLowerCase(),
+              (d) => d.name.toLowerCase() === task.delegateName!.toLowerCase(),
             );
             if (found) {
               delegateId = found.id;
@@ -1027,20 +1228,86 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
     } finally {
       setIsSubmittingTasks(false);
     }
-  }, [proposedTasks, selectedWorkspace, workspaceId]);
+  }, [proposedTasks, selectedWorkspace, workspaceId, workspaces]);
+
+  const executeMoves = useCallback(async () => {
+    if (!proposedMoves.length) return;
+    setIsSubmittingTasks(true);
+
+    try {
+      for (const move of proposedMoves) {
+        const updates: any = {};
+        if (move.targetQuadrant) {
+          updates.quadrant = move.targetQuadrant === "DO_FIRST" ? "DO" : move.targetQuadrant;
+        }
+        if (move.targetWorkspace) {
+          const found = workspaces.find(
+            (w) => w.name.toLowerCase() === move.targetWorkspace!.toLowerCase()
+          );
+          if (found) {
+            updates.workspaceId = found.id;
+          }
+        }
+
+        await fetch("/api/tasks", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: move.taskId,
+            ...updates,
+          }),
+        });
+      }
+
+      setProposedMoves([]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: uuid(),
+          role: "assistant",
+          content: `✅ Successfully moved ${proposedMoves.length} task${proposedMoves.length > 1 ? "s" : ""} as requested! Check your matrix board to verify.`,
+          timestamp: new Date(),
+        },
+      ]);
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("refresh-matrix-tasks"));
+      }
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: uuid(),
+          role: "assistant",
+          content: "There was an error moving the tasks. Please try again.",
+          timestamp: new Date(),
+        },
+      ]);
+    } finally {
+      setIsSubmittingTasks(false);
+    }
+  }, [proposedMoves, workspaces]);
 
   const addSingleTaskToMatrix = useCallback(async (task: ProposedTask) => {
     setIsSubmittingTasks(true);
 
     try {
-      const wsId = selectedWorkspace ?? workspaceId ?? 1;
-      
       const tasksToAdd = [
         task,
         ...proposedTasks.filter((f) => f.isFollowUp && f.parentTask === task.content)
       ];
 
       for (const t of tasksToAdd) {
+        let wsId = selectedWorkspace ?? workspaceId ?? 1;
+        if (t.targetWorkspace) {
+          const found = workspaces.find(
+            (w) => w.name.toLowerCase() === t.targetWorkspace!.toLowerCase()
+          );
+          if (found) {
+            wsId = found.id;
+          }
+        }
+
         let delegateId: number | null = null;
 
         if (t.delegateName && t.delegateName.toLowerCase() !== "self") {
@@ -1109,7 +1376,7 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
     } finally {
       setIsSubmittingTasks(false);
     }
-  }, [proposedTasks, selectedWorkspace, workspaceId]);
+  }, [proposedTasks, selectedWorkspace, workspaceId, workspaces]);
 
   const renderAvatar = (className = "w-4 h-4 text-white", forceImageFull = false) => {
     if (avatarType === "image" && avatarImage.trim()) {
@@ -1234,6 +1501,29 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
                   </div>
                 </div>
 
+                {/* Voice Selection */}
+                {currentLanguageVoices.length > 0 && (
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5 ml-1">Voice Accent (Speaker)</label>
+                    <select
+                      value={selectedVoiceName}
+                      onChange={(e) => {
+                        const name = e.target.value;
+                        setSelectedVoiceName(name);
+                        localStorage.setItem("chatbot_voice_name", name);
+                      }}
+                      className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800 dark:text-slate-200 font-medium"
+                    >
+                      <option value="">-- Auto-select Best Voice --</option>
+                      {currentLanguageVoices.map((v) => (
+                        <option key={v.name} value={v.name}>
+                          {v.name} ({v.lang})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 {/* Routing Logs Enable */}
                 <div className="flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Enable Routing Logs</label>
@@ -1286,6 +1576,39 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
                             </button>
                           )}
                         </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Preset Robot Avatars */}
+                <div>
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5 ml-1">Choose Robot Avatar</label>
+                  <div className="grid grid-cols-5 gap-2">
+                    {[
+                      { id: "one", path: "/assets/cute_robot_one.png" },
+                      { id: "two", path: "/assets/cute_robot_two.png" },
+                      { id: "three", path: "/assets/cute_robot_three.png" },
+                      { id: "four", path: "/assets/cute_robot_four.png" },
+                      { id: "five", path: "/assets/cute_robot_five.png" },
+                    ].map((robot) => {
+                      const isSelected = avatarType === "image" && avatarImage === robot.path;
+                      return (
+                        <button
+                          key={robot.id}
+                          onClick={() => saveAvatarSettings("image", avatarIcon, robot.path)}
+                          className={`relative aspect-square rounded-xl border overflow-hidden flex items-center justify-center transition-all p-0.5 ${
+                            isSelected
+                              ? "bg-indigo-50 dark:bg-indigo-950/20 border-indigo-500 ring-2 ring-indigo-500/20"
+                              : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-350"
+                          }`}
+                        >
+                          <img
+                            src={robot.path}
+                            alt={`Robot ${robot.id}`}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                        </button>
                       );
                     })}
                   </div>
@@ -1428,6 +1751,17 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
               >
                 <Settings className="w-4 h-4" />
               </button>
+              <button
+                onClick={() => setIsTtsEnabled((prev) => !prev)}
+                className={`p-1.5 rounded-xl transition-all duration-150 ${
+                  isTtsEnabled
+                    ? "bg-white/15 text-amber-300 shadow-sm shadow-black/5"
+                    : "text-white/80 hover:text-white hover:bg-white/10"
+                }`}
+                title={isTtsEnabled ? "Disable Read Aloud (Mute)" : "Enable Read Aloud (Speak)"}
+              >
+                {isTtsEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+              </button>
               <Sparkles className="w-3.5 h-3.5 text-white/60" />
               <button
                 onClick={() => { stopSpeaking(); setOpen(false); }}
@@ -1476,6 +1810,24 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
                 />
               </div>
 
+              {/* Briefing Action Bar */}
+              <div className="px-3 py-2 bg-slate-50 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-800/60 flex items-center justify-between gap-2 flex-shrink-0">
+                <button
+                  onClick={triggerDailyBriefing}
+                  disabled={isStreaming || isSpeaking}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-semibold rounded-lg transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  <Volume2 className="w-3.5 h-3.5" /> Brief My Day
+                </button>
+                <button
+                  onClick={triggerWeeklyBriefing}
+                  disabled={isStreaming || isSpeaking}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-violet-50 hover:bg-violet-100 dark:bg-violet-950/40 dark:hover:bg-violet-950/60 text-violet-700 dark:text-violet-300 text-xs font-semibold rounded-lg transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  <Volume2 className="w-3.5 h-3.5" /> Weekly Briefing
+                </button>
+              </div>
+
               {/* Messages wrapper */}
               <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
                 {messages.length === 0 ? (
@@ -1490,20 +1842,6 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                         Tell me what to do, ask about mental models, or use your mic 🎤
                       </p>
-                      <div className="flex flex-col gap-2 mt-4 max-w-[240px] mx-auto">
-                        <button
-                          onClick={triggerDailyBriefing}
-                          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-indigo-500/20 active:scale-95"
-                        >
-                          <Volume2 className="w-3.5 h-3.5" /> Brief My Day (Audio)
-                        </button>
-                        <button
-                          onClick={triggerWeeklyBriefing}
-                          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md shadow-violet-500/20 active:scale-95"
-                        >
-                          <Volume2 className="w-3.5 h-3.5" /> Describe Weekly Tasks (Audio)
-                        </button>
-                      </div>
                     </div>
                     <SuggestedPrompts onSelect={(p) => { setInput(p); }} context={context} />
                   </div>
@@ -1515,6 +1853,9 @@ export default function AiChatbot({ context, workspaceId }: AiChatbotProps) {
                     onCancelProposed={() => setProposedTasks([])}
                     onConfirmSingleProposed={addSingleTaskToMatrix}
                     isSubmittingProposed={isSubmittingTasks}
+                    proposedMoves={proposedMoves}
+                    onConfirmMoves={executeMoves}
+                    onCancelMoves={() => setProposedMoves([])}
                     avatarType={avatarType}
                     avatarIcon={avatarIcon}
                     avatarImage={avatarImage}

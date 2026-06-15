@@ -94,6 +94,10 @@ export async function updateTask(id: number, updates: Partial<Task>) {
     const access = await verifyWorkspaceAccess(existing.workspaceId);
     if (!access.success) return { success: false, error: access.error };
 
+    if (updates.workspaceId) {
+      updates.workspaceId = parseInt(updates.workspaceId as unknown as string);
+    }
+
     const data: Prisma.TaskUpdateInput = { ...updates } as any;
 
     if (updates.dueDate)
@@ -106,9 +110,28 @@ export async function updateTask(id: number, updates: Partial<Task>) {
     // Cleanup incompatible types
     delete (data as any).delegateId;
     delete (data as any).id;
+    delete (data as any).workspaceId;
 
-    // Business Rule: If moving out of DELEGATE quadrant, auto-assign to Self
-    if (data.quadrant && data.quadrant !== "DELEGATE") {
+    // Workspace change validation and delegate reassignment
+    if (updates.workspaceId && updates.workspaceId !== existing.workspaceId) {
+      const targetAccess = await verifyWorkspaceAccess(updates.workspaceId);
+      if (!targetAccess.success) return { success: false, error: targetAccess.error };
+
+      data.workspace = { connect: { id: updates.workspaceId } };
+
+      const selfDelegate = (await prisma.delegate.findFirst({
+        where: {
+          name: { in: ["Self", "self", "SELF"] },
+          workspaceId: updates.workspaceId,
+        },
+      })) as Delegate | null;
+      if (selfDelegate) {
+        data.delegate = { connect: { id: selfDelegate.id } };
+      } else {
+        data.delegate = { disconnect: true };
+      }
+    } else if (data.quadrant && data.quadrant !== "DELEGATE") {
+      // Business Rule: If moving out of DELEGATE quadrant, auto-assign to Self
       const selfDelegate = (await prisma.delegate.findFirst({
         where: {
           name: { in: ["Self", "self", "SELF"] },

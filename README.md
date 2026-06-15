@@ -4,12 +4,15 @@ A high-precision, interactive workspace designed to sharpen decision-making and 
 
 ## 🚀 Key Features
 
-### 🤖 AI Chatbot Tasker — "Betu" (v2.4.2)
+### 🤖 AI Chatbot Tasker — "Betu" (v2.4.8)
 
-Natural language AI assistant for task creation and mental model education.
+Natural language AI assistant for task creation, mental model education, and smart task management.
 
+- **TTS Header Speaker Button (Auto Speech)**: Toggle automatic read-aloud of chatbot replies via a speaker icon in the header. Features dynamic voice prioritization favoring natural, premium-sounding voices and sanitizes text strings (e.g. keeping hyphens in date structures) to avoid robotic text pronunciation.
+- **Proposed Task Moves (Task Shifting)**: Automatically detects when you ask to move, shift, reschedule, or re-organize existing tasks (e.g., "move broad report to Schedule quadrant", "transfer it to Work workspace"). Displays a `ProposedMoveCard` with Approve/Cancel options that directly updates database task entries instead of creating duplicate tasks.
+- **Strict Operating Mode Routing**: Enforces mode routing rules so that any explicit task movement request strictly invokes Mode C (`mode: "move"`), parsing context (like "this task" or "it") from conversation history and asking for clarification rather than defaulting back to creating duplicate tasks.
 - **Customizable Persona & Avatars**: Defaults to "Betu". Users can rename the chatbot and customize its avatar (selecting from preset icons like `Smile`, `Bot`, `Sparkles`, `Heart`, `Zap` or entering a custom image URL) via a settings panel, persisting in `localStorage`.
-- **Quota Tracking & Transparency**: Displays the current used message count and active limits (e.g., "Used 2/20 msgs today") directly in the chatbot header.
+- **Quota Tracking & Transparency**: Displays the current used message count and active limits (e.g., "Used 2/20 msgs today") directly in the chatbot header, with a strict hard cap of 100 daily messages.
 - **Spoken Daily & Weekly Briefings**: Generates spoken briefings for both daily agendas and weekly reviews. The new "Brief My Week (Audio)" action summarizes weekly completions, upcoming tasks, and quadrant balance advice.
 - **Local Grilling & Router Intercepts**: Prefilters prompts locally before hitting the LLM:
   - Intercepts tutorial help queries and renders quick links to restart matrix or analytics guided tours.
@@ -17,7 +20,7 @@ Natural language AI assistant for task creation and mental model education.
   - Intercepts home page task additions, prompting the user to select the destination workspace.
 - **JSON Output Sanitizer**: Automatically cleans up and parses response streams to prevent raw JSON syntax or Markdown wrapping from escaping to the user.
 - **Task Decomposition**: Large tasks are split into sub-tasks with a strict duration limit of 1 to 3 hours (60 to 180 minutes) maximum.
-- **Dual-Mode Intelligence**: Automatically detects whether you're asking to create a task or asking a question about mental models/productivity.
+- **Multi-Mode Intelligence**: Automatically detects whether you're asking to create a task, question mental models, or move an existing task.
 - **Multi-LLM Providers**: Supports Gemini 1.5 Flash, GPT-4o-mini, and Claude Haiku. Auto-falls back on failures.
 - **Voice Input**: Click the mic, speak naturally. Jitter-free sequential compilation compiled in real-time.
 - **Interactive FAQ & Admin Forum**: Public `/faq` page with accordion-style Q&As and a question submission form. Administrators can type answers, approve pending questions, and delete entries via the Admin Portal dashboard.
