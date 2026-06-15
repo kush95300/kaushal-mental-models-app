@@ -233,6 +233,17 @@ export function useTaskOperations({
     }
   }, [authChecked, fetchTasks]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleRefresh = () => {
+      fetchTasks();
+    };
+    window.addEventListener("refresh-matrix-tasks", handleRefresh);
+    return () => {
+      window.removeEventListener("refresh-matrix-tasks", handleRefresh);
+    };
+  }, [fetchTasks]);
+
   // Actions
   const addTask = async (
     content: string,
@@ -344,6 +355,9 @@ export function useTaskOperations({
       setTasks((prev) =>
         prev.map((t) => (t.id === taskId ? (res.data as Task) : t)),
       );
+      if (additionalData.workspaceId) {
+        fetchTasks();
+      }
     } else {
       fetchTasks();
     }
@@ -354,22 +368,31 @@ export function useTaskOperations({
     content: string,
     estimatedMinutes: number | null,
     reminderMinutesBefore: number | null = null,
+    workspaceId?: number,
   ) => {
     // Optimistic Update
     setTasks((prev) =>
       prev.map((t) =>
         t.id === id
-          ? ({ ...t, content, estimatedMinutes, reminderMinutesBefore } as Task)
+          ? ({ ...t, content, estimatedMinutes, reminderMinutesBefore, workspaceId: workspaceId ?? t.workspaceId } as Task)
           : t,
       ),
     );
 
     if (isTestMode) return;
-    await updateTaskAction(id, {
+    const res = await updateTaskAction(id, {
       content,
       estimatedMinutes,
       reminderMinutesBefore,
+      workspaceId,
     });
+    if (res.success) {
+      if (workspaceId) {
+        fetchTasks();
+      }
+    } else {
+      fetchTasks();
+    }
   };
 
   const deleteTask = async (id: number) => {

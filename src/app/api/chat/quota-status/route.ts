@@ -62,11 +62,11 @@ export async function GET() {
     if (needsReset) {
       usage = await (prisma as any).userChatUsage.update({
         where: { userId },
-        data: { usedToday: 0, usedThisWeek: 0, lastResetDate: now },
+        data: { usedToday: 0, usedThisWeek: 0, extraQuota: 0, lastResetDate: now },
       });
     }
 
-    const effectiveLimit = settings.defaultLimit + (usage.extraQuota ?? 0);
+    const effectiveLimit = Math.min(100, settings.defaultLimit + (usage.extraQuota ?? 0));
     const currentUsed = settings.period === "DAY" ? usage.usedToday : usage.usedThisWeek;
 
     return NextResponse.json({

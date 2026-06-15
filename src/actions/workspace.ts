@@ -91,6 +91,15 @@ export async function createWorkspace(data: {
         userId: session.id,
       },
     });
+
+    await prisma.delegate.create({
+      data: {
+        name: "Self",
+        email: "me@example.com",
+        workspaceId: workspace.id,
+      },
+    });
+
     revalidatePath("/eisenhower-matrix");
     return { success: true, data: workspace };
   } catch (error) {

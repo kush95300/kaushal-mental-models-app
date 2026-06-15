@@ -13,6 +13,9 @@ interface EditContentModalProps {
   onClose: () => void;
   saveTaskContent: () => void;
   warningMessage?: string | null;
+  workspaces?: any[];
+  editingWorkspaceId?: number | null;
+  setEditingWorkspaceId?: (value: number) => void;
 }
 
 export const EditContentModal: React.FC<EditContentModalProps> = ({
@@ -26,6 +29,9 @@ export const EditContentModal: React.FC<EditContentModalProps> = ({
   onClose,
   saveTaskContent,
   warningMessage,
+  workspaces = [],
+  editingWorkspaceId,
+  setEditingWorkspaceId,
 }) => {
   if (editingContentTaskId === null) return null;
 
@@ -53,6 +59,25 @@ export const EditContentModal: React.FC<EditContentModalProps> = ({
               placeholder="Task content..."
             />
           </div>
+
+          {workspaces.length > 1 && editingWorkspaceId && setEditingWorkspaceId && (
+            <div>
+              <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">
+                Target Workspace
+              </label>
+              <select
+                value={editingWorkspaceId}
+                onChange={(e) => setEditingWorkspaceId(parseInt(e.target.value))}
+                className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 outline-none focus:border-indigo-500 font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
+              >
+                {workspaces.map((ws) => (
+                  <option key={ws.id} value={ws.id} className="dark:bg-slate-900 font-semibold">
+                    {ws.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">

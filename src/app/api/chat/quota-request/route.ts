@@ -38,6 +38,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "requestedExtra must be a positive integer" }, { status: 400 });
   }
 
+  // Enforce max 100 messages per day hard limit
+  const settings = await (prisma as any).chatQuotaSettings.findFirst();
+  const defaultLimit = settings?.defaultLimit ?? 20;
+
+  const usage = await (prisma as any).userChatUsage.findUnique({
+    where: { userId: session.id },
+  });
+  const currentExtra = usage?.extraQuota ?? 0;
+
+  if (defaultLimit + currentExtra + requestedExtra > 100) {
+    return NextResponse.json(
+      { error: `Requested amount exceeds the maximum hard limit of 100 messages per day (current limit: ${defaultLimit + currentExtra}, requested: +${requestedExtra}).` },
+      { status: 400 }
+    );
+  }
+
   // Prevent duplicate pending requests
   const existing = await (prisma as any).chatQuotaRequest.findFirst({
     where: { userId: session.id, status: "PENDING" },
@@ -91,6 +107,23 @@ export async function PATCH(request: Request) {
     }
     newStatus = "PARTIALLY_APPROVED";
     finalApprovedAmount = amt;
+  }
+
+  if (finalApprovedAmount && finalApprovedAmount > 0) {
+    const settings = await (prisma as any).chatQuotaSettings.findFirst();
+    const defaultLimit = settings?.defaultLimit ?? 20;
+
+    const usage = await (prisma as any).userChatUsage.findUnique({
+      where: { userId: quotaReq.userId },
+    });
+    const currentExtra = usage?.extraQuota ?? 0;
+
+    if (defaultLimit + currentExtra + finalApprovedAmount > 100) {
+      return NextResponse.json(
+        { error: `Approval denied. The total daily limit cannot exceed 100 messages. (Current: ${defaultLimit + currentExtra}, Approved: +${finalApprovedAmount})` },
+        { status: 400 }
+      );
+    }
   }
 
   // Update the request record

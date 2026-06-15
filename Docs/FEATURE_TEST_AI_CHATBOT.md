@@ -598,6 +598,190 @@ npm run build
 | 30 | FAQ Redirections & Seeding | |
 | 31 | Trigger Button & Invitation Label | |
 | 32 | Gemini Multi-Model Fallback Chain | |
+| 33 | Workspace Extraction & Local Briefings | |
+| 34 | Task Workspace Transfer Modals | |
+| 35 | Daily Chat Quota Hard Limits | |
+| 36 | TTS Voice Accent Selector (Hinglish) | |
+| 37 | Preset Cute Robot Avatar Selector | |
+| 38 | Pending Tasks Q&A Routing | |
+| 39 | Chatbot Header Speaker Button (Auto TTS) | |
+| 40 | Proposed Task Moves (Task Shifting) | |
 | — | Production build | |
+
+---
+
+## Test 33 — Workspace Extraction & Local Briefing Routing
+
+**Steps:**
+1. Open the chatbot and make sure you have both "Work" and "Personal" workspaces.
+2. Select the "Work" workspace from the board.
+3. Type: `Add task prepare groceries in Personal workspace` -> Send.
+4. Verify the proposed task card.
+5. Type: `brief my task` -> Send.
+6. Verify the audio briefing triggers locally.
+
+**Expected:**
+- The proposed task card correctly shows `targetWorkspace` (or resolves target workspace) as "Personal" despite being on the "Work" matrix page.
+- Adding the task routes it to the "Personal" workspace immediately.
+- Typing `brief my task` intercepts the query locally and triggers the briefing audio scripts instead of falling back to Gemini.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
+## Test 34 — Task Workspace Transfer Modals
+
+**Steps:**
+1. Double-click on any task on the Eisenhower Matrix board to open the **Edit Content Modal**.
+2. If you have multiple workspaces, check for a **Target Workspace** selector dropdown. Select a different workspace and click **Save Changes**.
+3. Verify the task disappears from the current board (as it has been transferred). Switch to the target workspace and verify it is there.
+4. Click the **Prioritize/Move (Target 🎯)** icon on another task to open the **Assignment Modal**.
+5. Look at the bottom for the **"Transfer to Workspace"** section. Click one of the workspace buttons.
+6. Verify the task is immediately transferred to that workspace and the board refreshes.
+
+**Expected:**
+- The Target Workspace selector dropdown is rendered and successfully updates the task workspace.
+- The Assignment Modal displays transfer buttons for other workspaces and transfers the task instantly in one click.
+- All workspace transfers correctly shift delegate assignment to the "Self" delegate of the target workspace.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
+## Test 35 — Daily Chat Quota Hard Limits
+
+**Steps:**
+1. Navigate to `/admin` as an admin user.
+2. Go to the "AI Chat Quotas" section. Try to set the "Default Message Limit" to `101`.
+3. Click "Save Settings". Verify an error alert "Default daily limit cannot exceed 100 messages." is displayed and settings are not saved.
+4. Set the "Default Message Limit" to `20`. Click "Save Settings".
+5. Change the user database/quota state or request extra quota as a standard user.
+6. As a standard user, request `90` extra messages in the chatbot quota request modal.
+7. Verify that the request is rejected immediately with an error message: "Requested amount exceeds the maximum hard limit of 100 messages per day..."
+8. As a standard user, request `10` extra messages. Verify it succeeds.
+9. As an admin, go to the pending requests in the Admin Panel. Try to partially approve with `90` extra messages. Verify it rejects with: "Approval denied. The total daily limit cannot exceed 100 messages."
+10. Approve the `10` extra messages. Verify the user can chat and has a daily limit of 30.
+11. Simulate a day roll-over (e.g. reset counters, or trigger reset on a status call). Confirm that `extraQuota` resets to `0` and the user's limit resets back to the default `20`.
+
+**Expected:**
+- Default global limit cannot be set above 100.
+- User requests and admin approvals cannot increase the daily limit past 100 messages.
+- Approved extra quota increases are ephemeral and reset back to 0 on the next day, returning the user's limit to the default 20.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
+## Test 36 — TTS Voice Accent Selector (Hinglish)
+
+**Steps:**
+1. Open the chatbot, click settings (gear icon).
+2. Change the language setting to **Hinglish**.
+3. Confirm that the **Voice Accent (Speaker)** select dropdown appears.
+4. Verify that the dropdown lists Indian English (`en-IN`) and Hindi (`hi-IN`) voices (if installed/available in the browser).
+5. Select a specific voice from the dropdown list.
+6. Click **Brief My Day (Audio)** or trigger any spoken response.
+7. Verify that the speech synthesis uses the selected voice.
+8. Switch the language setting to **English**.
+9. Verify that the **Voice Accent (Speaker)** dropdown changes to display English-only voices (`en-*`).
+
+**Expected:**
+- Selecting Hinglish changes the available voices to prioritize Indian English and Hindi accents.
+- Selecting English lists standard English accents.
+- Spoken briefings are synthesized using the chosen custom voice.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
+## Test 37 — Preset Cute Robot Avatar Selector
+
+**Steps:**
+1. Open the chatbot, click settings (gear icon).
+2. Locate the **Choose Robot Avatar** section.
+3. Confirm that 5 different cute robot avatar thumbnails are rendered.
+4. Click on the 2nd robot icon (orange cat-eared robot).
+5. Verify that a border outline appears around it indicating it is selected, and that the custom URL text box is updated with the selected robot's asset path (`/assets/cute_robot_two.png`).
+6. Close settings and check the floating trigger button and the chatbot header avatar.
+7. Verify both elements update immediately to display the orange cat-eared robot.
+8. Enter a custom image URL in the custom URL field and click Save. Verify the avatar updates to the custom image.
+9. Delete the custom image URL and click Save. Verify the avatar reverts back to the default icon.
+
+**Expected:**
+- 5 cute robot options are available for selection.
+- Clicking any option instantly updates the active avatar across the trigger button and chat window header.
+- Custom URL input remains active and overrides the preset if a custom URL is saved.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
+## Test 38 — Pending Tasks Q&A Routing
+
+**Steps:**
+1. Open the chatbot and verify that you have some pending tasks (TODO status) on your matrix.
+2. Ask the chatbot: `what is my rest task pending for the day` -> Send.
+3. Verify the reply:
+   - The chatbot's response mode is routed as `mode: "answer"`.
+   - The chatbot conversationally and accurately lists all your remaining TODO tasks, mentioning their names, workspaces, and matrix quadrants.
+4. Try asking in Hinglish: `mera kya task bacha hai aaj ka` -> Send.
+5. Verify that the chatbot understands the Hinglish query and replies conversationally listing the pending tasks.
+
+**Expected:**
+- The chatbot correctly identifies the intent as Q&A (mode: "answer") rather than task scheduling.
+- The chatbot uses the injected active tasks context to summarize only the pending (TODO) tasks.
+- Works naturally in both English and Hinglish settings.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
+## Test 39 — Chatbot Header Speaker Button (Auto TTS)
+
+**Steps:**
+1. Open the chatbot. Look at the top-right control buttons in the chatbot header.
+2. Confirm a speaker/volume toggle button (icon showing volume-x or volume-2) is rendered next to the Settings button.
+3. Click the speaker button. Verify it changes style (active golden/amber background highlight with Volume2 icon) indicating TTS is turned ON.
+4. Send a message to the chatbot (e.g. `hello`).
+5. As the streamed text finishes rendering, confirm that the chatbot automatically starts reading the response out loud in the selected SpeechSynthesis voice.
+6. Click the speaker button again to turn it OFF.
+7. Confirm that:
+   - The icon changes back to the VolumeX icon.
+   - Any currently active SpeechSynthesis reading stops/cancels immediately.
+8. Refresh the page or close/open the chatbot, and verify that the last selected toggle state (ON or OFF) is persisted.
+
+**Expected:**
+- The toggle button accurately mirrors and changes the Read Aloud preference state.
+- State is saved in `localStorage` under `chatbot_tts_enabled` and retrieved on mount.
+- Streamed responses are auto-spoken only when the button is enabled.
+- Turning the button OFF immediately cancels any playing voice.
+
+**Pass:** ✅ | **Fail:** ❌
+
+---
+
+## Test 40 — Proposed Task Moves (Task Shifting)
+
+**Steps:**
+1. Open the chatbot and verify that you have a task named `broad main sections of the report` in your "Inbox" quadrant or another quadrant.
+2. Ask the chatbot: `move broad main sections of the report to schedule quadrant` -> Send.
+3. Verify that the chatbot understands the intent and enters `mode: "move"`.
+4. Check that:
+   - A `ProposedMoveCard` is rendered inside the chat window.
+   - It lists the task title and shows `"Move to: Schedule"` clearly.
+   - It does NOT propose creating a new task (i.e. `proposedTasks` card is not shown).
+5. Click **Approve Moves**.
+6. Verify that:
+   - The task is updated in the database.
+   - The matrix board immediately refreshes and the task is moved to the **Schedule** quadrant.
+   - A confirmation message `Successfully moved 1 task as requested!` is shown in the chatbot conversation.
+
+**Expected:**
+- Chatbot detects shift/move requests and correctly targets existing task IDs.
+- Approving the moves updates task quadrant/workspace directly instead of creating new duplicates.
+- The board automatically refreshes and shifts the task card layout instantly.
+
+**Pass:** ✅ | **Fail:** ❌
+
 
 

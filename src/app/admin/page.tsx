@@ -114,15 +114,21 @@ export default function AdminPortal() {
   const handleSaveQuotaSettings = async () => {
     if (!quotaSettings) return;
     setQuotaLoading(true);
+    setActionError("");
+    setActionSuccess("");
     try {
-      await fetch("/api/chat/quota-settings", {
+      const res = await fetch("/api/chat/quota-settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(quotaSettings),
       });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to save quota settings.");
+      }
       setActionSuccess("Quota settings saved.");
-    } catch {
-      setActionError("Failed to save quota settings.");
+    } catch (err: any) {
+      setActionError(err.message || "Failed to save quota settings.");
     } finally {
       setQuotaLoading(false);
     }
@@ -797,9 +803,9 @@ export default function AdminPortal() {
               <div>
                 <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">Default Message Limit</label>
                 <input
-                  type="number" min={1}
+                  type="number" min={1} max={100}
                   value={quotaSettings?.defaultLimit ?? 20}
-                  onChange={(e) => setQuotaSettings((s) => ({ ...(s ?? { period: "DAY" }), defaultLimit: Math.max(1, parseInt(e.target.value) || 1) }))}
+                  onChange={(e) => setQuotaSettings((s) => ({ ...(s ?? { period: "DAY" }), defaultLimit: Math.min(100, Math.max(1, parseInt(e.target.value) || 1)) }))}
                   className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 font-medium"
                 />
               </div>

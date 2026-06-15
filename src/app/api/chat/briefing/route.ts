@@ -182,6 +182,7 @@ export async function GET(request: Request) {
     // 7. Check if LLM is available, otherwise use fallback
     const availableProviders = LLMRouter.getAvailableProviders();
     let scriptText = "";
+    let speechBriefingText = "";
 
     if (availableProviders.length > 0) {
       try {
@@ -195,12 +196,13 @@ Keep sentences short, clear, and highly conversational.
 Use a natural speaking flow suitable for Text-to-Speech (TTS). Do not use markdown tags, formatting, lists, or asterisks.
 
 ${language === "hinglish" 
-  ? 'RESPOND IN HINGLISH: You must generate the spoken review script in Hinglish (Hindi written in English/Latin script). Do NOT use Devanagari script.'
-  : 'RESPOND IN ENGLISH: Generate the spoken review script in English.'}
+  ? 'RESPOND IN HINGLISH: You must generate the review script. Provide two versions: "reply" in Roman Hinglish (Hindi words written in English/Latin script) for display, and "speech" in Devanagari script (Hindi characters/script) for voice synthesis.'
+  : 'RESPOND IN ENGLISH: Generate the review script in English.'}
 
 ALWAYS respond with valid JSON in this exact format:
 {
-  "reply": "your conversational weekly review briefing script here"
+  "reply": "your conversational weekly review briefing script here (in English, or Roman Hinglish if Hinglish is selected)",
+  "speech": "only if Hinglish is selected: the Devanagari Hindi script translation of the weekly review briefing script, otherwise set to the same as reply"
 }`;
 
           const pendingTaskNames = pendingWeeklyTasks.map((t) => t.content);
@@ -223,12 +225,13 @@ Keep sentences short, clear, and highly conversational.
 Use a natural speaking flow suitable for Text-to-Speech (TTS). Do not use markdown tags, formatting, lists, or asterisks.
 
 ${language === "hinglish" 
-  ? 'RESPOND IN HINGLISH: You must generate the spoken briefing script in Hinglish (Hindi written in English/Latin script). Do NOT use Devanagari script.'
-  : 'RESPOND IN ENGLISH: Generate the spoken briefing script in English.'}
+  ? 'RESPOND IN HINGLISH: You must generate the briefing script. Provide two versions: "reply" in Roman Hinglish (Hindi words written in English/Latin script) for display, and "speech" in Devanagari script (Hindi characters/script) for voice synthesis.'
+  : 'RESPOND IN ENGLISH: Generate the briefing script in English.'}
 
 ALWAYS respond with valid JSON in this exact format:
 {
-  "reply": "your conversational voice briefing script here"
+  "reply": "your conversational voice briefing script here (in English, or Roman Hinglish if Hinglish is selected)",
+  "speech": "only if Hinglish is selected: the Devanagari Hindi script translation of the daily briefing script, otherwise set to the same as reply"
 }`;
 
           const todayTasksNames = todayTasks.map((t) => t.content);
@@ -251,7 +254,6 @@ Please generate a daily briefing script. Tell the user what tasks they have toda
         ]);
 
         const reader = stream.getReader();
-        const decoder = new TextDecoder();
         let accumulated = "";
 
         while (true) {
@@ -265,11 +267,14 @@ Please generate a daily briefing script. Tell the user what tasks they have toda
           if (jsonMatch) {
             const parsed = JSON.parse(jsonMatch[0]);
             scriptText = parsed.reply || parsed.text || accumulated;
+            speechBriefingText = parsed.speech || scriptText;
           } else {
             scriptText = accumulated;
+            speechBriefingText = accumulated;
           }
         } catch {
           scriptText = accumulated;
+          speechBriefingText = accumulated;
         }
       } catch (err) {
         console.error("LLM briefing generation failed, falling back:", err);
@@ -279,11 +284,11 @@ Please generate a daily briefing script. Tell the user what tasks they have toda
     if (!scriptText) {
       if (type === "weekly") {
         const pendingTaskNames = pendingWeeklyTasks.map((t) => t.content);
-        let script = language === "hinglish"
-          ? `Namaste! Main hoon aapka assistant ${botName}. Yeh hai aapka weekly tasks ka review. `
-          : `Hello! I am ${botName}, your productivity assistant. Here is your weekly review. `;
-        
+        let script = "";
+        let speechScript = "";
+
         if (language === "hinglish") {
+          script = `Namaste! Main hoon aapka assistant ${botName}. Yeh hai aapka weekly tasks ka review. `;
           script += `Pichle saat dino mein, aapne ${completedWeeklyTasksCount} tasks complete kiye aur ${totalCreatedWeeklyTasksCount} naye tasks banaye. `;
           if (pendingWeeklyTasks.length === 0) {
             script += "Aane wale hafte ke liye koi pending tasks schedule nahi hain. Naye goals set karne ka yeh achha time hai. ";
@@ -291,7 +296,17 @@ Please generate a daily briefing script. Tell the user what tasks they have toda
             script += `Aane wale saat dino mein, aapke paas ${pendingWeeklyTasks.length} tasks scheduled hain, jaise ki: ${pendingTaskNames.slice(0, 3).join(", ")}. `;
           }
           script += `Quadrant advice ke baare mein: ` + advice;
+
+          speechScript = `नमस्ते! मैं हूँ आपका असिस्टेंट ${botName}। यह है आपका वीकली टास्क का रिव्यू। `;
+          speechScript += `पिछले सात दिनों में, आपने ${completedWeeklyTasksCount} टास्क पूरे किए और ${totalCreatedWeeklyTasksCount} नए टास्क बनाए। `;
+          if (pendingWeeklyTasks.length === 0) {
+            speechScript += "आने वाले हफ्ते के लिए कोई पेंडिंग टास्क शेड्यूल नहीं हैं। नए गोल्स सेट करने का यह अच्छा समय है। ";
+          } else {
+            speechScript += `आने वाले सात दिनों में, आपके पास ${pendingWeeklyTasks.length} टास्क शेड्यूल्ड हैं, जैसे कि: ${pendingTaskNames.slice(0, 3).join(", ")}। `;
+          }
+          speechScript += `क्वाड्रंट एडवाइस के बारे में: ` + advice;
         } else {
+          script = `Hello! I am ${botName}, your productivity assistant. Here is your weekly review. `;
           script += `In the past seven days, you completed ${completedWeeklyTasksCount} task${completedWeeklyTasksCount !== 1 ? "s" : ""} and created ${totalCreatedWeeklyTasksCount} new task${totalCreatedWeeklyTasksCount !== 1 ? "s" : ""}. `;
           if (pendingWeeklyTasks.length === 0) {
             script += "You have no tasks scheduled for the coming week. It is a great time to review your long-term goals. ";
@@ -299,15 +314,17 @@ Please generate a daily briefing script. Tell the user what tasks they have toda
             script += `For the next seven days, you have ${pendingWeeklyTasks.length} task${pendingWeeklyTasks.length > 1 ? "s" : ""} scheduled, including: ${pendingTaskNames.slice(0, 3).join(", ")}. `;
           }
           script += `Regarding your quadrant balance: ` + advice;
+          speechScript = script;
         }
         scriptText = script;
+        speechBriefingText = speechScript;
       } else {
         const todayTasksNames = todayTasks.map((t) => t.content);
-        let script = language === "hinglish"
-          ? `Namaste! Main hoon aapka assistant ${botName}. Yeh hai aapka daily briefing. `
-          : `Hello! I am ${botName}, your productivity assistant. Here is your daily briefing. `;
+        let script = "";
+        let speechScript = "";
 
         if (language === "hinglish") {
+          script = `Namaste! Main hoon aapka assistant ${botName}. Yeh hai aapka daily briefing. `;
           if (todayTasks.length === 0) {
             script += "Aaj ke liye aapka koi task scheduled nahi hai. Naye tasks plan karne ke liye achha din hai. ";
           } else {
@@ -321,7 +338,23 @@ Please generate a daily briefing script. Tell the user what tasks they have toda
             script += `Aapne aaj ${completedToday} tasks complete kiye, kal jitne hi. `;
           }
           script += advice;
+
+          speechScript = `नमस्ते! मैं हूँ आपका असिस्टेंट ${botName}। यह है आपका डेली ब्रीफिंग। `;
+          if (todayTasks.length === 0) {
+            speechScript += "आज के लिए आपका कोई टास्क शेड्यूल्ड नहीं है। नए टास्क प्लान करने के लिए अच्छा दिन है। ";
+          } else {
+            speechScript += `आज आपके पास ${todayTasks.length} टास्क ड्यू हैं: ${todayTasksNames.slice(0, 3).join(", ")}। `;
+          }
+          if (completedToday > completedYesterday) {
+            speechScript += `आपका प्रोडक्टिविटी लेवल ऊपर है! आज आपने ${completedToday} टास्क पूरे किए, जो कि कल से ${completedToday - completedYesterday} ज़्यादा हैं। मोमेंटम बनाए रखें! `;
+          } else if (completedToday < completedYesterday) {
+            speechScript += `आज आपने ${completedToday} टास्क पूरे किए, जबकि कल ${completedYesterday} किए थे। `;
+          } else if (completedToday > 0) {
+            speechScript += `आपने आज ${completedToday} टास्क पूरे किए, कल जितने ही। `;
+          }
+          speechScript += advice;
         } else {
+          script = `Hello! I am ${botName}, your productivity assistant. Here is your daily briefing. `;
           if (todayTasks.length === 0) {
             script += "You have no tasks scheduled for today. It's a great day to plan ahead or focus on deep learning. ";
           } else {
@@ -337,12 +370,14 @@ Please generate a daily briefing script. Tell the user what tasks they have toda
           }
 
           script += advice;
-          scriptText = script;
+          speechScript = script;
         }
+        scriptText = script;
+        speechBriefingText = speechScript;
       }
     }
 
-    return NextResponse.json({ success: true, briefing: scriptText });
+    return NextResponse.json({ success: true, briefing: scriptText, speechBriefing: speechBriefingText || scriptText });
   } catch (error) {
     console.error("Briefing API error:", error);
     return NextResponse.json({ error: "Failed to construct daily briefing" }, { status: 500 });

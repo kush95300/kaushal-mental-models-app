@@ -44,6 +44,14 @@ export interface ProposedTask {
   isFollowUp: boolean;
   /** title of the task this is a follow-up for */
   parentTask?: string;
+  targetWorkspace?: string | null;
+}
+
+export interface ProposedMove {
+  taskId: number;
+  taskTitle: string;
+  targetQuadrant: QuadrantKey | null;
+  targetWorkspace: string | null;
 }
 
 // ─── API Shapes ───────────────────────────────────────────────────────────────
@@ -63,13 +71,15 @@ export interface ChatAPIRequest {
  * JSON structure the LLM returns (parsed from SSE stream end event).
  * mode "task"   → proposedTasks is populated
  * mode "answer" → reply contains the conversational response
+ * mode "move"   → proposedMoves is populated
  */
 export interface LLMStructuredResponse {
-  mode: "task" | "answer";
+  mode: "task" | "answer" | "move";
   reply: string;
   confused: boolean;
   clarificationQuestion?: string;
   proposedTasks: ProposedTask[];
+  proposedMoves?: ProposedMove[];
   /** Workspace the LLM resolved to (only set on mode "task" from home) */
   resolvedWorkspaceId?: number | null;
 }

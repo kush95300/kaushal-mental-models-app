@@ -147,6 +147,7 @@ function EisenhowerMatrixContent() {
     useState<string>("");
   const [editingReminderMinutes, setEditingReminderMinutes] =
     useState<string>("");
+  const [editingWorkspaceId, setEditingWorkspaceId] = useState<number | null>(null);
   const [showDoneList, setShowDoneList] = useState(false);
   const [showDeletedList, setShowDeletedList] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
@@ -581,6 +582,7 @@ function EisenhowerMatrixContent() {
       !task.estimatedMinutes
     ) {
       setEditingContentTaskId(task.id);
+      setEditingWorkspaceId(task.workspaceId);
       setEditingContentValue(task.content);
       setEditingEstimatedMinutes("");
       setEditingReminderMinutes(task.reminderMinutesBefore?.toString() || "");
@@ -607,6 +609,18 @@ function EisenhowerMatrixContent() {
     setActiveQuadrant(null);
   };
 
+  const handleStartEditing = (taskId: number | null) => {
+    setEditingContentTaskId(taskId);
+    if (taskId === null) {
+      setEditingWorkspaceId(null);
+    } else {
+      const task = tasks.find((t) => t.id === taskId);
+      if (task) {
+        setEditingWorkspaceId(task.workspaceId);
+      }
+    }
+  };
+
   const saveTaskContent = async () => {
     if (!editingContentTaskId) return;
 
@@ -621,11 +635,13 @@ function EisenhowerMatrixContent() {
       contentToSave,
       minutesToSave,
       reminderToSave,
+      editingWorkspaceId || undefined,
     );
     setEditingContentTaskId(null);
     setEditingContentValue("");
     setEditingEstimatedMinutes("");
     setEditingReminderMinutes("");
+    setEditingWorkspaceId(null);
   };
 
   const addDelegate = async () => {
@@ -773,7 +789,7 @@ function EisenhowerMatrixContent() {
               setActiveQuadrant={setActiveQuadrant}
               toggleComplete={toggleComplete}
               deleteTask={deleteTask}
-              setEditingContentTaskId={setEditingContentTaskId}
+              setEditingContentTaskId={handleStartEditing}
               setEditingContentValue={setEditingContentValue}
               setEditingEstimatedMinutes={setEditingEstimatedMinutes}
               setEditingReminderMinutes={setEditingReminderMinutes}
@@ -788,6 +804,7 @@ function EisenhowerMatrixContent() {
           tasks={tasks}
           onTaskClick={(task) => {
             setEditingContentTaskId(task.id);
+            setEditingWorkspaceId(task.workspaceId);
             setEditingContentValue(task.content);
             setEditingEstimatedMinutes(task.estimatedMinutes?.toString() || "");
             setEditingReminderMinutes(
@@ -887,6 +904,7 @@ function EisenhowerMatrixContent() {
           setShowDelegateModal={setShowDelegateModal}
           setShowOnboarding={setShowOnboarding}
           setAssignmentModal={setAssignmentModal}
+          workspaces={workspaces}
         />
       )}
       {showDelegateModal && (
@@ -944,9 +962,13 @@ function EisenhowerMatrixContent() {
             setEditingContentValue("");
             setEditingEstimatedMinutes("");
             setEditingReminderMinutes("");
+            setEditingWorkspaceId(null);
             setModalWarning(null);
           }}
           saveTaskContent={saveTaskContent}
+          workspaces={workspaces}
+          editingWorkspaceId={editingWorkspaceId}
+          setEditingWorkspaceId={setEditingWorkspaceId}
         />
       )}
       <SettingsModal

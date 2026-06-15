@@ -2,6 +2,69 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v2.4.8] - 2026-06-15
+
+### Added & Fixed — Chat Daily Message Limit Hard Caps, Workspace Transfers, and Task Shifting
+
+- **Fixed Task Workspace Transfer Bug**:
+  - Resolved a runtime `PrismaClientValidationError` ("Unknown argument workspaceId. Did you mean workspace?") that occurred when trying to update a task's `workspaceId` directly as a scalar field.
+  - Updated `updateTask` server action in `src/actions/task.ts` and the `PATCH` route in `src/app/api/tasks/route.ts` to update task workspaces using the proper Prisma nested relation connection syntax `workspace: { connect: { id: ... } }`, deleting the raw `workspaceId` scalar field from the data payload.
+  - This ensures that transferring tasks between workspaces via the Assignment Modal and the chatbot moves approval card works flawlessly.
+- **Improved Chatbot Move Intent Rules**:
+  - Added strict `CRITICAL OPERATING MODE SELECTION RULES` to `src/lib/llm/systemPrompt.ts` that force the model to choose MODE C (`mode: "move"`) for any task movement request.
+  - Instructed the model to never fallback to creating duplicate tasks (MODE A) and instead request clarification if the target task is ambiguous or missing.
+- **Chatbot Header Speaker Button (Auto Text-to-Speech)**:
+  - Added a speaker/volume toggle button (`Volume2` / `VolumeX`) in the chatbot window header that enables or disables automatic Text-to-Speech (Read Aloud) for all incoming chatbot replies.
+  - Persists the toggle state in `localStorage` under `chatbot_tts_enabled` so it is retained across chat sessions.
+  - Automatically speaks all streamed assistant replies using the user's selected accent when enabled.
+  - Instantly cancels any active SpeechSynthesis playback if the user turns the speaker button OFF.
+  - Added a `scoreVoice` prioritization system that rates available browser voices, automatically promoting natural premium voices (e.g. Google, Samantha, Rishi, Neerja) to the top of selection lists, and deprioritizes robotic built-in legacy voices.
+  - Refined SpeechSynthesis text cleaning to keep single hyphens/dashes inside date strings (e.g. `2026-06-13`) and hyphenated words, preventing SpeechSynthesis from reading date hyphens as empty strings and pronouncing dates as large 8-digit numbers (e.g., "2 crore 2 lakh...").
+- **Proposed Task Moves (Chatbot Task Shifting)**:
+  - Added a new `MODE C: TASK MOVEMENT` to the system prompt generator, allowing the LLM to identify when a user intends to move or shift an existing task (e.g. "move this task to Personal workspace", "shift prepare grocery to Schedule quadrant").
+  - Injected task `id`s into the LLM system prompt's list of active tasks so the LLM can output precise target `taskId`s for proposed moves.
+  - Added `ProposedMove` interface to chat types and added `proposedMoves` to the parsed LLM structured response JSON.
+  - Created a beautiful `ProposedMoveCard` UI component to render the proposed moves, displaying the task title, its target quadrant, and target workspace context with Approve and Cancel buttons.
+  - Added `executeMoves` callback that triggers `PATCH /api/tasks` for each move, updating the database task records instantly.
+  - Dispatched a custom `"refresh-matrix-tasks"` event on completion to instantly reload the Eisenhower matrix board.
+- **Pending Tasks Q&A Routing**:
+  - Injected user's active tasks (today's TODO & DONE tasks) into the chatbot's system prompt context.
+  - Refined the chatbot's Mode B (Question & Answer) system instructions to recognize questions about pending, remaining, done, completed, or "rest" tasks in both English and Hinglish (e.g. "what is my rest task pending for the day", "mera kya task bacha hai today"), summarizing them conversationally.
+- **Daily Hard limit of 100 Messages**:
+  - Implemented strict backend constraints across all chat routes (`/api/chat`, `/api/chat/quota-status`, `/api/chat/quota-request`, and `/api/chat/quota-settings`) guaranteeing that no user can exceed a hard ceiling of 100 messages per day, even if requested or modified by admins.
+- **Default Message Limit Validation**:
+  - Validated that the global `defaultLimit` set by administrators in `/api/chat/quota-settings` cannot exceed 100, displaying a descriptive error to administrators if violated. Added UI `max={100}` attributes and input clamping.
+- **Ephemeral Extra Quota Reset**:
+  - Made approved quota boosts single-day only by automatically resetting `extraQuota` back to `0` during the daily reset boundary check. On the next day, standard users are seamlessly returned to the default limit (20).
+- **Quota Request and Approval Caps**:
+  - Capped maximum user-requested boosts and admin-approved partial increases to prevent the computed target limit from exceeding the 100-message hard ceiling.
+- **TTS Voice Accent Selection & Hinglish Voice Filtering**:
+  - Added a "Voice Accent (Speaker)" select dropdown in the Chatbot settings panel. This dropdown dynamically queries available SpeechSynthesis voices on the client browser.
+  - Persists the selected voice choice in `localStorage` under `chatbot_voice_name`, falling back automatically to the best accent match if none is explicitly selected.
+- **Preset Cute Robot Avatars**:
+  - Generated and bundled 5 high-quality cute 3D robot chatbot mascot images inside `public/assets/` to serve as preset chatbot avatars.
+  - Added a grid selection panel "Choose Robot Avatar" in the chatbot settings panel overlay, allowing users to choose from any of the 5 cute mascots with instant preview highlights.
+  - Retained the option to input and save a custom image URL link for maximum customization.
+  - Set the first cute robot mascot (`/assets/cute_robot_one.png`) as the new system-wide default chatbot avatar.
+
+## [v2.4.7] - 2026-06-15
+
+### Fixed & Added — Chatbot Alternating Roles, Workspace Scoping, and Task Transfer Modals
+
+- **Chat History Alternating Roles (Gemini Fix)**:
+  - Implemented automatic chat history normalization in `/api/chat` that combines consecutive messages of the same role (e.g. consecutive assistant messages) and ensures the history starts with a `user` message. This prevents role-validation errors and ensures Gemini maintains proper context over multiple turns.
+- **Persistent Audio Briefing Buttons**:
+  - Moved the "Brief My Day" and "Describe Weekly Tasks" audio briefing buttons from the welcome screen to a persistent, compact action bar directly below the LLM provider switcher, keeping them always available.
+- **Local Briefing API Interception**:
+  - Intercepts briefing phrases (e.g. "brief my task/week") locally in the chatbot message handler to execute the briefing API directly, preventing them from falling back to Gemini.
+- **Workspace Query Scoping**:
+  - Automatically scans user task queries for workspace names first (case-insensitive word-boundary check) before falling back to the selected workspace, allowing explicit override of task target workspaces.
+  - Added target workspace name context dynamically in the system prompt.
+- **Task Workspace Transfer Modals**:
+  - Added a "Target Workspace" select dropdown in the task **Edit Content Modal** when multiple workspaces are available, allowing users to transfer tasks between workspaces.
+  - Added quick **"Transfer to Workspace"** buttons in the task **Assignment Modal** (MOVE view) to let users change a task's workspace in one click.
+  - Automatically re-assigns the task's delegate to the target workspace's "Self" delegate during workspace transfers to prevent foreign key errors.
+
 ## [v2.4.6] - 2026-06-13
 
 ### Fixed — Gemini Multi-Model Fallback Chain

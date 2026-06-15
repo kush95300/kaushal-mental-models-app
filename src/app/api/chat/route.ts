@@ -92,11 +92,11 @@ async function checkAndIncrementQuota(
   if (needsReset) {
     usage = await (prisma as any).userChatUsage.update({
       where: { userId },
-      data: { usedToday: 0, usedThisWeek: 0, lastResetDate: now },
+      data: { usedToday: 0, usedThisWeek: 0, extraQuota: 0, lastResetDate: now },
     });
   }
 
-  const effectiveLimit = settings.defaultLimit + (usage.extraQuota ?? 0);
+  const effectiveLimit = Math.min(100, settings.defaultLimit + (usage.extraQuota ?? 0));
   const currentUsed = settings.period === "DAY" ? usage.usedToday : usage.usedThisWeek;
 
   if (currentUsed >= effectiveLimit) {
@@ -170,6 +170,39 @@ export async function POST(request: Request) {
     select: { id: true, name: true, description: true, color: true },
   });
 
+  // Load user active/pending tasks for context
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const activeTasks = await prisma.task.findMany({
+    where: {
+      isDeleted: false,
+      workspace: { userId: session.id },
+      OR: [
+        { status: "TODO" },
+        {
+          status: "DONE",
+          completedAt: { gte: todayStart }
+        }
+      ]
+    },
+    select: {
+      id: true,
+      content: true,
+      quadrant: true,
+      status: true,
+      dueDate: true,
+      workspace: { select: { name: true } }
+    }
+  });
+
+  const activeTasksListText = activeTasks
+    .map((t) => {
+      const dueStr = t.dueDate ? new Date(t.dueDate).toISOString().split("T")[0] : "No due date";
+      return `  - id=${t.id} | title="${t.content}" | Workspace: "${t.workspace.name}" | Status: ${t.status} | Quadrant: ${t.quadrant} | Due: ${dueStr}`;
+    })
+    .join("\n");
+
   const currentDate = new Date().toISOString().split("T")[0];
   const systemPrompt = buildSystemPrompt(
     workspaces as any,
@@ -178,20 +211,38 @@ export async function POST(request: Request) {
     currentDate,
     botName,
     language as any,
+    activeTasksListText,
   );
 
   // 6. Normalize messages for LLM (strip client-only fields/placeholders, keep last 10 pairs)
   const UI_PLACEHOLDERS = ["WORKSPACE_CHOOSER", "TUTORIAL_LINKS", "FAQ_LINK"];
-  const normalized = messages
-    .filter(
-      (m) =>
-        (m.role === "user" || m.role === "assistant") &&
-        !UI_PLACEHOLDERS.includes(m.content) &&
-        !m.content.startsWith("To add this task") &&
-        !m.content.startsWith("To add these tasks")
-    )
-    .slice(-20) // last 10 pairs = 20 messages
-    .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+  const filtered = messages.filter(
+    (m) =>
+      (m.role === "user" || m.role === "assistant") &&
+      !UI_PLACEHOLDERS.includes(m.content) &&
+      !m.content.startsWith("To add this task") &&
+      !m.content.startsWith("To add these tasks")
+  );
+
+  const combined: { role: "user" | "assistant"; content: string }[] = [];
+  for (const msg of filtered) {
+    if (combined.length > 0 && combined[combined.length - 1].role === msg.role) {
+      combined[combined.length - 1].content += "\n" + msg.content;
+    } else {
+      combined.push({ role: msg.role as "user" | "assistant", content: msg.content });
+    }
+  }
+
+  // Ensure history starts with a user message
+  while (combined.length > 0 && combined[0].role !== "user") {
+    combined.shift();
+  }
+
+  const normalized = combined.slice(-20);
+  // Ensure after slicing it still starts with user
+  while (normalized.length > 0 && normalized[0].role !== "user") {
+    normalized.shift();
+  }
 
   // 7. Stream from LLM
   const stream = new ReadableStream({

@@ -32,6 +32,13 @@ export async function POST(request: Request) {
   const period = body.period === "WEEK" ? "WEEK" : "DAY";
   const defaultLimit = Math.max(1, parseInt(body.defaultLimit ?? "20") || 20);
 
+  if (defaultLimit > 100) {
+    return NextResponse.json(
+      { error: "Default daily limit cannot exceed 100 messages." },
+      { status: 400 }
+    );
+  }
+
   let settings = await (prisma as any).chatQuotaSettings.findFirst();
   if (settings) {
     settings = await (prisma as any).chatQuotaSettings.update({

@@ -140,6 +140,7 @@ export async function PATCH(request: Request) {
     }
 
     // Sanitize updates
+    if (updates.workspaceId) updates.workspaceId = parseInt(updates.workspaceId);
     if (updates.dueDate) updates.dueDate = new Date(updates.dueDate);
     if (updates.delegateId) updates.delegateId = parseInt(updates.delegateId);
     if (updates.estimatedMinutes !== undefined) {
@@ -153,8 +154,30 @@ export async function PATCH(request: Request) {
         : null;
     }
 
-    // Business Rule: If moving out of DELEGATE quadrant, auto-assign to Self
-    if (updates.quadrant && updates.quadrant !== "DELEGATE") {
+    // Workspace change validation and delegate reassignment
+    if (updates.workspaceId && updates.workspaceId !== existing.workspaceId) {
+      if (!(await verifyWorkspaceAccess(updates.workspaceId, session))) {
+        return NextResponse.json(
+          { error: "Unauthorized workspace access" },
+          { status: 403 },
+        );
+      }
+      updates.workspace = { connect: { id: updates.workspaceId } };
+
+      const selfDelegate = await (prisma as any).delegate.findFirst({
+        where: {
+          name: { in: ["Self", "self", "SELF"] },
+          workspaceId: updates.workspaceId,
+        },
+      });
+      if (selfDelegate) {
+        updates.delegateId = selfDelegate.id;
+      } else {
+        updates.delegate = { disconnect: true };
+      }
+      delete updates.workspaceId;
+    } else if (updates.quadrant && updates.quadrant !== "DELEGATE") {
+      // Business Rule: If moving out of DELEGATE quadrant, auto-assign to Self
       const selfDelegate = await (prisma as any).delegate.findFirst({
         where: {
           name: {
@@ -166,6 +189,11 @@ export async function PATCH(request: Request) {
       if (selfDelegate) {
         updates.delegateId = selfDelegate.id;
       }
+    }
+
+    if (updates.delegateId) {
+      updates.delegate = { connect: { id: updates.delegateId } };
+      delete updates.delegateId;
     }
 
     // Handle analytics tracking
